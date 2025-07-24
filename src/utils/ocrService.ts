@@ -249,8 +249,8 @@ const findRectangularRegions = (edges: Uint8ClampedArray, width: number, height:
   
   console.log('🔍 Finding rectangular regions...');
   
-  // Grid-based approach for TrackMan's structured layout
-  const gridSize = 20; // Check every 20 pixels
+  // Use a larger grid size to focus on actual tile areas, not noise
+  const gridSize = 60; // Larger grid for TrackMan's structured layout
   
   for (let y = gridSize; y < height - gridSize; y += gridSize) {
     for (let x = gridSize; x < width - gridSize; x += gridSize) {
@@ -258,17 +258,23 @@ const findRectangularRegions = (edges: Uint8ClampedArray, width: number, height:
       
       if (visited.has(idx)) continue;
       
-      // Look for potential tile corners (areas with low edge density = inside tiles)
+      // Look for potential tile areas 
       const region = expandRegion(edges, width, height, x, y, visited);
       
-      if (region && region.width > 50 && region.height > 40) {
+      // Much stricter criteria for valid tiles
+      if (region && 
+          region.width > 120 && region.width < width * 0.4 && // Reasonable width bounds
+          region.height > 80 && region.height < height * 0.3 && // Reasonable height bounds
+          region.width / region.height > 1.5 && region.width / region.height < 3) { // TrackMan tiles are wider than tall
         regions.push(region);
-        console.log(`📦 Found region: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
+        console.log(`📦 Found valid tile region: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
       }
     }
   }
   
-  return regions;
+  // Sort and limit to most promising regions
+  regions.sort((a, b) => (b.width * b.height) - (a.width * a.height)); // Sort by area, largest first
+  return regions.slice(0, 12); // Limit to 12 best regions
 };
 
 // Expand a region from a seed point to find tile boundaries
@@ -538,33 +544,51 @@ export const extractTrackmanData = async (imageFile: File) => {
     console.log('⚙️  Preprocessing image for better OCR...');
     const preprocessedImage = await enhancedPreprocessing(imageFile);
     
-    // First, detect and extract individual tiles from the image
+    // First, try tile-based approach with timeout protection
     console.log('🔍 Detecting individual tiles...');
-    const tiles = await detectTrackmanTiles(preprocessedImage);
     
-    const data: any = {};
+    let data: any = {};
+    let tilesProcessed = 0;
     
-    // Process each tile independently
-    for (let i = 0; i < tiles.length; i++) {
-      const tile = tiles[i];
-      console.log(`🔍 Processing tile ${i + 1}/${tiles.length}:`, tile.title);
+    try {
+      // Set a timeout for tile detection to prevent infinite loops
+      const tilePromise = detectTrackmanTiles(preprocessedImage);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Tile detection timeout')), 10000)
+      );
       
-      const tileData = await processSingleTile(tile);
-      if (tileData.parameter && tileData.value) {
-        data[tileData.parameter] = `${tileData.value}${tileData.unit ? ' ' + tileData.unit : ''}`;
-        console.log(`✅ Extracted ${tileData.parameter}: ${data[tileData.parameter]}`);
+      const tiles = await Promise.race([tilePromise, timeoutPromise]) as TrackManTile[];
+      
+      // Limit tile processing to first 12 most promising tiles
+      const limitedTiles = tiles.slice(0, 12);
+      console.log(`🔍 Processing ${limitedTiles.length} tiles (limited from ${tiles.length})`);
+      
+      // Process each tile independently
+      for (let i = 0; i < limitedTiles.length; i++) {
+        const tile = limitedTiles[i];
+        console.log(`🔍 Processing tile ${i + 1}/${limitedTiles.length}:`, tile.title);
+        
+        const tileData = await processSingleTile(tile);
+        if (tileData.parameter && tileData.value) {
+          data[tileData.parameter] = `${tileData.value}${tileData.unit ? ' ' + tileData.unit : ''}`;
+          console.log(`✅ Extracted ${tileData.parameter}: ${data[tileData.parameter]}`);
+          tilesProcessed++;
+        }
       }
+      
+    } catch (error) {
+      console.warn('⚠️ Tile detection failed or timed out:', error);
     }
     
-    // Fallback to full image OCR if tile detection fails
-    if (Object.keys(data).length === 0) {
-      console.log('🔄 Tile detection failed, falling back to full OCR...');
-      const fallbackData = await fallbackFullImageOCR(preprocessedImage);
-      return fallbackData;
-    }
+    // Always run fallback full image OCR for better coverage
+    console.log('🔄 Running full image OCR for comprehensive extraction...');
+    const fallbackData = await fallbackFullImageOCR(preprocessedImage);
     
-    console.log(`✅ Successfully extracted ${Object.keys(data).length} data points using tile-based OCR`);
-    return data;
+    // Merge tile data with fallback data, preferring tile data when available
+    const finalData = { ...fallbackData, ...data };
+    
+    console.log(`✅ Successfully extracted ${Object.keys(finalData).length} data points (${tilesProcessed} from tiles)`);
+    return finalData;
   } catch (error) {
     console.error('❌ OCR Error:', error);
     throw error;
