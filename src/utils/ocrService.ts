@@ -288,46 +288,129 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
     ]
   };
   
-  // Table-based parsing for pipe-separated data
+  // Enhanced table-based parsing for TrackMan pipe-separated data
   const parseTableData = (text: string) => {
     const tableData: any = {};
     const lines = text.split('\n');
     
+    console.log('🔍 Table parsing - analyzing', lines.length, 'lines');
+    
+    // Find header line and data lines
+    let headerLine = '';
+    let dataLines: string[] = [];
+    
     for (const line of lines) {
-      if (line.includes('|')) {
-        const parts = line.split('|').map(p => p.trim());
+      const cleanLine = line.trim();
+      if (cleanLine.includes('CLUB') && cleanLine.includes('SPEED')) {
+        headerLine = cleanLine;
+        console.log('📊 Found header line:', headerLine);
+      } else if (cleanLine.includes('|') && /\d/.test(cleanLine)) {
+        dataLines.push(cleanLine);
+        console.log('📊 Found data line:', cleanLine);
+      }
+    }
+    
+    if (headerLine && dataLines.length > 0) {
+      // Parse headers to identify column positions
+      const headers = headerLine.split('|').map(h => h.trim().toUpperCase());
+      console.log('📊 Headers:', headers);
+      
+      // Map known TrackMan parameters to header variations
+      const headerMap: Record<string, string[]> = {
+        'clubSpeed': ['CLUB SPEED', 'CLUBSPEED', 'CLUB_SPEED'],
+        'attackAngle': ['ATTACK', 'ATT', 'ATTACKANG', 'ATTACK_ANG'],
+        'clubPath': ['CLUB PATH', 'CLUBPATH', 'PATH'],
+        'dynLoft': ['DYN LOFT', 'DYNLOFT', 'DYN_LOFT'],
+        'faceAngle': ['FACE', 'FACEANG', 'FACE_ANG'],
+        'spinLoft': ['SPIN LOFT', 'SPINLOFT', 'SPIN_LOFT'],
+        'faceToPath': ['FACE TO PATH', 'FACETOPATH', 'FACE_TO_PATH'],
+        'swingPlane': ['SWING PL', 'SWINGPL', 'SWING_PL'],
+        'swingDirection': ['SWING DIR', 'SWINGDIR', 'SWING_DIR'],
+        'lowPointDistance': ['LOW PT', 'LOWPT', 'LOW_PT'],
+        'impactOffset': ['IMP OFFSET', 'IMPOFFSET', 'IMP_OFFSET'],
+        'impactHeight': ['IMP HEIGHT', 'IMPHEIGHT', 'IMP_HEIGHT'],
+        'dynLie': ['DYN LIE', 'DYNLIE', 'DYN_LIE'],
+        'ballSpeed': ['BALL SPEED', 'BALLSPEED', 'BALL_SPEED'],
+        'smashFactor': ['SMASH', 'SMASHFAC', 'SMASH_FAC'],
+        'launchAngle': ['LAUNCH', 'LAUNCHANG', 'LAUNCH_ANG'],
+        'launchDirection': ['LAUNCH DIR', 'LAUNCHDIR', 'LAUNCH_DIR'],
+        'spinRate': ['SPIN RATE', 'SPINRATE', 'SPIN_RATE'],
+        'spinAxis': ['SPIN AXIS', 'SPINAXIS', 'SPIN_AXIS'],
+        'curve': ['CURVE'],
+        'height': ['HEIGHT'],
+        'carry': ['CARRY'],
+        'total': ['TOTAL'],
+        'landingAngle': ['LAND', 'LANDING', 'LAND_ANG']
+      };
+      
+      // Create column mapping
+      const columnMap: Record<number, string> = {};
+      for (let i = 0; i < headers.length; i++) {
+        const header = headers[i];
+        for (const [param, variations] of Object.entries(headerMap)) {
+          if (variations.some(v => header.includes(v))) {
+            columnMap[i] = param;
+            console.log(`📊 Column ${i} (${header}) mapped to ${param}`);
+            break;
+          }
+        }
+      }
+      
+      // Extract data from rows
+      for (const dataLine of dataLines) {
+        const values = dataLine.split('|').map(v => v.trim());
+        console.log('📊 Processing values:', values);
         
-        // Look for numeric values in table format
-        for (let i = 0; i < parts.length; i++) {
-          const part = parts[i];
-          const numMatch = part.match(/(-?\d+\.?\d*)/);
+        for (let i = 0; i < values.length && i < headers.length; i++) {
+          const value = values[i];
+          const param = columnMap[i];
           
-          if (numMatch) {
-            const value = numMatch[1];
+          if (param && value && /\d/.test(value)) {
+            // Extract numeric value
+            const numMatch = value.match(/(-?\d+\.?\d*)/);
+            if (numMatch) {
+              let extractedValue = numMatch[1];
+              
+              // Handle special cases for decimal placement
+              if (['clubSpeed', 'ballSpeed'].includes(param) && !extractedValue.includes('.') && extractedValue.length >= 3) {
+                extractedValue = extractedValue.slice(0, -1) + '.' + extractedValue.slice(-1);
+              }
+              
+              tableData[param] = extractedValue;
+              console.log(`✅ Extracted ${param}: ${extractedValue} from column ${i}`);
+            }
+          }
+        }
+      }
+    }
+    
+    // Fallback: look for numeric patterns in pipe-separated format
+    if (Object.keys(tableData).length === 0) {
+      console.log('🔍 Fallback: searching for numeric patterns...');
+      
+      for (const line of lines) {
+        if (line.includes('|')) {
+          const parts = line.split('|').map(p => p.trim());
+          const numbers = parts.filter(p => /^\d+\.?\d*$/.test(p)).map(p => parseFloat(p));
+          
+          if (numbers.length >= 5) {
+            console.log('📊 Found numeric sequence:', numbers);
             
-            // Try to identify what this value represents based on context
-            if (part.match(/mph|MPH/i) && parseFloat(value) > 50 && parseFloat(value) < 200) {
-              if (parseFloat(value) > 100) {
-                tableData.ballSpeed = value;
-              } else {
-                tableData.clubSpeed = value;
+            // Try to map based on typical TrackMan value ranges
+            for (let i = 0; i < numbers.length; i++) {
+              const value = numbers[i];
+              
+              if (value >= 60 && value <= 120 && !tableData.clubSpeed) {
+                tableData.clubSpeed = (value / 10).toString(); // Convert 845 to 84.5
+              } else if (value >= 100 && value <= 180 && !tableData.ballSpeed) {
+                tableData.ballSpeed = (value / 10).toString();
+              } else if (value >= 1 && value <= 50 && !tableData.attackAngle) {
+                tableData.attackAngle = value.toString();
+              } else if (value >= 10 && value <= 50 && !tableData.dynLoft) {
+                tableData.dynLoft = value.toString();
+              } else if (value >= 1000 && value <= 8000 && !tableData.spinRate) {
+                tableData.spinRate = value.toString();
               }
-            } else if (part.match(/deg|DEG|°/i) && parseFloat(value) > -50 && parseFloat(value) < 100) {
-              // Could be various angle measurements
-              if (parseFloat(value) > 50) {
-                tableData.swingPlane = value;
-              } else if (parseFloat(value) > 10 && parseFloat(value) < 30) {
-                tableData.launchAngle = value;
-              }
-            } else if (part.match(/rpm|RPM/i)) {
-              tableData.spinRate = value;
-            } else if (part.match(/yds|YDS|yards/i)) {
-              if (parseFloat(value) > 100 && parseFloat(value) < 250) {
-                if (!tableData.carry) tableData.carry = value;
-                else tableData.total = value;
-              }
-            } else if (part.match(/ft|FT/i) && parseFloat(value) > 20 && parseFloat(value) < 200) {
-              tableData.height = value;
             }
           }
         }
