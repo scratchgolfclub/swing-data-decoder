@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
+const openAIApiKey = Deno.env.get('openaikey');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +20,8 @@ serve(async (req) => {
       throw new Error('OpenAI API key not found');
     }
 
+    console.log('Testing OpenAI Vision with TrackMan data extraction...');
+    
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,7 +36,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Scrape all TrackMan swing data from this image. Return values line by line, including data labels and units (mph, deg, mm, ft, yds, etc.). Be precise and match the visual layout as best as possible.'
+                text: 'What do you see in this image? Describe all the text and numbers visible.'
               },
               {
                 type: 'image_url',
@@ -48,19 +50,23 @@ serve(async (req) => {
       }),
     });
 
+    const data = await response.json();
+    console.log('OpenAI Response:', JSON.stringify(data, null, 2));
+    
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`OpenAI API error: ${error}`);
+      throw new Error(`OpenAI API error: ${JSON.stringify(data)}`);
     }
 
-    const data = await response.json();
     const extractedText = data.choices[0].message.content;
 
-    return new Response(JSON.stringify({ text: extractedText }), {
+    return new Response(JSON.stringify({ 
+      text: extractedText,
+      fullResponse: data 
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error in openai-ocr function:', error);
+    console.error('Error in test-openai-vision function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
