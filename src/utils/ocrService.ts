@@ -1,5 +1,5 @@
 import Tesseract from 'tesseract.js';
-import { enhancedPreprocessingWithBackgroundRemoval } from './backgroundRemovalService';
+import { extractTextWithMultiOCR, getBestOCRResult, OCRConfig } from './multiOcrService';
 
 // Define types for tile-based OCR
 interface TrackManTile {
@@ -467,79 +467,7 @@ const extractTileComponents = (text: string, tileId: string): TileData => {
   return { parameter, value, unit };
 };
 
-// Multiple OCR approaches for maximum accuracy
-const multiEngineOCR = async (imageUrl: string) => {
-  console.log('🔄 Running multi-engine OCR analysis...');
-  
-  const results: string[] = [];
-  
-  // Engine 1: Standard English OCR
-  try {
-    const result = await Tesseract.recognize(imageUrl, 'eng', {
-      logger: () => {}
-    });
-    if (result.data.text.trim()) results.push(result.data.text);
-    console.log('✅ Standard OCR completed');
-  } catch (error) {
-    console.warn('⚠️ Standard OCR failed:', error);
-  }
-  
-  // Engine 2: OCR optimized for digits and symbols
-  try {
-    const result = await Tesseract.recognize(imageUrl, 'eng', {
-      logger: () => {}
-    });
-    if (result.data.text.trim()) results.push(result.data.text);
-    console.log('✅ Digit-optimized OCR completed');
-  } catch (error) {
-    console.warn('⚠️ Digit-optimized OCR failed:', error);
-  }
-  
-  // Engine 3: OCR for structured data
-  try {
-    const result = await Tesseract.recognize(imageUrl, 'eng', {
-      logger: () => {}
-    });
-    if (result.data.text.trim()) results.push(result.data.text);
-    console.log('✅ Structured OCR completed');
-  } catch (error) {
-    console.warn('⚠️ Structured OCR failed:', error);
-  }
-  
-  return results;
-};
-
-// Fallback to full image OCR with multiple engines
-const fallbackFullImageOCR = async (preprocessedImage: string) => {
-  console.log('🔄 Running enhanced full image OCR...');
-  
-  const ocrResults = await multiEngineOCR(preprocessedImage);
-  
-  console.log('📝 Multi-engine OCR Results:');
-  console.log('='.repeat(50));
-  
-  let bestResult = '';
-  let maxDataPoints = 0;
-  
-  for (let i = 0; i < ocrResults.length; i++) {
-    const text = ocrResults[i];
-    console.log(`Engine ${i + 1} text:`, text.substring(0, 200));
-    
-    // Quick check for data richness
-    const dataPointCount = (text.match(/\d+/g) || []).length;
-    if (dataPointCount > maxDataPoints) {
-      maxDataPoints = dataPointCount;
-      bestResult = text;
-    }
-  }
-  
-  console.log('='.repeat(50));
-  console.log(`Best result chosen: Engine with ${maxDataPoints} numeric values`);
-  
-  // Parse the best extracted text
-  const data = parseTrackmanText(bestResult || ocrResults[0] || '', 1);
-  return data;
-};
+// Legacy functions - now using multi-OCR approach above
 
 export const extractTrackmanData = async (imageFile: File) => {
   try {
@@ -550,7 +478,7 @@ export const extractTrackmanData = async (imageFile: File) => {
     let preprocessedImage: string;
     
     try {
-      preprocessedImage = await enhancedPreprocessingWithBackgroundRemoval(imageFile);
+      preprocessedImage = await enhancedPreprocessing(imageFile);
       console.log('✅ AI background removal completed successfully');
     } catch (error) {
       console.warn('⚠️ AI preprocessing failed, using standard preprocessing:', error);
@@ -593,9 +521,21 @@ export const extractTrackmanData = async (imageFile: File) => {
       console.warn('⚠️ Tile detection failed or timed out:', error);
     }
     
-    // Always run fallback full image OCR for better coverage
-    console.log('🔄 Running full image OCR for comprehensive extraction...');
-    const fallbackData = await fallbackFullImageOCR(preprocessedImage);
+    // Always run enhanced multi-OCR for comprehensive extraction
+    console.log('🔄 Running enhanced multi-OCR for comprehensive extraction...');
+    
+    // Configure multi-OCR for maximum accuracy  
+    const ocrConfig: Partial<OCRConfig> = {
+      enableTesseract: true,
+      enablePaddleOCR: false, // Disabled until stable
+      enableCanvasOCR: true,
+      enableAdvancedPreprocessing: true,
+      preferredEngine: 'auto'
+    };
+    
+    const ocrResults = await extractTextWithMultiOCR(imageFile, ocrConfig);
+    const bestText = getBestOCRResult(ocrResults);
+    const fallbackData = parseTrackmanText(bestText, 1);
     
     // Merge tile data with fallback data, preferring tile data when available
     const finalData = { ...fallbackData, ...data };
