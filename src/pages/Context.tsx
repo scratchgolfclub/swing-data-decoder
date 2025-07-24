@@ -669,7 +669,7 @@ const Context = () => {
                 </AccordionItem>
                 
                 <AccordionItem value="woods">
-                  <AccordionTrigger>🌲 Woods (Fairways & Hybrids)</AccordionTrigger>
+                  <AccordionTrigger>🌲 Woods (9h-2h, 9w-2w)</AccordionTrigger>
                   <AccordionContent className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm text-card-foreground mb-2">Good Ranges:</h4>
