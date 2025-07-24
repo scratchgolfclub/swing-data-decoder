@@ -1,20 +1,75 @@
 import Tesseract from 'tesseract.js';
 
+// Preprocess image for better OCR results
+const preprocessImage = (imageFile: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      // Set canvas size to image size
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image
+      ctx.drawImage(img, 0, 0);
+      
+      // Get image data for processing
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      
+      // Enhance contrast and convert to grayscale
+      for (let i = 0; i < data.length; i += 4) {
+        // Convert to grayscale
+        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        
+        // Enhance contrast (make dark text darker, light backgrounds lighter)
+        const enhanced = gray > 128 ? Math.min(255, gray * 1.2) : Math.max(0, gray * 0.8);
+        
+        data[i] = enhanced;     // R
+        data[i + 1] = enhanced; // G
+        data[i + 2] = enhanced; // B
+        // Alpha stays the same
+      }
+      
+      // Put enhanced image data back
+      ctx.putImageData(imageData, 0, 0);
+      
+      // Convert to data URL
+      resolve(canvas.toDataURL('image/png'));
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(imageFile);
+  });
+};
+
 export const extractTrackmanData = async (imageFile: File) => {
   try {
     console.log('🔍 Starting OCR processing for:', imageFile.name, 'Size:', imageFile.size);
     
-    const { data: { text } } = await Tesseract.recognize(imageFile, 'eng', {
+    // Preprocess the image for better OCR results
+    console.log('⚙️  Preprocessing image for better OCR...');
+    const preprocessedImage = await preprocessImage(imageFile);
+    
+    const { data: { text } } = await Tesseract.recognize(preprocessedImage, 'eng', {
       logger: m => console.log('📊 OCR Progress:', m)
     });
 
     console.log('📝 Raw OCR Text Extracted:');
     console.log('='.repeat(50));
-    console.log(text);
+    console.log(text || '(NO TEXT EXTRACTED)');
     console.log('='.repeat(50));
+    console.log('📏 Text length:', text?.length || 0);
 
     // Parse the extracted text to find TrackMan data
-    const data = parseTrackmanText(text, 1);
+    const data = parseTrackmanText(text || '', 1);
     return data;
   } catch (error) {
     console.error('❌ OCR Error:', error);
