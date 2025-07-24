@@ -10,6 +10,7 @@ import scratchLogo from "@/assets/scratch-golf-logo.png";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedClub, setSelectedClub] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
 
@@ -64,6 +65,99 @@ const Index = () => {
         <div className="bg-card rounded-lg shadow-lg p-8 border">
           {!selectedFile ? (
             <div className="space-y-6">
+              {/* Club Selection */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-center">Select Your Club</h3>
+                <div className="grid grid-cols-5 md:grid-cols-10 gap-2 max-w-4xl mx-auto">
+                  {/* Driver */}
+                  <button
+                    onClick={() => setSelectedClub('Dr')}
+                    className={`w-12 h-12 rounded-full border-2 text-sm font-medium transition-all ${
+                      selectedClub === 'Dr' 
+                        ? 'bg-primary text-primary-foreground border-primary' 
+                        : 'bg-white hover:bg-gray-50 border-gray-300'
+                    }`}
+                  >
+                    Dr
+                  </button>
+                  
+                  {/* Woods */}
+                  {['2w', '3w', '4w', '5w', '6w', '7w', '8w', '9w'].map((club) => (
+                    <button
+                      key={club}
+                      onClick={() => setSelectedClub(club)}
+                      className={`w-12 h-12 rounded-full border-2 text-sm font-medium transition-all ${
+                        selectedClub === club 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {club}
+                    </button>
+                  ))}
+                  
+                  {/* Hybrids */}
+                  {['1h', '2h', '3h', '4h', '5h', '6h', '7h', '8h', '9h'].map((club) => (
+                    <button
+                      key={club}
+                      onClick={() => setSelectedClub(club)}
+                      className={`w-12 h-12 rounded-full border-2 text-sm font-medium transition-all ${
+                        selectedClub === club 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {club}
+                    </button>
+                  ))}
+                  
+                  {/* Irons */}
+                  {['1i', '2i', '3i', '4i', '5i', '6i', '7i', '8i', '9i'].map((club) => (
+                    <button
+                      key={club}
+                      onClick={() => setSelectedClub(club)}
+                      className={`w-12 h-12 rounded-full border-2 text-sm font-medium transition-all ${
+                        selectedClub === club 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {club}
+                    </button>
+                  ))}
+                  
+                  {/* Wedges */}
+                  {['Pw', 'Sw', 'Lw'].map((club) => (
+                    <button
+                      key={club}
+                      onClick={() => setSelectedClub(club)}
+                      className={`w-12 h-12 rounded-full border-2 text-sm font-medium transition-all ${
+                        selectedClub === club 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {club}
+                    </button>
+                  ))}
+                  
+                  {/* Degree Wedges */}
+                  {['50°', '52°', '54°', '56°', '58°', '60°'].map((club) => (
+                    <button
+                      key={club}
+                      onClick={() => setSelectedClub(club)}
+                      className={`w-12 h-12 rounded-full border-2 text-xs font-medium transition-all ${
+                        selectedClub === club 
+                          ? 'bg-primary text-primary-foreground border-primary' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                      }`}
+                    >
+                      {club}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex justify-center gap-4">
                 <TooltipProvider>
                   <Tooltip>
