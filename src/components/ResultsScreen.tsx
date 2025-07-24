@@ -1,10 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye } from "lucide-react";
+import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye, ExternalLink } from "lucide-react";
 import { getVideoRecommendations, getTextRecommendations } from "@/utils/recommendationEngine";
+import { FirecrawlService } from "@/utils/FirecrawlService";
+import { VideoCard } from "@/components/VideoCard";
+import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import scratchLogo from "@/assets/scratch-golf-logo.png";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ResultsScreenProps {
   data: any;
@@ -73,31 +76,19 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           <CardContent>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {videoRecommendations.map((video, index) => (
-                <div key={index} className="group relative overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-sm hover:shadow-xl transition-all duration-300">
-                  {/* Video Thumbnail */}
-                  <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
-                        <Play className="h-8 w-8 text-primary ml-1" />
-                      </div>
-                    </div>
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-20"></div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className="font-bold text-lg mb-2 text-stone-900 dark:text-stone-100">{video.title}</h3>
-                    <p className="text-muted-foreground mb-4 line-clamp-2">{video.description}</p>
-                    <Button 
-                      onClick={() => window.open(video.url, '_blank')}
-                      className="w-full bg-primary hover:bg-primary/90 shadow-sm"
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Watch Video
-                    </Button>
-                  </div>
-                </div>
+                <VideoCard 
+                  key={index} 
+                  video={video} 
+                  index={index}
+                />
               ))}
             </div>
+            {videoRecommendations.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Play className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No specific video recommendations available for your current data.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -146,6 +137,9 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             </div>
           </CardContent>
         </Card>
+        
+        {/* API Key Dialog */}
+        <ApiKeyDialog />
       </div>
     </div>
   );
