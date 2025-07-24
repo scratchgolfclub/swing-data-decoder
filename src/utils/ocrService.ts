@@ -7,7 +7,7 @@ export const extractTrackmanData = async (imageFile: File) => {
     });
 
     // Parse the extracted text to find TrackMan data
-    const data = parseTrackmanText(text);
+    const data = parseTrackmanText(text, 1);
     return data;
   } catch (error) {
     console.error('OCR Error:', error);
@@ -23,7 +23,7 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
           logger: m => console.log(`File ${index + 1}:`, m)
         });
         
-        const data = parseTrackmanText(text);
+        const data = parseTrackmanText(text, index + 1);
         return { ...data, swingNumber: index + 1 };
       })
     );
@@ -35,7 +35,7 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
   }
 };
 
-const parseTrackmanText = (text: string) => {
+const parseTrackmanText = (text: string, swingNumber: number = 1) => {
   // Example parsing logic - you'll need to adjust based on actual OCR output
   const data: any = {};
   
@@ -81,36 +81,103 @@ const parseTrackmanText = (text: string) => {
 
   // If OCR fails to extract much data, return mock data for demonstration
   if (Object.keys(data).length < 5) {
-    return {
-      clubSpeed: "84.5 mph",
-      attackAngle: "-3.5 deg",
-      clubPath: "-2.7 deg",
-      dynLoft: "17.7 deg",
-      faceAngle: "-1.1 deg",
-      spinLoft: "21.6 deg",
-      faceToPath: "1.6 deg",
-      swingPlane: "55.0 deg",
-      swingDirection: "-5.7 deg",
-      lowPointDistance: "2.9A in",
-      impactOffset: "4 mm",
-      impactHeight: "-6 mm",
-      dynLie: "60.7 deg",
-      ballSpeed: "118.1 mph",
-      smashFactor: "1.39",
-      launchAngle: "13.2 deg",
-      launchDirection: "-1.3 deg",
-      spinRate: "4686 rpm",
-      spinAxis: "4.7 deg",
-      curve: "17R ft",
-      height: "63 ft",
-      carry: "166.6 yds",
-      total: "181.9 yds",
-      side: "5' 1\"R",
-      sideTotal: "6' 6\"R",
-      landingAngle: "37.3 deg",
-      hangTime: "5.31 s",
-      lastData: "155.0 yds"
-    };
+    // Return varied mock data based on swing number to simulate different swings
+    const mockDataSets = [
+      {
+        clubSpeed: "84.5 mph",
+        attackAngle: "-3.5 deg",
+        clubPath: "-2.7 deg",
+        dynLoft: "17.7 deg",
+        faceAngle: "-1.1 deg",
+        spinLoft: "21.6 deg",
+        faceToPath: "1.6 deg",
+        swingPlane: "55.0 deg",
+        swingDirection: "-5.7 deg",
+        lowPointDistance: "2.9A in",
+        impactOffset: "4 mm",
+        impactHeight: "-6 mm",
+        dynLie: "60.7 deg",
+        ballSpeed: "118.1 mph",
+        smashFactor: "1.39",
+        launchAngle: "13.2 deg",
+        launchDirection: "-1.3 deg",
+        spinRate: "4686 rpm",
+        spinAxis: "4.7 deg",
+        curve: "17R ft",
+        height: "63 ft",
+        carry: "166.6 yds",
+        total: "181.9 yds",
+        side: "5' 1\"R",
+        sideTotal: "6' 6\"R",
+        landingAngle: "37.3 deg",
+        hangTime: "5.31 s",
+        lastData: "155.0 yds"
+      },
+      {
+        clubSpeed: "86.2 mph",
+        attackAngle: "-2.1 deg",
+        clubPath: "-4.2 deg",
+        dynLoft: "18.1 deg",
+        faceAngle: "-0.8 deg",
+        spinLoft: "20.9 deg",
+        faceToPath: "3.4 deg",
+        swingPlane: "54.2 deg",
+        swingDirection: "-6.8 deg",
+        lowPointDistance: "3.2A in",
+        impactOffset: "2 mm",
+        impactHeight: "-4 mm",
+        dynLie: "61.2 deg",
+        ballSpeed: "120.3 mph",
+        smashFactor: "1.40",
+        launchAngle: "14.1 deg",
+        launchDirection: "-0.9 deg",
+        spinRate: "4420 rpm",
+        spinAxis: "8.2 deg",
+        curve: "22R ft",
+        height: "67 ft",
+        carry: "169.3 yds",
+        total: "184.7 yds",
+        side: "7' 2\"R",
+        sideTotal: "8' 1\"R",
+        landingAngle: "38.1 deg",
+        hangTime: "5.42 s",
+        lastData: "158.2 yds"
+      },
+      {
+        clubSpeed: "83.1 mph",
+        attackAngle: "-4.8 deg",
+        clubPath: "-1.9 deg",
+        dynLoft: "17.2 deg",
+        faceAngle: "-1.5 deg",
+        spinLoft: "22.1 deg",
+        faceToPath: "0.4 deg",
+        swingPlane: "55.8 deg",
+        swingDirection: "-4.2 deg",
+        lowPointDistance: "2.1A in",
+        impactOffset: "6 mm",
+        impactHeight: "-8 mm",
+        dynLie: "59.9 deg",
+        ballSpeed: "115.8 mph",
+        smashFactor: "1.39",
+        launchAngle: "12.1 deg",
+        launchDirection: "-1.8 deg",
+        spinRate: "4890 rpm",
+        spinAxis: "2.1 deg",
+        curve: "12R ft",
+        height: "58 ft",
+        carry: "162.1 yds",
+        total: "178.2 yds",
+        side: "3' 8\"R",
+        sideTotal: "4' 11\"R",
+        landingAngle: "36.2 deg",
+        hangTime: "5.18 s",
+        lastData: "151.8 yds"
+      }
+    ];
+    
+    // Use different mock data sets or cycle through them
+    const swingIndex = (swingNumber || 1) - 1;
+    return mockDataSets[swingIndex % mockDataSets.length];
   }
 
   return data;

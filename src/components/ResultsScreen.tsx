@@ -12,10 +12,13 @@ interface ResultsScreenProps {
 }
 
 export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
-  // Use the first swing data for recommendations
-  const swingData = data.swings && data.swings.length > 0 ? data.swings[0] : {};
-  const videoRecommendations = getVideoRecommendations(swingData);
-  const textRecommendations = getTextRecommendations(swingData);
+  // Pass all swing data to recommendation functions for analysis
+  const swings = data.swings || [];
+  const videoRecommendations = getVideoRecommendations(swings);
+  const textRecommendations = getTextRecommendations(swings);
+  
+  // Use the first swing data for display purposes
+  const swingData = swings.length > 0 ? swings[0] : {};
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     overview: true,
     workOn: false,
@@ -108,96 +111,11 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            
-            {/* Overview Section */}
-            <Collapsible open={openSections.overview} onOpenChange={() => toggleSection('overview')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Eye className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-lg">Overview</span>
-                </div>
-                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.overview ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pt-4">
-                <div className="prose prose-stone dark:prose-invert max-w-none">
-                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
-                    🧠 Understanding Club Path & Face Angle<br/>
-                    In simple terms:<br/><br/>
-                    Club Path is the direction the club is traveling at impact — either right (in-to-out), left (out-to-in), or neutral.<br/><br/>
-                    Face Angle is where the clubface is pointing relative to the target at impact.<br/><br/>
-                    The relationship between face angle and club path determines the ball's starting direction and curve.
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* What to Work On Section */}
-            <Collapsible open={openSections.workOn} onOpenChange={() => toggleSection('workOn')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Target className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-lg">What to Work On</span>
-                </div>
-                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.workOn ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pt-4">
-                <div className="prose prose-stone dark:prose-invert max-w-none">
-                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
-                    🛠️ Neutralizing Club Path<br/>
-                    Your face-to-path relationship is solid, but the out-to-in club path is the root of the fade. To hit straighter or even draw-biased shots, we want to move your club path closer to 0°, or even slightly positive (in-to-out).
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Drills Section */}
-            <Collapsible open={openSections.drills} onOpenChange={() => toggleSection('drills')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Lightbulb className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-lg">Drills & Feel Changes</span>
-                </div>
-                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.drills ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pt-4">
-                <div className="prose prose-stone dark:prose-invert max-w-none">
-                  <div className="text-stone-700 dark:text-stone-300 leading-relaxed space-y-4">
-                    <div>
-                      <strong>✅ Alignment Stick Drill:</strong><br/>
-                      Place an alignment stick on the ground pointing slightly right of your target (1–2 yards). Feel your swing path trace along the stick on your downswing to promote an in-to-out path.
-                    </div>
-                    <div>
-                      <strong>✅ Split Hand Drill:</strong><br/>
-                      Grip the club with your normal top hand. Place your bottom hand halfway down the shaft. Make slow swings feeling the club move from inside to out.
-                    </div>
-                    <div>
-                      <strong>✅ "Swing to Right Field" Feel:</strong><br/>
-                      On the range, pick a target to the right of your actual target. Make swings visualizing the ball launching in that direction.
-                    </div>
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Goal Section */}
-            <Collapsible open={openSections.goal} onOpenChange={() => toggleSection('goal')}>
-              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
-                <div className="flex items-center gap-3">
-                  <Trophy className="h-5 w-5 text-primary" />
-                  <span className="font-semibold text-lg">Goal</span>
-                </div>
-                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.goal ? 'rotate-180' : ''}`} />
-              </CollapsibleTrigger>
-              <CollapsibleContent className="px-4 pt-4">
-                <div className="prose prose-stone dark:prose-invert max-w-none">
-                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
-                    🔁 <strong>Target Goals:</strong><br/>
-                    • Shift club path from -2.7° closer to neutral (0°) or even slightly positive (+1 to +2°)<br/>
-                    • Maintain a face angle that's 1–2° closed to the path to produce a slight draw or straight shot
-                  </p>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+            <div className="prose prose-stone dark:prose-invert max-w-none">
+              <div className="text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-line">
+                {textRecommendations}
+              </div>
+            </div>
 
           </CardContent>
         </Card>
