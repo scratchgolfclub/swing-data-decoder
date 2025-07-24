@@ -115,49 +115,218 @@ const enhancedPreprocessing = (imageFile: File): Promise<string> => {
   });
 };
 
-// Detect individual tiles in the TrackMan interface
+// Detect individual tiles in the TrackMan interface using computer vision
 const detectTrackmanTiles = async (preprocessedImage: string): Promise<TrackManTile[]> => {
-  console.log('🔍 Starting tile detection...');
+  console.log('🔍 Starting computer vision tile detection...');
   
-  // For now, use a simple approach based on TrackMan's typical layout
-  // This would be enhanced with actual computer vision in production
-  const tiles: TrackManTile[] = [];
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      
+      const tiles: TrackManTile[] = [];
+      
+      // TrackMan typically has a grid layout - detect tile boundaries
+      const tileRegions = detectTileRegions(canvas, ctx);
+      
+      console.log(`📊 Detected ${tileRegions.length} potential tile regions`);
+      
+      // Extract each tile as a separate image
+      for (let i = 0; i < tileRegions.length; i++) {
+        const region = tileRegions[i];
+        
+        // Create a separate canvas for this tile
+        const tileCanvas = document.createElement('canvas');
+        const tileCtx = tileCanvas.getContext('2d');
+        
+        if (!tileCtx) continue;
+        
+        tileCanvas.width = region.width;
+        tileCanvas.height = region.height;
+        
+        // Extract the tile region
+        const imageData = ctx.getImageData(region.x, region.y, region.width, region.height);
+        tileCtx.putImageData(imageData, 0, 0);
+        
+        // Convert tile to data URL
+        const tileDataURL = tileCanvas.toDataURL('image/png');
+        
+        tiles.push({
+          x: region.x,
+          y: region.y,
+          width: region.width,
+          height: region.height,
+          title: `Tile_${i + 1}`,
+          imageData: tileDataURL
+        });
+        
+        console.log(`📦 Extracted tile ${i + 1}: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
+      }
+      
+      resolve(tiles);
+    };
+    
+    img.onerror = () => reject(new Error('Failed to load preprocessed image'));
+    img.src = preprocessedImage;
+  });
+};
+
+// Detect tile regions using edge detection and contour analysis
+const detectTileRegions = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+  const width = canvas.width;
+  const height = canvas.height;
   
-  // Common TrackMan parameters and their expected positions (rough estimates)
-  const tileDefinitions = [
-    { title: 'CLUB SPEED', parameter: 'clubSpeed' },
-    { title: 'ATTACK ANGLE', parameter: 'attackAngle' },
-    { title: 'CLUB PATH', parameter: 'clubPath' },
-    { title: 'DYN LOFT', parameter: 'dynLoft' },
-    { title: 'FACE ANGLE', parameter: 'faceAngle' },
-    { title: 'SPIN LOFT', parameter: 'spinLoft' },
-    { title: 'FACE TO PATH', parameter: 'faceToPath' },
-    { title: 'BALL SPEED', parameter: 'ballSpeed' },
-    { title: 'SMASH FACTOR', parameter: 'smashFactor' },
-    { title: 'LAUNCH ANGLE', parameter: 'launchAngle' },
-    { title: 'LAUNCH DIRECTION', parameter: 'launchDirection' },
-    { title: 'SPIN RATE', parameter: 'spinRate' },
-    { title: 'SPIN AXIS', parameter: 'spinAxis' },
-    { title: 'HEIGHT', parameter: 'height' },
-    { title: 'CARRY', parameter: 'carry' },
-    { title: 'TOTAL', parameter: 'total' }
-  ];
+  console.log('🔍 Analyzing image for tile boundaries...');
   
-  // For now, return the full image as a single "tile" for each expected parameter
-  // This will be enhanced with actual tile detection later
-  for (const tileDef of tileDefinitions) {
-    tiles.push({
-      x: 0,
-      y: 0,
-      width: 100,
-      height: 100,
-      title: tileDef.title,
-      imageData: preprocessedImage
-    });
+  // Convert to grayscale for edge detection
+  const grayData = new Uint8ClampedArray(width * height);
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+    grayData[i / 4] = gray;
   }
   
-  console.log(`📊 Generated ${tiles.length} tiles for processing`);
-  return tiles;
+  // Simple edge detection using Sobel operator
+  const edges = new Uint8ClampedArray(width * height);
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x;
+      
+      // Sobel X
+      const sobelX = 
+        -1 * grayData[(y-1) * width + (x-1)] + 1 * grayData[(y-1) * width + (x+1)] +
+        -2 * grayData[y * width + (x-1)] + 2 * grayData[y * width + (x+1)] +
+        -1 * grayData[(y+1) * width + (x-1)] + 1 * grayData[(y+1) * width + (x+1)];
+      
+      // Sobel Y
+      const sobelY = 
+        -1 * grayData[(y-1) * width + (x-1)] + -2 * grayData[(y-1) * width + x] + -1 * grayData[(y-1) * width + (x+1)] +
+        1 * grayData[(y+1) * width + (x-1)] + 2 * grayData[(y+1) * width + x] + 1 * grayData[(y+1) * width + (x+1)];
+      
+      const magnitude = Math.sqrt(sobelX * sobelX + sobelY * sobelY);
+      edges[idx] = magnitude > 50 ? 255 : 0; // Threshold for edge detection
+    }
+  }
+  
+  // Find rectangular regions that could be tiles
+  const regions = findRectangularRegions(edges, width, height);
+  
+  // Filter regions by size (TrackMan tiles are typically 80-200px wide/tall)
+  const filteredRegions = regions.filter(region => 
+    region.width >= 80 && region.width <= 300 &&
+    region.height >= 60 && region.height <= 150 &&
+    region.width * region.height >= 4800 // Minimum area
+  );
+  
+  console.log(`📊 Found ${filteredRegions.length} tile-sized regions after filtering`);
+  
+  // Sort regions from top-left to bottom-right (reading order)
+  filteredRegions.sort((a, b) => {
+    if (Math.abs(a.y - b.y) < 30) { // Same row
+      return a.x - b.x;
+    }
+    return a.y - b.y;
+  });
+  
+  return filteredRegions;
+};
+
+// Find rectangular regions in the edge-detected image
+const findRectangularRegions = (edges: Uint8ClampedArray, width: number, height: number) => {
+  const regions: Array<{x: number, y: number, width: number, height: number}> = [];
+  const visited = new Set<number>();
+  
+  console.log('🔍 Finding rectangular regions...');
+  
+  // Grid-based approach for TrackMan's structured layout
+  const gridSize = 20; // Check every 20 pixels
+  
+  for (let y = gridSize; y < height - gridSize; y += gridSize) {
+    for (let x = gridSize; x < width - gridSize; x += gridSize) {
+      const idx = y * width + x;
+      
+      if (visited.has(idx)) continue;
+      
+      // Look for potential tile corners (areas with low edge density = inside tiles)
+      const region = expandRegion(edges, width, height, x, y, visited);
+      
+      if (region && region.width > 50 && region.height > 40) {
+        regions.push(region);
+        console.log(`📦 Found region: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
+      }
+    }
+  }
+  
+  return regions;
+};
+
+// Expand a region from a seed point to find tile boundaries
+const expandRegion = (
+  edges: Uint8ClampedArray, 
+  width: number, 
+  height: number, 
+  startX: number, 
+  startY: number,
+  visited: Set<number>
+) => {
+  // Simple rectangular expansion looking for low-edge areas (tile interiors)
+  let minX = startX, maxX = startX;
+  let minY = startY, maxY = startY;
+  
+  // Expand horizontally
+  while (minX > 0 && isLowEdgeArea(edges, width, minX - 1, startY)) minX--;
+  while (maxX < width - 1 && isLowEdgeArea(edges, width, maxX + 1, startY)) maxX++;
+  
+  // Expand vertically
+  while (minY > 0 && isLowEdgeArea(edges, width, startX, minY - 1)) minY--;
+  while (maxY < height - 1 && isLowEdgeArea(edges, width, startX, maxY + 1)) maxY++;
+  
+  // Mark region as visited
+  for (let y = minY; y <= maxY; y += 5) {
+    for (let x = minX; x <= maxX; x += 5) {
+      visited.add(y * width + x);
+    }
+  }
+  
+  return {
+    x: minX,
+    y: minY,
+    width: maxX - minX,
+    height: maxY - minY
+  };
+};
+
+// Check if an area has low edge density (likely inside a tile)
+const isLowEdgeArea = (edges: Uint8ClampedArray, width: number, x: number, y: number) => {
+  const windowSize = 5;
+  let edgeCount = 0;
+  let totalPixels = 0;
+  
+  for (let dy = -windowSize; dy <= windowSize; dy++) {
+    for (let dx = -windowSize; dx <= windowSize; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      
+      if (nx >= 0 && nx < width && ny >= 0) {
+        const idx = ny * width + nx;
+        if (edges[idx] > 128) edgeCount++;
+        totalPixels++;
+      }
+    }
+  }
+  
+  return totalPixels > 0 && (edgeCount / totalPixels) < 0.3; // Less than 30% edges
 };
 
 // Process a single tile to extract title, value, and unit
@@ -183,33 +352,101 @@ const processSingleTile = async (tile: TrackManTile): Promise<TileData> => {
 };
 
 // Extract title, value, and unit from tile text
-const extractTileComponents = (text: string, expectedTitle: string): TileData => {
-  console.log(`🔍 Extracting components from: "${text}"`);
+const extractTileComponents = (text: string, tileId: string): TileData => {
+  console.log(`🔍 Extracting components from tile ${tileId}: "${text}"`);
   
   // Clean the text
   const cleanText = text.replace(/[^\w\s\-\.\+°]/g, ' ').replace(/\s+/g, ' ').trim();
+  const lines = cleanText.split(/\s+/);
   
-  // Map title to parameter name
+  console.log(`📝 Cleaned text lines:`, lines);
+  
+  // Extract title (typically the first line or largest text)
+  let detectedTitle = '';
+  const titlePatterns = [
+    'CLUB.*SPEED', 'ATTACK.*ANGLE?', 'CLUB.*PATH', 'DYN.*LOFT', 'FACE.*ANGLE?',
+    'SPIN.*LOFT', 'FACE.*TO.*PATH', 'SWING.*PL', 'SWING.*DIR', 'LOW.*PT',
+    'IMP.*OFFSET', 'IMP.*HEIGHT', 'DYN.*LIE', 'BALL.*SPEED', 'SMASH',
+    'LAUNCH.*ANGLE?', 'LAUNCH.*DIR', 'SPIN.*RATE', 'SPIN.*AXIS',
+    'CURVE', 'HEIGHT', 'CARRY', 'TOTAL', 'LAND.*ANG'
+  ];
+  
+  // Look for title patterns in the text
+  for (const pattern of titlePatterns) {
+    const regex = new RegExp(pattern, 'i');
+    if (regex.test(cleanText)) {
+      const match = cleanText.match(regex);
+      if (match) {
+        detectedTitle = match[0].toUpperCase();
+        console.log(`📊 Detected title: "${detectedTitle}"`);
+        break;
+      }
+    }
+  }
+  
+  // If no title detected, try to extract from common words
+  if (!detectedTitle) {
+    const commonTitles = ['CLUB', 'ATTACK', 'PATH', 'LOFT', 'FACE', 'SPIN', 'SWING', 'BALL', 'SMASH', 'LAUNCH', 'CARRY', 'TOTAL', 'HEIGHT', 'CURVE'];
+    for (const word of lines) {
+      if (commonTitles.some(title => word.toUpperCase().includes(title))) {
+        detectedTitle = word.toUpperCase();
+        break;
+      }
+    }
+  }
+  
+  // Map detected title to parameter name
   const titleToParameter: Record<string, string> = {
     'CLUB SPEED': 'clubSpeed',
-    'ATTACK ANGLE': 'attackAngle', 
+    'CLUBSPEED': 'clubSpeed',
+    'ATTACK ANGLE': 'attackAngle',
+    'ATTACKANGLE': 'attackAngle', 
+    'ATTACK': 'attackAngle',
     'CLUB PATH': 'clubPath',
+    'CLUBPATH': 'clubPath',
+    'PATH': 'clubPath',
     'DYN LOFT': 'dynLoft',
+    'DYNLOFT': 'dynLoft',
+    'LOFT': 'dynLoft',
     'FACE ANGLE': 'faceAngle',
+    'FACEANGLE': 'faceAngle',
+    'FACE': 'faceAngle',
     'SPIN LOFT': 'spinLoft',
+    'SPINLOFT': 'spinLoft',
     'FACE TO PATH': 'faceToPath',
+    'FACETOPATH': 'faceToPath',
+    'SWING PL': 'swingPlane',
+    'SWINGPL': 'swingPlane',
+    'SWING': 'swingPlane',
+    'SWING DIR': 'swingDirection',
+    'SWINGDIR': 'swingDirection',
     'BALL SPEED': 'ballSpeed',
-    'SMASH FACTOR': 'smashFactor',
+    'BALLSPEED': 'ballSpeed',
+    'BALL': 'ballSpeed',
+    'SMASH': 'smashFactor',
     'LAUNCH ANGLE': 'launchAngle',
-    'LAUNCH DIRECTION': 'launchDirection',
+    'LAUNCHANGLE': 'launchAngle',
+    'LAUNCH': 'launchAngle',
     'SPIN RATE': 'spinRate',
+    'SPINRATE': 'spinRate',
     'SPIN AXIS': 'spinAxis',
+    'SPINAXIS': 'spinAxis',
     'HEIGHT': 'height',
     'CARRY': 'carry',
-    'TOTAL': 'total'
+    'TOTAL': 'total',
+    'CURVE': 'curve'
   };
   
-  const parameter = titleToParameter[expectedTitle] || '';
+  // Find best matching parameter
+  let parameter = '';
+  for (const [title, param] of Object.entries(titleToParameter)) {
+    if (detectedTitle.includes(title) || title.includes(detectedTitle)) {
+      parameter = param;
+      break;
+    }
+  }
+  
+  console.log(`📊 Mapped title "${detectedTitle}" to parameter: ${parameter}`);
   
   // Extract numeric value (including negative numbers and decimals)
   const valueMatch = cleanText.match(/(-?\d+\.?\d*)/);
@@ -222,6 +459,8 @@ const extractTileComponents = (text: string, expectedTitle: string): TileData =>
     if (['clubSpeed', 'ballSpeed'].includes(parameter) && !value.includes('.') && value.length >= 3) {
       value = value.slice(0, -1) + '.' + value.slice(-1);
     }
+    
+    console.log(`📊 Extracted value: ${value}`);
   }
   
   // Extract unit
@@ -244,7 +483,7 @@ const extractTileComponents = (text: string, expectedTitle: string): TileData =>
     unit = 's';
   }
   
-  console.log(`📊 Extracted - Parameter: ${parameter}, Value: ${value}, Unit: ${unit}`);
+  console.log(`📊 Final extraction - Title: "${detectedTitle}", Parameter: ${parameter}, Value: ${value}, Unit: ${unit}`);
   
   return { parameter, value, unit };
 };
