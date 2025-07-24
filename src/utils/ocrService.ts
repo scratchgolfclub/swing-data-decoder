@@ -1,5 +1,21 @@
 import Tesseract from 'tesseract.js';
 
+// Define types for tile-based OCR
+interface TrackManTile {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  title: string;
+  imageData: string;
+}
+
+interface TileData {
+  parameter: string;
+  value: string;
+  unit?: string;
+}
+
 // Enhanced image preprocessing specifically optimized for TrackMan reports
 const enhancedPreprocessing = (imageFile: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -99,26 +115,192 @@ const enhancedPreprocessing = (imageFile: File): Promise<string> => {
   });
 };
 
+// Detect individual tiles in the TrackMan interface
+const detectTrackmanTiles = async (preprocessedImage: string): Promise<TrackManTile[]> => {
+  console.log('🔍 Starting tile detection...');
+  
+  // For now, use a simple approach based on TrackMan's typical layout
+  // This would be enhanced with actual computer vision in production
+  const tiles: TrackManTile[] = [];
+  
+  // Common TrackMan parameters and their expected positions (rough estimates)
+  const tileDefinitions = [
+    { title: 'CLUB SPEED', parameter: 'clubSpeed' },
+    { title: 'ATTACK ANGLE', parameter: 'attackAngle' },
+    { title: 'CLUB PATH', parameter: 'clubPath' },
+    { title: 'DYN LOFT', parameter: 'dynLoft' },
+    { title: 'FACE ANGLE', parameter: 'faceAngle' },
+    { title: 'SPIN LOFT', parameter: 'spinLoft' },
+    { title: 'FACE TO PATH', parameter: 'faceToPath' },
+    { title: 'BALL SPEED', parameter: 'ballSpeed' },
+    { title: 'SMASH FACTOR', parameter: 'smashFactor' },
+    { title: 'LAUNCH ANGLE', parameter: 'launchAngle' },
+    { title: 'LAUNCH DIRECTION', parameter: 'launchDirection' },
+    { title: 'SPIN RATE', parameter: 'spinRate' },
+    { title: 'SPIN AXIS', parameter: 'spinAxis' },
+    { title: 'HEIGHT', parameter: 'height' },
+    { title: 'CARRY', parameter: 'carry' },
+    { title: 'TOTAL', parameter: 'total' }
+  ];
+  
+  // For now, return the full image as a single "tile" for each expected parameter
+  // This will be enhanced with actual tile detection later
+  for (const tileDef of tileDefinitions) {
+    tiles.push({
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      title: tileDef.title,
+      imageData: preprocessedImage
+    });
+  }
+  
+  console.log(`📊 Generated ${tiles.length} tiles for processing`);
+  return tiles;
+};
+
+// Process a single tile to extract title, value, and unit
+const processSingleTile = async (tile: TrackManTile): Promise<TileData> => {
+  try {
+    console.log(`🔍 Processing tile: ${tile.title}`);
+    
+    // Run OCR on the tile
+    const { data: { text } } = await Tesseract.recognize(tile.imageData, 'eng', {
+      logger: () => {} // Suppress verbose logging for individual tiles
+    });
+    
+    console.log(`📝 Tile OCR text for ${tile.title}:`, text);
+    
+    // Extract components from the tile text
+    const result = extractTileComponents(text, tile.title);
+    
+    return result;
+  } catch (error) {
+    console.error(`❌ Error processing tile ${tile.title}:`, error);
+    return { parameter: '', value: '' };
+  }
+};
+
+// Extract title, value, and unit from tile text
+const extractTileComponents = (text: string, expectedTitle: string): TileData => {
+  console.log(`🔍 Extracting components from: "${text}"`);
+  
+  // Clean the text
+  const cleanText = text.replace(/[^\w\s\-\.\+°]/g, ' ').replace(/\s+/g, ' ').trim();
+  
+  // Map title to parameter name
+  const titleToParameter: Record<string, string> = {
+    'CLUB SPEED': 'clubSpeed',
+    'ATTACK ANGLE': 'attackAngle', 
+    'CLUB PATH': 'clubPath',
+    'DYN LOFT': 'dynLoft',
+    'FACE ANGLE': 'faceAngle',
+    'SPIN LOFT': 'spinLoft',
+    'FACE TO PATH': 'faceToPath',
+    'BALL SPEED': 'ballSpeed',
+    'SMASH FACTOR': 'smashFactor',
+    'LAUNCH ANGLE': 'launchAngle',
+    'LAUNCH DIRECTION': 'launchDirection',
+    'SPIN RATE': 'spinRate',
+    'SPIN AXIS': 'spinAxis',
+    'HEIGHT': 'height',
+    'CARRY': 'carry',
+    'TOTAL': 'total'
+  };
+  
+  const parameter = titleToParameter[expectedTitle] || '';
+  
+  // Extract numeric value (including negative numbers and decimals)
+  const valueMatch = cleanText.match(/(-?\d+\.?\d*)/);
+  let value = '';
+  
+  if (valueMatch) {
+    value = valueMatch[1];
+    
+    // Handle decimal placement for speeds (845 -> 84.5)
+    if (['clubSpeed', 'ballSpeed'].includes(parameter) && !value.includes('.') && value.length >= 3) {
+      value = value.slice(0, -1) + '.' + value.slice(-1);
+    }
+  }
+  
+  // Extract unit
+  let unit = '';
+  if (cleanText.includes('mph') || cleanText.includes('MPH')) {
+    unit = 'mph';
+  } else if (cleanText.includes('deg') || cleanText.includes('DEG') || cleanText.includes('°')) {
+    unit = 'deg';
+  } else if (cleanText.includes('rpm') || cleanText.includes('RPM')) {
+    unit = 'rpm';
+  } else if (cleanText.includes('yds') || cleanText.includes('YDS')) {
+    unit = 'yds';
+  } else if (cleanText.includes('ft') || cleanText.includes('FT')) {
+    unit = 'ft';
+  } else if (cleanText.includes('in') || cleanText.includes('IN')) {
+    unit = 'in';
+  } else if (cleanText.includes('mm') || cleanText.includes('MM')) {
+    unit = 'mm';
+  } else if (cleanText.includes('s') || cleanText.includes('sec')) {
+    unit = 's';
+  }
+  
+  console.log(`📊 Extracted - Parameter: ${parameter}, Value: ${value}, Unit: ${unit}`);
+  
+  return { parameter, value, unit };
+};
+
+// Fallback to full image OCR if tile detection fails
+const fallbackFullImageOCR = async (preprocessedImage: string) => {
+  console.log('🔄 Running fallback full image OCR...');
+  
+  const { data: { text } } = await Tesseract.recognize(preprocessedImage, 'eng', {
+    logger: m => console.log('📊 OCR Progress:', m)
+  });
+
+  console.log('📝 Raw OCR Text Extracted:');
+  console.log('='.repeat(50));
+  console.log(text || '(NO TEXT EXTRACTED)');
+  console.log('='.repeat(50));
+
+  // Parse the extracted text to find TrackMan data
+  const data = parseTrackmanText(text || '', 1);
+  return data;
+};
+
 export const extractTrackmanData = async (imageFile: File) => {
   try {
-    console.log('🔍 Starting OCR processing for:', imageFile.name, 'Size:', imageFile.size);
+    console.log('🔍 Starting tile-based OCR processing for:', imageFile.name, 'Size:', imageFile.size);
     
     // Preprocess the image for better OCR results
     console.log('⚙️  Preprocessing image for better OCR...');
     const preprocessedImage = await enhancedPreprocessing(imageFile);
     
-    const { data: { text } } = await Tesseract.recognize(preprocessedImage, 'eng', {
-      logger: m => console.log('📊 OCR Progress:', m)
-    });
-
-    console.log('📝 Raw OCR Text Extracted:');
-    console.log('='.repeat(50));
-    console.log(text || '(NO TEXT EXTRACTED)');
-    console.log('='.repeat(50));
-    console.log('📏 Text length:', text?.length || 0);
-
-    // Parse the extracted text to find TrackMan data
-    const data = parseTrackmanText(text || '', 1);
+    // First, detect and extract individual tiles from the image
+    console.log('🔍 Detecting individual tiles...');
+    const tiles = await detectTrackmanTiles(preprocessedImage);
+    
+    const data: any = {};
+    
+    // Process each tile independently
+    for (let i = 0; i < tiles.length; i++) {
+      const tile = tiles[i];
+      console.log(`🔍 Processing tile ${i + 1}/${tiles.length}:`, tile.title);
+      
+      const tileData = await processSingleTile(tile);
+      if (tileData.parameter && tileData.value) {
+        data[tileData.parameter] = `${tileData.value}${tileData.unit ? ' ' + tileData.unit : ''}`;
+        console.log(`✅ Extracted ${tileData.parameter}: ${data[tileData.parameter]}`);
+      }
+    }
+    
+    // Fallback to full image OCR if tile detection fails
+    if (Object.keys(data).length === 0) {
+      console.log('🔄 Tile detection failed, falling back to full OCR...');
+      const fallbackData = await fallbackFullImageOCR(preprocessedImage);
+      return fallbackData;
+    }
+    
+    console.log(`✅ Successfully extracted ${Object.keys(data).length} data points using tile-based OCR`);
     return data;
   } catch (error) {
     console.error('❌ OCR Error:', error);
@@ -134,16 +316,7 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
       imageFiles.map(async (file, index) => {
         console.log(`📁 Processing file ${index + 1}: ${file.name}`);
         
-        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
-          logger: m => console.log(`📊 File ${index + 1} OCR:`, m)
-        });
-        
-        console.log(`📝 Raw OCR Text for file ${index + 1}:`);
-        console.log('='.repeat(30));
-        console.log(text);
-        console.log('='.repeat(30));
-        
-        const data = parseTrackmanText(text, index + 1);
+        const data = await extractTrackmanData(file);
         return { ...data, swingNumber: index + 1 };
       })
     );
