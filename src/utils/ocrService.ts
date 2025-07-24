@@ -1,7 +1,7 @@
 import Tesseract from 'tesseract.js';
 
-// Enhanced image preprocessing for better OCR results
-const preprocessImage = (imageFile: File): Promise<string> => {
+// Enhanced image preprocessing specifically optimized for TrackMan reports
+const enhancedPreprocessing = (imageFile: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -24,22 +24,22 @@ const preprocessImage = (imageFile: File): Promise<string> => {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       
-      // Advanced preprocessing for better OCR
+      // TrackMan-specific preprocessing
       for (let i = 0; i < data.length; i += 4) {
         // Convert to grayscale
         const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
         
-        // Enhanced contrast with better thresholding
+        // Aggressive contrast enhancement for text clarity
         let enhanced;
-        if (gray > 150) {
-          // Light areas - make them brighter
-          enhanced = Math.min(255, gray * 1.3);
-        } else if (gray < 100) {
-          // Dark areas - make them darker
-          enhanced = Math.max(0, gray * 0.7);
+        if (gray > 180) {
+          // Very light areas - pure white
+          enhanced = 255;
+        } else if (gray < 80) {
+          // Dark areas - pure black for text
+          enhanced = 0;
         } else {
-          // Mid-tones - enhance slightly
-          enhanced = gray > 128 ? Math.min(255, gray * 1.1) : Math.max(0, gray * 0.9);
+          // Mid-tones - binary threshold
+          enhanced = gray > 128 ? 255 : 0;
         }
         
         data[i] = enhanced;     // R
@@ -48,23 +48,42 @@ const preprocessImage = (imageFile: File): Promise<string> => {
         // Alpha stays the same
       }
       
-      // Apply noise reduction by averaging neighboring pixels
+      // Apply morphological operations for text cleanup
       const processedData = new Uint8ClampedArray(data);
+      
+      // Erosion to remove noise
       for (let y = 1; y < canvas.height - 1; y++) {
         for (let x = 1; x < canvas.width - 1; x++) {
           const idx = (y * canvas.width + x) * 4;
           
-          // Simple blur for noise reduction
-          const neighbors = [
-            processedData[idx - 4], // left
-            processedData[idx + 4], // right
-            processedData[idx - canvas.width * 4], // top
-            processedData[idx + canvas.width * 4], // bottom
-            processedData[idx] // center
-          ];
+          // Check 3x3 neighborhood
+          let minValue = 255;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nIdx = ((y + dy) * canvas.width + (x + dx)) * 4;
+              minValue = Math.min(minValue, processedData[nIdx]);
+            }
+          }
           
-          const avg = neighbors.reduce((sum, val) => sum + val, 0) / neighbors.length;
-          data[idx] = data[idx + 1] = data[idx + 2] = avg;
+          data[idx] = data[idx + 1] = data[idx + 2] = minValue;
+        }
+      }
+      
+      // Dilation to restore text thickness
+      const dilatedData = new Uint8ClampedArray(data);
+      for (let y = 1; y < canvas.height - 1; y++) {
+        for (let x = 1; x < canvas.width - 1; x++) {
+          const idx = (y * canvas.width + x) * 4;
+          
+          let maxValue = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nIdx = ((y + dy) * canvas.width + (x + dx)) * 4;
+              maxValue = Math.max(maxValue, dilatedData[nIdx]);
+            }
+          }
+          
+          data[idx] = data[idx + 1] = data[idx + 2] = maxValue;
         }
       }
       
@@ -86,7 +105,7 @@ export const extractTrackmanData = async (imageFile: File) => {
     
     // Preprocess the image for better OCR results
     console.log('⚙️  Preprocessing image for better OCR...');
-    const preprocessedImage = await preprocessImage(imageFile);
+    const preprocessedImage = await enhancedPreprocessing(imageFile);
     
     const { data: { text } } = await Tesseract.recognize(preprocessedImage, 'eng', {
       logger: m => console.log('📊 OCR Progress:', m)
