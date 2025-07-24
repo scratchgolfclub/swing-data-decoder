@@ -1,549 +1,77 @@
-import Tesseract from 'tesseract.js';
-import { extractTextWithMultiOCR, getBestOCRResult, OCRConfig } from './multiOcrService';
+import { supabase } from '@/integrations/supabase/client';
 
-// Define types for tile-based OCR
-interface TrackManTile {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  title: string;
-  imageData: string;
-}
-
-interface TileData {
-  parameter: string;
-  value: string;
-  unit?: string;
-}
-
-// Simple preprocessing that focuses on clarity without over-processing
-const enhancedPreprocessing = (imageFile: File): Promise<string> => {
+// Convert File to base64
+const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'));
-        return;
-      }
-      
-      // Keep original size to avoid distortion
-      canvas.width = img.width;
-      canvas.height = img.height;
-      
-      // Draw with high quality
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, 0, 0);
-      
-      // Minimal processing - just improve contrast
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-      
-      for (let i = 0; i < data.length; i += 4) {
-        // Simple contrast boost
-        const r = Math.min(255, Math.max(0, (data[i] - 128) * 1.3 + 128));
-        const g = Math.min(255, Math.max(0, (data[i + 1] - 128) * 1.3 + 128));
-        const b = Math.min(255, Math.max(0, (data[i + 2] - 128) * 1.3 + 128));
-        
-        data[i] = r;
-        data[i + 1] = g;
-        data[i + 2] = b;
-      }
-      
-      ctx.putImageData(imageData, 0, 0);
-      console.log('✅ Simple preprocessing completed');
-      resolve(canvas.toDataURL('image/png', 1.0));
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove the data:image/...;base64, prefix
+      const base64 = result.split(',')[1];
+      resolve(base64);
     };
-    
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = URL.createObjectURL(imageFile);
+    reader.onerror = reject;
   });
 };
 
-// Detect individual tiles in the TrackMan interface using computer vision
-const detectTrackmanTiles = async (preprocessedImage: string): Promise<TrackManTile[]> => {
-  console.log('🔍 Starting computer vision tile detection...');
-  
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        reject(new Error('Could not get canvas context'));
-        return;
-      }
-      
-      canvas.width = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-      
-      const tiles: TrackManTile[] = [];
-      
-      // TrackMan typically has a grid layout - detect tile boundaries
-      const tileRegions = detectTileRegions(canvas, ctx);
-      
-      console.log(`📊 Detected ${tileRegions.length} potential tile regions`);
-      
-      // Extract each tile as a separate image
-      for (let i = 0; i < tileRegions.length; i++) {
-        const region = tileRegions[i];
-        
-        // Create a separate canvas for this tile
-        const tileCanvas = document.createElement('canvas');
-        const tileCtx = tileCanvas.getContext('2d');
-        
-        if (!tileCtx) continue;
-        
-        tileCanvas.width = region.width;
-        tileCanvas.height = region.height;
-        
-        // Extract the tile region
-        const imageData = ctx.getImageData(region.x, region.y, region.width, region.height);
-        tileCtx.putImageData(imageData, 0, 0);
-        
-        // Convert tile to data URL
-        const tileDataURL = tileCanvas.toDataURL('image/png');
-        
-        tiles.push({
-          x: region.x,
-          y: region.y,
-          width: region.width,
-          height: region.height,
-          title: `Tile_${i + 1}`,
-          imageData: tileDataURL
-        });
-        
-        console.log(`📦 Extracted tile ${i + 1}: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
-      }
-      
-      resolve(tiles);
-    };
-    
-    img.onerror = () => reject(new Error('Failed to load preprocessed image'));
-    img.src = preprocessedImage;
-  });
-};
-
-// Detect tile regions using edge detection and contour analysis
-const detectTileRegions = (canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const width = canvas.width;
-  const height = canvas.height;
-  
-  console.log('🔍 Analyzing image for tile boundaries...');
-  
-  // Convert to grayscale for edge detection
-  const grayData = new Uint8ClampedArray(width * height);
-  for (let i = 0; i < data.length; i += 4) {
-    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
-    grayData[i / 4] = gray;
-  }
-  
-  // Simple edge detection using Sobel operator
-  const edges = new Uint8ClampedArray(width * height);
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = y * width + x;
-      
-      // Sobel X
-      const sobelX = 
-        -1 * grayData[(y-1) * width + (x-1)] + 1 * grayData[(y-1) * width + (x+1)] +
-        -2 * grayData[y * width + (x-1)] + 2 * grayData[y * width + (x+1)] +
-        -1 * grayData[(y+1) * width + (x-1)] + 1 * grayData[(y+1) * width + (x+1)];
-      
-      // Sobel Y
-      const sobelY = 
-        -1 * grayData[(y-1) * width + (x-1)] + -2 * grayData[(y-1) * width + x] + -1 * grayData[(y-1) * width + (x+1)] +
-        1 * grayData[(y+1) * width + (x-1)] + 2 * grayData[(y+1) * width + x] + 1 * grayData[(y+1) * width + (x+1)];
-      
-      const magnitude = Math.sqrt(sobelX * sobelX + sobelY * sobelY);
-      edges[idx] = magnitude > 50 ? 255 : 0; // Threshold for edge detection
-    }
-  }
-  
-  // Find rectangular regions that could be tiles
-  const regions = findRectangularRegions(edges, width, height);
-  
-  // Filter regions by size (TrackMan tiles are typically 80-200px wide/tall)
-  const filteredRegions = regions.filter(region => 
-    region.width >= 80 && region.width <= 300 &&
-    region.height >= 60 && region.height <= 150 &&
-    region.width * region.height >= 4800 // Minimum area
-  );
-  
-  console.log(`📊 Found ${filteredRegions.length} tile-sized regions after filtering`);
-  
-  // Sort regions from top-left to bottom-right (reading order)
-  filteredRegions.sort((a, b) => {
-    if (Math.abs(a.y - b.y) < 30) { // Same row
-      return a.x - b.x;
-    }
-    return a.y - b.y;
-  });
-  
-  return filteredRegions;
-};
-
-// Find rectangular regions in the edge-detected image
-const findRectangularRegions = (edges: Uint8ClampedArray, width: number, height: number) => {
-  const regions: Array<{x: number, y: number, width: number, height: number}> = [];
-  const visited = new Set<number>();
-  
-  console.log('🔍 Finding rectangular regions...');
-  
-  // Use a larger grid size to focus on actual tile areas, not noise
-  const gridSize = 60; // Larger grid for TrackMan's structured layout
-  
-  for (let y = gridSize; y < height - gridSize; y += gridSize) {
-    for (let x = gridSize; x < width - gridSize; x += gridSize) {
-      const idx = y * width + x;
-      
-      if (visited.has(idx)) continue;
-      
-      // Look for potential tile areas 
-      const region = expandRegion(edges, width, height, x, y, visited);
-      
-      // Much stricter criteria for valid tiles
-      if (region && 
-          region.width > 120 && region.width < width * 0.4 && // Reasonable width bounds
-          region.height > 80 && region.height < height * 0.3 && // Reasonable height bounds
-          region.width / region.height > 1.5 && region.width / region.height < 3) { // TrackMan tiles are wider than tall
-        regions.push(region);
-        console.log(`📦 Found valid tile region: ${region.width}x${region.height} at (${region.x}, ${region.y})`);
-      }
-    }
-  }
-  
-  // Sort and limit to most promising regions
-  regions.sort((a, b) => (b.width * b.height) - (a.width * a.height)); // Sort by area, largest first
-  return regions.slice(0, 12); // Limit to 12 best regions
-};
-
-// Expand a region from a seed point to find tile boundaries
-const expandRegion = (
-  edges: Uint8ClampedArray, 
-  width: number, 
-  height: number, 
-  startX: number, 
-  startY: number,
-  visited: Set<number>
-) => {
-  // Simple rectangular expansion looking for low-edge areas (tile interiors)
-  let minX = startX, maxX = startX;
-  let minY = startY, maxY = startY;
-  
-  // Add iteration limits to prevent infinite loops
-  const maxExpansion = Math.min(width, height) / 4; // Max 25% of image size
-  let iterations = 0;
-  
-  // Expand horizontally with limits
-  while (minX > 0 && iterations < maxExpansion && isLowEdgeArea(edges, width, minX - 1, startY)) {
-    minX--;
-    iterations++;
-  }
-  iterations = 0;
-  while (maxX < width - 1 && iterations < maxExpansion && isLowEdgeArea(edges, width, maxX + 1, startY)) {
-    maxX++;
-    iterations++;
-  }
-  
-  // Expand vertically with limits
-  iterations = 0;
-  while (minY > 0 && iterations < maxExpansion && isLowEdgeArea(edges, width, startX, minY - 1)) {
-    minY--;
-    iterations++;
-  }
-  iterations = 0;
-  while (maxY < height - 1 && iterations < maxExpansion && isLowEdgeArea(edges, width, startX, maxY + 1)) {
-    maxY++;
-    iterations++;
-  }
-  
-  // Mark region as visited (with bounds checking)
-  const regionSize = (maxX - minX + 1) * (maxY - minY + 1);
-  if (regionSize < 10000) { // Only mark reasonable-sized regions to prevent Set overflow
-    for (let y = minY; y <= maxY; y += 5) {
-      for (let x = minX; x <= maxX; x += 5) {
-        if (y >= 0 && y < height && x >= 0 && x < width) {
-          visited.add(y * width + x);
-        }
-      }
-    }
-  }
-  
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY
-  };
-};
-
-// Check if an area has low edge density (likely inside a tile)
-const isLowEdgeArea = (edges: Uint8ClampedArray, width: number, x: number, y: number) => {
-  const windowSize = 5;
-  let edgeCount = 0;
-  let totalPixels = 0;
-  
-  for (let dy = -windowSize; dy <= windowSize; dy++) {
-    for (let dx = -windowSize; dx <= windowSize; dx++) {
-      const nx = x + dx;
-      const ny = y + dy;
-      
-      if (nx >= 0 && nx < width && ny >= 0) {
-        const idx = ny * width + nx;
-        if (edges[idx] > 128) edgeCount++;
-        totalPixels++;
-      }
-    }
-  }
-  
-  return totalPixels > 0 && (edgeCount / totalPixels) < 0.3; // Less than 30% edges
-};
-
-// Process a single tile to extract title, value, and unit
-const processSingleTile = async (tile: TrackManTile): Promise<TileData> => {
+export const extractTextFromImage = async (imageFile: File): Promise<string> => {
   try {
-    console.log(`🔍 Processing tile: ${tile.title}`);
+    console.log('🚀 Starting OCR extraction with OpenAI Vision...');
     
-    // Run OCR on the tile
-    const { data: { text } } = await Tesseract.recognize(tile.imageData, 'eng', {
-      logger: () => {} // Suppress verbose logging for individual tiles
+    // Convert image to base64
+    const imageBase64 = await fileToBase64(imageFile);
+    
+    // Call the Supabase edge function
+    const { data, error } = await supabase.functions.invoke('openai-ocr', {
+      body: { imageBase64 }
     });
     
-    console.log(`📝 Tile OCR text for ${tile.title}:`, text);
+    if (error) {
+      throw new Error(`OCR function error: ${error.message}`);
+    }
     
-    // Extract components from the tile text
-    const result = extractTileComponents(text, tile.title);
+    if (!data?.text) {
+      throw new Error('No text extracted from image');
+    }
     
-    return result;
+    console.log('✅ OCR extraction completed:', data.text.length, 'characters');
+    return data.text;
+    
   } catch (error) {
-    console.error(`❌ Error processing tile ${tile.title}:`, error);
-    return { parameter: '', value: '' };
+    console.error('❌ OCR extraction failed:', error);
+    throw new Error(`OCR failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 };
-
-// Extract title, value, and unit from tile text
-const extractTileComponents = (text: string, tileId: string): TileData => {
-  console.log(`🔍 Extracting components from tile ${tileId}: "${text}"`);
-  
-  // Clean the text
-  const cleanText = text.replace(/[^\w\s\-\.\+°]/g, ' ').replace(/\s+/g, ' ').trim();
-  const lines = cleanText.split(/\s+/);
-  
-  console.log(`📝 Cleaned text lines:`, lines);
-  
-  // Extract title (typically the first line or largest text)
-  let detectedTitle = '';
-  const titlePatterns = [
-    'CLUB.*SPEED', 'ATTACK.*ANGLE?', 'CLUB.*PATH', 'DYN.*LOFT', 'FACE.*ANGLE?',
-    'SPIN.*LOFT', 'FACE.*TO.*PATH', 'SWING.*PL', 'SWING.*DIR', 'LOW.*PT',
-    'IMP.*OFFSET', 'IMP.*HEIGHT', 'DYN.*LIE', 'BALL.*SPEED', 'SMASH',
-    'LAUNCH.*ANGLE?', 'LAUNCH.*DIR', 'SPIN.*RATE', 'SPIN.*AXIS',
-    'CURVE', 'HEIGHT', 'CARRY', 'TOTAL', 'LAND.*ANG'
-  ];
-  
-  // Look for title patterns in the text
-  for (const pattern of titlePatterns) {
-    const regex = new RegExp(pattern, 'i');
-    if (regex.test(cleanText)) {
-      const match = cleanText.match(regex);
-      if (match) {
-        detectedTitle = match[0].toUpperCase();
-        console.log(`📊 Detected title: "${detectedTitle}"`);
-        break;
-      }
-    }
-  }
-  
-  // If no title detected, try to extract from common words
-  if (!detectedTitle) {
-    const commonTitles = ['CLUB', 'ATTACK', 'PATH', 'LOFT', 'FACE', 'SPIN', 'SWING', 'BALL', 'SMASH', 'LAUNCH', 'CARRY', 'TOTAL', 'HEIGHT', 'CURVE'];
-    for (const word of lines) {
-      if (commonTitles.some(title => word.toUpperCase().includes(title))) {
-        detectedTitle = word.toUpperCase();
-        break;
-      }
-    }
-  }
-  
-  // Map detected title to parameter name
-  const titleToParameter: Record<string, string> = {
-    'CLUB SPEED': 'clubSpeed',
-    'CLUBSPEED': 'clubSpeed',
-    'ATTACK ANGLE': 'attackAngle',
-    'ATTACKANGLE': 'attackAngle', 
-    'ATTACK': 'attackAngle',
-    'CLUB PATH': 'clubPath',
-    'CLUBPATH': 'clubPath',
-    'PATH': 'clubPath',
-    'DYN LOFT': 'dynLoft',
-    'DYNLOFT': 'dynLoft',
-    'LOFT': 'dynLoft',
-    'FACE ANGLE': 'faceAngle',
-    'FACEANGLE': 'faceAngle',
-    'FACE': 'faceAngle',
-    'SPIN LOFT': 'spinLoft',
-    'SPINLOFT': 'spinLoft',
-    'FACE TO PATH': 'faceToPath',
-    'FACETOPATH': 'faceToPath',
-    'SWING PL': 'swingPlane',
-    'SWINGPL': 'swingPlane',
-    'SWING': 'swingPlane',
-    'SWING DIR': 'swingDirection',
-    'SWINGDIR': 'swingDirection',
-    'BALL SPEED': 'ballSpeed',
-    'BALLSPEED': 'ballSpeed',
-    'BALL': 'ballSpeed',
-    'SMASH': 'smashFactor',
-    'LAUNCH ANGLE': 'launchAngle',
-    'LAUNCHANGLE': 'launchAngle',
-    'LAUNCH': 'launchAngle',
-    'SPIN RATE': 'spinRate',
-    'SPINRATE': 'spinRate',
-    'SPIN AXIS': 'spinAxis',
-    'SPINAXIS': 'spinAxis',
-    'HEIGHT': 'height',
-    'CARRY': 'carry',
-    'TOTAL': 'total',
-    'CURVE': 'curve'
-  };
-  
-  // Find best matching parameter
-  let parameter = '';
-  for (const [title, param] of Object.entries(titleToParameter)) {
-    if (detectedTitle.includes(title) || title.includes(detectedTitle)) {
-      parameter = param;
-      break;
-    }
-  }
-  
-  console.log(`📊 Mapped title "${detectedTitle}" to parameter: ${parameter}`);
-  
-  // Extract numeric value (including negative numbers and decimals)
-  const valueMatch = cleanText.match(/(-?\d+\.?\d*)/);
-  let value = '';
-  
-  if (valueMatch) {
-    value = valueMatch[1];
-    
-    // Handle decimal placement for speeds (845 -> 84.5)
-    if (['clubSpeed', 'ballSpeed'].includes(parameter) && !value.includes('.') && value.length >= 3) {
-      value = value.slice(0, -1) + '.' + value.slice(-1);
-    }
-    
-    console.log(`📊 Extracted value: ${value}`);
-  }
-  
-  // Extract unit
-  let unit = '';
-  if (cleanText.includes('mph') || cleanText.includes('MPH')) {
-    unit = 'mph';
-  } else if (cleanText.includes('deg') || cleanText.includes('DEG') || cleanText.includes('°')) {
-    unit = 'deg';
-  } else if (cleanText.includes('rpm') || cleanText.includes('RPM')) {
-    unit = 'rpm';
-  } else if (cleanText.includes('yds') || cleanText.includes('YDS')) {
-    unit = 'yds';
-  } else if (cleanText.includes('ft') || cleanText.includes('FT')) {
-    unit = 'ft';
-  } else if (cleanText.includes('in') || cleanText.includes('IN')) {
-    unit = 'in';
-  } else if (cleanText.includes('mm') || cleanText.includes('MM')) {
-    unit = 'mm';
-  } else if (cleanText.includes('s') || cleanText.includes('sec')) {
-    unit = 's';
-  }
-  
-  console.log(`📊 Final extraction - Title: "${detectedTitle}", Parameter: ${parameter}, Value: ${value}, Unit: ${unit}`);
-  
-  return { parameter, value, unit };
-};
-
-// Legacy functions - now using multi-OCR approach above
 
 export const extractTrackmanData = async (imageFile: File) => {
   try {
-    console.log('🔍 Starting enhanced OCR processing for:', imageFile.name, 'Size:', imageFile.size);
+    console.log('🔍 Starting TrackMan data extraction using OpenAI Vision...');
     
-    // Try enhanced preprocessing with background removal first
-    console.log('🎯 Using AI-enhanced preprocessing with background removal...');
-    let preprocessedImage: string;
+    // Convert image to base64
+    const imageBase64 = await fileToBase64(imageFile);
     
-    try {
-      preprocessedImage = await enhancedPreprocessing(imageFile);
-      console.log('✅ AI background removal completed successfully');
-    } catch (error) {
-      console.warn('⚠️ AI preprocessing failed, using standard preprocessing:', error);
-      preprocessedImage = await enhancedPreprocessing(imageFile);
+    // Call the Supabase edge function for TrackMan-specific extraction
+    const { data, error } = await supabase.functions.invoke('openai-ocr', {
+      body: { imageBase64 }
+    });
+    
+    if (error) {
+      throw new Error(`OCR function error: ${error.message}`);
     }
     
-    // First, try tile-based approach with timeout protection
-    console.log('🔍 Detecting individual tiles...');
-    
-    let data: any = {};
-    let tilesProcessed = 0;
-    
-    try {
-      // Set a timeout for tile detection to prevent infinite loops
-      const tilePromise = detectTrackmanTiles(preprocessedImage);
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Tile detection timeout')), 10000)
-      );
-      
-      const tiles = await Promise.race([tilePromise, timeoutPromise]) as TrackManTile[];
-      
-      // Limit tile processing to first 12 most promising tiles
-      const limitedTiles = tiles.slice(0, 12);
-      console.log(`🔍 Processing ${limitedTiles.length} tiles (limited from ${tiles.length})`);
-      
-      // Process each tile independently
-      for (let i = 0; i < limitedTiles.length; i++) {
-        const tile = limitedTiles[i];
-        console.log(`🔍 Processing tile ${i + 1}/${limitedTiles.length}:`, tile.title);
-        
-        const tileData = await processSingleTile(tile);
-        if (tileData.parameter && tileData.value) {
-          data[tileData.parameter] = `${tileData.value}${tileData.unit ? ' ' + tileData.unit : ''}`;
-          console.log(`✅ Extracted ${tileData.parameter}: ${data[tileData.parameter]}`);
-          tilesProcessed++;
-        }
-      }
-      
-    } catch (error) {
-      console.warn('⚠️ Tile detection failed or timed out:', error);
+    if (!data?.text) {
+      throw new Error('No text extracted from image');
     }
     
-    // Always run enhanced multi-OCR for comprehensive extraction
-    console.log('🔄 Running enhanced multi-OCR for comprehensive extraction...');
+    // Parse the extracted text to get structured TrackMan data
+    const extractedData = parseTrackmanText(data.text);
     
-    // Configure multi-OCR for maximum accuracy  
-    const ocrConfig: Partial<OCRConfig> = {
-      enableTesseract: true,
-      enablePaddleOCR: false, // Disabled until stable
-      enableCanvasOCR: true,
-      enableAdvancedPreprocessing: true,
-      preferredEngine: 'auto'
-    };
+    console.log(`✅ Successfully extracted ${Object.keys(extractedData).length} data points`);
+    return extractedData;
     
-    const ocrResults = await extractTextWithMultiOCR(imageFile, ocrConfig);
-    const bestText = getBestOCRResult(ocrResults);
-    const fallbackData = parseTrackmanText(bestText, 1);
-    
-    // Merge tile data with fallback data, preferring tile data when available
-    const finalData = { ...fallbackData, ...data };
-    
-    console.log(`✅ Successfully extracted ${Object.keys(finalData).length} data points (${tilesProcessed} from tiles)`);
-    return finalData;
   } catch (error) {
-    console.error('❌ OCR Error:', error);
+    console.error('❌ TrackMan data extraction failed:', error);
     throw error;
   }
 };
@@ -701,138 +229,6 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
     ]
   };
   
-  // Enhanced table-based parsing for TrackMan pipe-separated data
-  const parseTableData = (text: string) => {
-    const tableData: any = {};
-    const lines = text.split('\n');
-    
-    console.log('🔍 Table parsing - analyzing', lines.length, 'lines');
-    
-    // Find header line and data lines
-    let headerLine = '';
-    let dataLines: string[] = [];
-    
-    for (const line of lines) {
-      const cleanLine = line.trim();
-      if (cleanLine.includes('CLUB') && cleanLine.includes('SPEED')) {
-        headerLine = cleanLine;
-        console.log('📊 Found header line:', headerLine);
-      } else if (cleanLine.includes('|') && /\d/.test(cleanLine)) {
-        dataLines.push(cleanLine);
-        console.log('📊 Found data line:', cleanLine);
-      }
-    }
-    
-    if (headerLine && dataLines.length > 0) {
-      // Parse headers to identify column positions
-      const headers = headerLine.split('|').map(h => h.trim().toUpperCase());
-      console.log('📊 Headers:', headers);
-      
-      // Map known TrackMan parameters to header variations
-      const headerMap: Record<string, string[]> = {
-        'clubSpeed': ['CLUB SPEED', 'CLUBSPEED', 'CLUB_SPEED'],
-        'attackAngle': ['ATTACK', 'ATT', 'ATTACKANG', 'ATTACK_ANG'],
-        'clubPath': ['CLUB PATH', 'CLUBPATH', 'PATH'],
-        'dynLoft': ['DYN LOFT', 'DYNLOFT', 'DYN_LOFT'],
-        'faceAngle': ['FACE', 'FACEANG', 'FACE_ANG'],
-        'spinLoft': ['SPIN LOFT', 'SPINLOFT', 'SPIN_LOFT'],
-        'faceToPath': ['FACE TO PATH', 'FACETOPATH', 'FACE_TO_PATH'],
-        'swingPlane': ['SWING PL', 'SWINGPL', 'SWING_PL'],
-        'swingDirection': ['SWING DIR', 'SWINGDIR', 'SWING_DIR'],
-        'lowPointDistance': ['LOW PT', 'LOWPT', 'LOW_PT'],
-        'impactOffset': ['IMP OFFSET', 'IMPOFFSET', 'IMP_OFFSET'],
-        'impactHeight': ['IMP HEIGHT', 'IMPHEIGHT', 'IMP_HEIGHT'],
-        'dynLie': ['DYN LIE', 'DYNLIE', 'DYN_LIE'],
-        'ballSpeed': ['BALL SPEED', 'BALLSPEED', 'BALL_SPEED'],
-        'smashFactor': ['SMASH', 'SMASHFAC', 'SMASH_FAC'],
-        'launchAngle': ['LAUNCH', 'LAUNCHANG', 'LAUNCH_ANG'],
-        'launchDirection': ['LAUNCH DIR', 'LAUNCHDIR', 'LAUNCH_DIR'],
-        'spinRate': ['SPIN RATE', 'SPINRATE', 'SPIN_RATE'],
-        'spinAxis': ['SPIN AXIS', 'SPINAXIS', 'SPIN_AXIS'],
-        'curve': ['CURVE'],
-        'height': ['HEIGHT'],
-        'carry': ['CARRY'],
-        'total': ['TOTAL'],
-        'landingAngle': ['LAND', 'LANDING', 'LAND_ANG']
-      };
-      
-      // Create column mapping
-      const columnMap: Record<number, string> = {};
-      for (let i = 0; i < headers.length; i++) {
-        const header = headers[i];
-        for (const [param, variations] of Object.entries(headerMap)) {
-          if (variations.some(v => header.includes(v))) {
-            columnMap[i] = param;
-            console.log(`📊 Column ${i} (${header}) mapped to ${param}`);
-            break;
-          }
-        }
-      }
-      
-      // Extract data from rows
-      for (const dataLine of dataLines) {
-        const values = dataLine.split('|').map(v => v.trim());
-        console.log('📊 Processing values:', values);
-        
-        for (let i = 0; i < values.length && i < headers.length; i++) {
-          const value = values[i];
-          const param = columnMap[i];
-          
-          if (param && value && /\d/.test(value)) {
-            // Extract numeric value
-            const numMatch = value.match(/(-?\d+\.?\d*)/);
-            if (numMatch) {
-              let extractedValue = numMatch[1];
-              
-              // Handle special cases for decimal placement
-              if (['clubSpeed', 'ballSpeed'].includes(param) && !extractedValue.includes('.') && extractedValue.length >= 3) {
-                extractedValue = extractedValue.slice(0, -1) + '.' + extractedValue.slice(-1);
-              }
-              
-              tableData[param] = extractedValue;
-              console.log(`✅ Extracted ${param}: ${extractedValue} from column ${i}`);
-            }
-          }
-        }
-      }
-    }
-    
-    // Fallback: look for numeric patterns in pipe-separated format
-    if (Object.keys(tableData).length === 0) {
-      console.log('🔍 Fallback: searching for numeric patterns...');
-      
-      for (const line of lines) {
-        if (line.includes('|')) {
-          const parts = line.split('|').map(p => p.trim());
-          const numbers = parts.filter(p => /^\d+\.?\d*$/.test(p)).map(p => parseFloat(p));
-          
-          if (numbers.length >= 5) {
-            console.log('📊 Found numeric sequence:', numbers);
-            
-            // Try to map based on typical TrackMan value ranges
-            for (let i = 0; i < numbers.length; i++) {
-              const value = numbers[i];
-              
-              if (value >= 60 && value <= 120 && !tableData.clubSpeed) {
-                tableData.clubSpeed = (value / 10).toString(); // Convert 845 to 84.5
-              } else if (value >= 100 && value <= 180 && !tableData.ballSpeed) {
-                tableData.ballSpeed = (value / 10).toString();
-              } else if (value >= 1 && value <= 50 && !tableData.attackAngle) {
-                tableData.attackAngle = value.toString();
-              } else if (value >= 10 && value <= 50 && !tableData.dynLoft) {
-                tableData.dynLoft = value.toString();
-              } else if (value >= 1000 && value <= 8000 && !tableData.spinRate) {
-                tableData.spinRate = value.toString();
-              }
-            }
-          }
-        }
-      }
-    }
-    
-    return tableData;
-  };
-
   // Extract data using multiple approaches for maximum coverage
   let matchCount = 0;
   
@@ -864,54 +260,13 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
         data[key] = value;
         matchCount++;
         matched = true;
-        console.log(`✅ Pattern match for ${key}: ${value} (pattern: ${pattern.source.substring(0, 50)}...)`);
+        console.log(`✅ Pattern match for ${key}: ${value}`);
         break;
       }
     }
     
     if (!matched) {
       console.log(`❌ No match found for ${key}`);
-    }
-  }
-  
-  // Try table-based parsing as fallback
-  console.log('🔍 Attempting table-based parsing...');
-  const tableData = parseTableData(text);
-  for (const [key, value] of Object.entries(tableData)) {
-    if (!data[key] && value) {
-      data[key] = value;
-      matchCount++;
-      console.log(`✅ Table extraction for ${key}: ${value}`);
-    }
-  }
-  
-  // Advanced pattern matching for missed values
-  console.log('🔍 Attempting advanced number extraction...');
-  const advancedPatterns = [
-    // Look for standalone numbers that might be TrackMan data
-    { pattern: /(\d{2,3}\.\d)\s*mph/gi, keys: ['clubSpeed', 'ballSpeed'] },
-    { pattern: /(-?\d{1,2}\.\d)\s*deg/gi, keys: ['attackAngle', 'clubPath', 'launchAngle'] },
-    { pattern: /(\d{4,5})\s*rpm/gi, keys: ['spinRate'] },
-    { pattern: /(\d{2,3})\s*ft/gi, keys: ['height', 'curve'] },
-    { pattern: /(\d{2,3}\.\d)\s*yds/gi, keys: ['carry', 'total'] },
-    { pattern: /(1\.\d{2})/g, keys: ['smashFactor'] }
-  ];
-  
-  for (const { pattern, keys } of advancedPatterns) {
-    const matches = Array.from(text.matchAll(pattern));
-    for (const match of matches) {
-      for (const key of keys) {
-        if (!data[key]) {
-          const value = match[1];
-          // Validate the value makes sense for this measurement
-          if (validateMeasurement(key, parseFloat(value))) {
-            data[key] = value;
-            matchCount++;
-            console.log(`✅ Advanced extraction for ${key}: ${value}`);
-            break;
-          }
-        }
-      }
     }
   }
   
@@ -942,65 +297,8 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
   if (data.impactHeight) data.impactHeight += " mm";
   if (data.hangTime) data.hangTime += " s";
   
-  console.log(`📊 Total matches found: ${matchCount} out of 28 possible data points`);
+  console.log(`📊 Total matches found: ${matchCount}`);
   console.log('🔍 Final extracted data:', data);
 
-  // Check if we have any meaningful data extracted
-  if (Object.keys(data).length === 0) {
-    console.warn('⚠️  No TrackMan data could be extracted from the image');
-    console.log('💡 This might mean:');
-    console.log('   - The image doesn\'t contain TrackMan data');
-    console.log('   - The image quality is too low for OCR');
-    console.log('   - The text format doesn\'t match expected patterns');
-    console.log('🔍 Raw text sample:', text.substring(0, 200));
-    
-    // For debugging purposes, let's be more forgiving and return sample data
-    // if the user says this same image worked before
-    console.log('🔄 Returning sample data for debugging...');
-    return {
-      extractionFailed: true,
-      message: 'OCR extracted text but no TrackMan patterns matched',
-      rawText: text.substring(0, 500) + (text.length > 500 ? '...' : ''),
-      // Include sample data that should work
-      clubSpeed: "84.5 mph",
-      attackAngle: "-3.5 deg",
-      clubPath: "-2.7 deg",
-      ballSpeed: "118.1 mph",
-      smashFactor: "1.39",
-      launchAngle: "13.2 deg",
-      carry: "166.6 yds",
-      total: "181.9 yds",
-      debugNote: "Sample data provided - OCR needs improvement"
-    };
-  }
-
-  // If we have some data but not much, still return it with a warning
-  if (Object.keys(data).length < 3) {
-    console.warn(`⚠️  Only ${Object.keys(data).length} data points extracted. Results may be incomplete.`);
-    data.partialExtraction = true;
-    data.extractedCount = Object.keys(data).length;
-  } else {
-    console.log(`✅ Successfully extracted ${Object.keys(data).length} data points`);
-  }
-
   return data;
-};
-
-// Validate if a measurement value makes sense for the given parameter
-const validateMeasurement = (key: string, value: number): boolean => {
-  const ranges: Record<string, [number, number]> = {
-    clubSpeed: [40, 150],
-    ballSpeed: [60, 220],
-    attackAngle: [-15, 15],
-    clubPath: [-20, 20],
-    launchAngle: [0, 45],
-    spinRate: [1000, 8000],
-    height: [10, 200],
-    carry: [50, 400],
-    total: [50, 450],
-    smashFactor: [1.0, 1.6]
-  };
-  
-  const range = ranges[key];
-  return range ? value >= range[0] && value <= range[1] : true;
 };
