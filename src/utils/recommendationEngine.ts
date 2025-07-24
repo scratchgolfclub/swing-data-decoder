@@ -35,7 +35,19 @@ const analyzeSwingConsistency = (swings: any[]) => {
   };
 };
 
-export const getVideoRecommendations = (swings: any[]) => {
+// Helper function to determine club category for context
+const getClubCategory = (club: string): string => {
+  const clubLower = club.toLowerCase();
+  
+  if (clubLower === 'dr') return 'driver';
+  if (clubLower.includes('w') || clubLower.includes('h')) return 'woods';
+  if (clubLower.includes('i') && !clubLower.includes('pw')) return 'irons';
+  if (clubLower.includes('pw') || clubLower.includes('sw') || clubLower.includes('lw') || clubLower.includes('°')) return 'wedges';
+  
+  return 'irons'; // default
+};
+
+export const getVideoRecommendations = (swings: any[], selectedClub: string = '') => {
   const videos = [];
   
   // If no swings data, return empty
@@ -163,11 +175,14 @@ export const getVideoRecommendations = (swings: any[]) => {
   return videos.slice(0, 4);
 };
 
-export const getTextRecommendations = (swings: any[]) => {
+export const getTextRecommendations = (swings: any[], selectedClub: string = '') => {
   // If no swings data, return default
   if (!swings || swings.length === 0) {
     return `📊 No swing data available. Please upload TrackMan data photos for analysis.`;
   }
+  
+  // Get club category for context
+  const clubCategory = getClubCategory(selectedClub);
   
   // Analyze consistency across multiple swings
   const consistency = analyzeSwingConsistency(swings);
@@ -176,6 +191,10 @@ export const getTextRecommendations = (swings: any[]) => {
   const clubPath = parseNumericValue(primarySwing.clubPath);
   const faceAngle = parseNumericValue(primarySwing.faceAngle);
   const faceToPath = parseNumericValue(primarySwing.faceToPath);
+  const attackAngle = parseNumericValue(primarySwing.attackAngle);
+  const spinRate = parseNumericValue(primarySwing.spinRate);
+  const launchAngle = parseNumericValue(primarySwing.launchAngle);
+  const dynamicLoft = parseNumericValue(primarySwing.dynLoft);
   
   // Build consistency context if multiple swings
   let consistencyNote = '';
@@ -192,17 +211,57 @@ export const getTextRecommendations = (swings: any[]) => {
     }
   }
   
+  // Club-specific context and ranges
+  let clubSpecificContext = '';
+  let outOfRangeIssues: string[] = [];
+  
+  if (clubCategory === 'driver') {
+    clubSpecificContext = `\n🚀 Driver Analysis:\nOptimal ranges: AoA +0° to +6°, Club Path -1° to +3°, Face-to-Path ≤1°, Spin Rate 2000-3000 rpm\n\n`;
+    
+    if (attackAngle < 0) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) is negative - should be positive for driver distance`);
+    if (Math.abs(faceToPath) > 1) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±1° - work on consistency`);
+    if (spinRate > 3000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) is high - work on upward strike`);
+  }
+  
+  else if (clubCategory === 'woods') {
+    clubSpecificContext = `\n🌲 Woods/Hybrids Analysis:\nOptimal ranges: AoA -2° to +2°, Club Path -1° to +3°, Face-to-Path ≤2°, Spin Rate 3000-4500 rpm\n\n`;
+    
+    if (attackAngle < -2 || attackAngle > 2) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-2° to +2°)`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
+    if (spinRate < 3000 || spinRate > 4500) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (3000-4500)`);
+  }
+  
+  else if (clubCategory === 'irons') {
+    clubSpecificContext = `\n🛠️ Irons Analysis:\nOptimal ranges: AoA -4° to -2°, Club Path -2° to +2°, Face-to-Path ≤2°, Spin Rate 5000-7000 rpm\n\n`;
+    
+    if (attackAngle > -2 || attackAngle < -4) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-4° to -2°)`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
+    if (spinRate < 5000 || spinRate > 7000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (5000-7000)`);
+  }
+  
+  else if (clubCategory === 'wedges') {
+    clubSpecificContext = `\n⛳ Wedges Analysis:\nOptimal ranges: AoA -6° to -4°, Club Path -2° to +2°, Face-to-Path ≤2°, Spin Rate 7000-9000 rpm\n\n`;
+    
+    if (attackAngle > -4 || attackAngle < -6) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-6° to -4°)`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
+    if (spinRate < 7000 || spinRate > 9000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (7000-9000)`);
+  }
+  
+  // Build out-of-range issues context
+  let rangeIssuesContext = '';
+  if (outOfRangeIssues.length > 0) {
+    rangeIssuesContext = `\n⚠️ Areas Outside Optimal Ranges:\n${outOfRangeIssues.map(issue => `• ${issue}`).join('\n')}\n\n`;
+  }
+  
   // Specific pattern analysis - Out-to-in with open face (fade pattern)  
   if (clubPath < -2 && faceToPath > 1) {
-    return `🧠 Understanding Club Path & Face Angle
-
-In simple terms:
+    return `🧠 Understanding Club Path & Face Angle${clubSpecificContext}In simple terms:
 
 Club Path is the direction the club is traveling at impact — either right (in-to-out), left (out-to-in), or neutral.
 
 Face Angle is where the clubface is pointing relative to the target at impact.
 
-The relationship between face angle and club path determines the ball's starting direction and curve.${consistencyNote}In your case:
+The relationship between face angle and club path determines the ball's starting direction and curve.${consistencyNote}${rangeIssuesContext}In your case:
 
 Your club is traveling ${Math.abs(clubPath).toFixed(1)}° left of target (out-to-in).
 
@@ -241,7 +300,7 @@ Maintain a face angle that's 1–2° closed to the path to produce a slight draw
   
   // Strong slice pattern
   if (clubPath < -2 && faceToPath > 3) {
-    return `🌪️ Classic Slice Pattern Detected${consistencyNote}Your data shows a strong slice pattern:
+    return `🌪️ Classic Slice Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows a strong slice pattern:
 - Club Path: ${clubPath.toFixed(1)}° (out-to-in)
 - Face to Path: ${faceToPath.toFixed(1)}° (open to path)
 
@@ -256,7 +315,7 @@ Priority: Work on swing path first, then face control.`;
   
   // Hook pattern
   if (clubPath > 5 && faceToPath < -3) {
-    return `🪝 Strong Hook Pattern Detected${consistencyNote}Your data shows excessive draw/hook:
+    return `🪝 Strong Hook Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows excessive draw/hook:
 - Club Path: ${clubPath.toFixed(1)}° (in-to-out)
 - Face to Path: ${faceToPath.toFixed(1)}° (closed to path)
 
@@ -275,7 +334,7 @@ Priority: Moderate the release while maintaining good path.`;
       .sort(([,a], [,b]) => b - a)[0];
     
     if (mostInconsistent) {
-      return `🎯 Consistency Focus Needed${consistencyNote}Your biggest inconsistency is in ${mostInconsistent[0]} (varies by ±${mostInconsistent[1].toFixed(1)}°).
+      return `🎯 Consistency Focus Needed${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your biggest inconsistency is in ${mostInconsistent[0]} (varies by ±${mostInconsistent[1].toFixed(1)}°).
 
 This suggests focusing on:
 1. Setup fundamentals (posture, alignment, ball position)
@@ -287,8 +346,8 @@ Work on repeating the same setup and feel, rather than making big swing changes.
     }
   }
   
-  // Default comprehensive analysis
-  return `📊 Your Swing Analysis${consistencyNote}Based on your TrackMan data, here are the key areas to focus on:
+  // Default comprehensive analysis with club-specific context
+  return `📊 Your Swing Analysis${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Based on your TrackMan data, here are the key areas to focus on:
 
 🎯 Ball Flight: Your current setup produces ${clubPath < 0 ? 'fade' : clubPath > 2 ? 'draw' : 'relatively straight'} patterns.
 

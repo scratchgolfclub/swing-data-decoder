@@ -12,10 +12,11 @@ interface ResultsScreenProps {
 }
 
 export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
-  // Pass all swing data to recommendation functions for analysis
+  // Pass all swing data AND selected club to recommendation functions for analysis
   const swings = data.swings || [];
-  const videoRecommendations = getVideoRecommendations(swings);
-  const textRecommendations = getTextRecommendations(swings);
+  const selectedClub = data.club || '';
+  const videoRecommendations = getVideoRecommendations(swings, selectedClub);
+  const textRecommendations = getTextRecommendations(swings, selectedClub);
   
   // Use the first swing data for display purposes
   const swingData = swings.length > 0 ? swings[0] : {};
