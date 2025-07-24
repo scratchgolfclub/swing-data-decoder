@@ -26,27 +26,41 @@ export const ClubSelection = ({ selectedClub, onClubSelect }: ClubSelectionProps
         <h3 className="text-lg font-semibold">Select Your Club</h3>
       </div>
       
-      <div className="grid grid-cols-5 md:grid-cols-10 gap-2 max-w-4xl mx-auto">
-        {allClubs.map((club) => (
-          <button
-            key={club}
-            onClick={() => onClubSelect(club)}
-            className={`w-12 h-12 rounded-full border-2 transition-all ${
-              selectedClub === club 
-                ? 'bg-primary text-primary-foreground border-primary' 
-                : 'bg-card hover:bg-muted border-border flex items-center justify-center'
-            }`}
+      {!selectedClub ? (
+        <div className="flex justify-center">
+          <select 
+            onChange={(e) => onClubSelect(e.target.value)}
+            className="w-12 h-12 rounded-full border-2 border-border bg-card hover:bg-muted transition-all appearance-none flex items-center justify-center cursor-pointer text-center"
+            style={{ 
+              backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor'%3e%3cpath stroke-linecap='round' stroke-linejoin='round' d='M12 4.5v15m7.5-7.5h-15'/%3e%3c/svg%3e")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center',
+              backgroundSize: '16px 16px'
+            }}
           >
-            {selectedClub === club ? (
-              <span className={`text-xs font-medium ${club.includes('°') ? 'text-xs' : 'text-sm'}`}>
+            <option value="" disabled selected hidden></option>
+            {allClubs.map((club) => (
+              <option key={club} value={club}>
                 {club}
-              </span>
-            ) : (
-              <Plus className="h-4 w-4 text-muted-foreground" />
-            )}
-          </button>
-        ))}
-      </div>
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-medium">
+              {selectedClub}
+            </div>
+            <button 
+              onClick={() => onClubSelect('')}
+              className="text-sm text-muted-foreground hover:text-foreground underline"
+            >
+              Change Club
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

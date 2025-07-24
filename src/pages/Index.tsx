@@ -75,28 +75,8 @@ const Index = () => {
               selectedFile={selectedFile}
               onFileSelect={handleFileSelect}
               onFileRemove={() => setSelectedFile(null)}
+              canUpload={!!selectedClub}
             />
-            
-            {/* Help Tooltip */}
-            <div className="flex justify-center">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <HelpCircle className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-xs">
-                    <img 
-                      src="/lovable-uploads/d29e5f89-5e39-4a66-94f2-aa2ec156d29a.png" 
-                      alt="Example TrackMan data screenshot"
-                      className="w-full rounded"
-                    />
-                    <p className="mt-2 text-sm">Example: Take a clear photo of your TrackMan screen showing all the data points</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
             
             {/* Step 3: Submit */}
             {selectedFile && selectedClub && (
