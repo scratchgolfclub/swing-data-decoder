@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Play, ExternalLink } from "lucide-react";
-import { FirecrawlService } from "@/utils/FirecrawlService";
+import { ThumbnailService } from "@/utils/thumbnailService";
 
 interface VideoCardProps {
   video: {
@@ -17,21 +17,23 @@ export const VideoCard = ({ video, index }: VideoCardProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadThumbnail = async () => {
-      try {
-        const result = await FirecrawlService.scrapeVideoThumbnail(video.url);
-        if (result.success && result.thumbnail) {
-          setThumbnail(result.thumbnail);
-        }
-      } catch (error) {
-        console.error('Error loading thumbnail:', error);
-      } finally {
+    const loadThumbnail = () => {
+      // Try to get custom thumbnail first
+      const customThumbnail = ThumbnailService.getThumbnail(video.url);
+      if (customThumbnail) {
+        setThumbnail(customThumbnail);
         setIsLoading(false);
+        return;
       }
+      
+      // Use default thumbnail if no custom one exists
+      const defaultThumbnail = ThumbnailService.getDefaultThumbnail(index);
+      setThumbnail(defaultThumbnail);
+      setIsLoading(false);
     };
 
     loadThumbnail();
-  }, [video.url]);
+  }, [video.url, index]);
 
   return (
     <div className="group relative overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-sm hover:shadow-xl transition-all duration-300">
