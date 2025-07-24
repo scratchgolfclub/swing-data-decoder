@@ -56,8 +56,9 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   // Analyze consistency across multiple swings
   const consistency = analyzeSwingConsistency(swings);
   const primarySwing = swings[0]; // Use first swing as primary for analysis
+  const clubCategory = getClubCategory(selectedClub);
   
-  // Check for setup issues first (from provided context)
+  // Parse all metrics
   const clubPath = parseNumericValue(primarySwing.clubPath);
   const attackAngle = parseNumericValue(primarySwing.attackAngle);
   const faceAngle = parseNumericValue(primarySwing.faceAngle);
@@ -65,114 +66,264 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   const spinAxis = parseNumericValue(primarySwing.spinAxis);
   const dynamicLie = parseNumericValue(primarySwing.dynLie);
   const impactOffset = parseNumericValue(primarySwing.impactOffset);
+  const dynamicLoft = parseNumericValue(primarySwing.dynLoft);
+  const lowPointDistance = parseNumericValue(primarySwing.lowPointDistance);
+  const spinRate = parseNumericValue(primarySwing.spinRate);
+  const launchAngle = parseNumericValue(primarySwing.launchAngle);
+  const ballSpeed = parseNumericValue(primarySwing.ballSpeed);
+  const clubSpeed = parseNumericValue(primarySwing.clubSpeed);
+  const smashFactor = parseNumericValue(primarySwing.smashFactor);
+  const carry = parseNumericValue(primarySwing.carry);
+  const curve = parseNumericValue(primarySwing.curve);
+  const launchDirection = parseNumericValue(primarySwing.launchDirection);
+  const swingDirection = parseNumericValue(primarySwing.swingDirection);
   
-  // Setup for Success Videos (based on provided context)
+  // Priority scoring system for video recommendations
+  const videoRecommendations = [];
   
-  // Golf Posture - if multiple issues or inconsistency
-  if (attackAngle > 0 || Math.abs(clubPath) > 4 || (consistency.variances.clubPath || 0) > 3 || attackAngle < -5) {
-    videos.push({
+  // SETUP FOR SUCCESS VIDEOS (Highest Priority)
+  
+  // Golf Posture - Critical foundation
+  if (attackAngle > 0 || Math.abs(clubPath) > 4 || (consistency.variances.clubPath || 0) > 3 || attackAngle < -5 || lowPointDistance > 0.5) {
+    videoRecommendations.push({
       title: "Golf Posture",
       description: "Posture sets the foundation for consistent swing direction, attack angle, and low point",
-      url: "https://scratchgc.wistia.com/medias/5u6i7fhjfk"
+      url: "https://scratchgc.wistia.com/medias/5u6i7fhjfk",
+      priority: 10
     });
   }
   
-  // Balance Points - if inconsistent path/lie or heel/toe strikes
-  if ((consistency.variances.clubPath || 0) > 3 || Math.abs(impactOffset) > 5 || Math.abs(dynamicLie - 60) > 3) {
-    videos.push({
+  // Balance Points - Stability issues
+  if ((consistency.variances.clubPath || 0) > 3 || Math.abs(impactOffset) > 5 || Math.abs(dynamicLie - 60) > 3 || Math.abs(swingDirection) > 5) {
+    videoRecommendations.push({
       title: "Balance Points", 
       description: "Improve balance to reduce heel/toe strikes and stabilize swing path",
-      url: "https://scratchgc.wistia.com/medias/gn0lpl2dfe"
+      url: "https://scratchgc.wistia.com/medias/gn0lpl2dfe",
+      priority: 9
     });
   }
   
-  // Grip Videos
-  if (Math.abs(faceToPath) > 2 || (consistency.variances.faceAngle || 0) > 2) {
-    if (faceToPath > 2) {
-      videos.push({
+  // Posture and Balance Checkpoints - Reinforcement
+  if ((consistency.variances.dynamicLoft || 0) > 4 || (attackAngle > 0 && clubCategory === 'irons') || !consistency.isConsistent) {
+    videoRecommendations.push({
+      title: "Posture and Balance Checkpoints",
+      description: "Reinforces proper alignment and stance width for consistent impact",
+      url: "https://scratchgc.wistia.com/medias/j1j0a6hlt1",
+      priority: 8
+    });
+  }
+  
+  // Grip Videos - Face control
+  if (Math.abs(faceToPath) > 2 || (consistency.variances.faceAngle || 0) > 2 || smashFactor < (clubCategory === 'driver' ? 1.4 : 1.3)) {
+    if (faceToPath > 2 || Math.abs(launchDirection) > 3) {
+      videoRecommendations.push({
         title: "Grip Checkpoints – Trail Hand",
         description: "Fix your trail hand grip to improve face control and reduce slice patterns",
-        url: "https://scratchgc.wistia.com/medias/mqjewf6aqo"
+        url: "https://scratchgc.wistia.com/medias/mqjewf6aqo",
+        priority: 8
       });
     }
     if (Math.abs(spinAxis) > 5 || (consistency.variances.faceAngle || 0) > 2) {
-      videos.push({
+      videoRecommendations.push({
         title: "Grip Checkpoints – Lead Hand",
         description: "Proper lead hand grip for consistent face angles and reduced curvature",
-        url: "https://scratchgc.wistia.com/medias/s9lx5jqzss"
+        url: "https://scratchgc.wistia.com/medias/s9lx5jqzss",
+        priority: 8
       });
     }
   }
   
-  // Ball Position
-  if (attackAngle < -5 || attackAngle > 0 || Math.abs(faceToPath) > 3) {
-    videos.push({
+  // Ball Position - Impact fundamentals
+  if (attackAngle < -5 || (attackAngle > 0 && clubCategory !== 'driver') || Math.abs(faceToPath) > 3 || lowPointDistance > 0.5) {
+    videoRecommendations.push({
       title: "Ball Position",
       description: "Optimize ball position to improve attack angle and launch conditions",
-      url: "https://scratchgc.wistia.com/medias/a02r1906cd"
+      url: "https://scratchgc.wistia.com/medias/a02r1906cd",
+      priority: 9
     });
   }
   
-  // Club Path & Ball Flight Laws Videos
+  // Alignment - Direction issues
+  if (Math.abs(launchDirection) > 3 || (Math.abs(faceToPath) < 1 && Math.abs(curve) > 10)) {
+    videoRecommendations.push({
+      title: "Alignment",
+      description: "Fix directional misses even when swing metrics are good",
+      url: "https://scratchgc.wistia.com/medias/k6fn07gug6",
+      priority: 7
+    });
+  }
   
-  // Club Path Lesson 1 - for understanding basics
-  if (Math.abs(clubPath) > 2 && Math.abs(faceAngle) > 1) {
-    videos.push({
+  // Foot Orientation - Mobility issues
+  if (Math.abs(clubPath) > 4 || Math.abs(swingDirection) > 5 || dynamicLie > 65) {
+    videoRecommendations.push({
+      title: "Foot Orientation",
+      description: "Improve rotational mobility and setup balance",
+      url: "https://scratchgc.wistia.com/medias/v23r3wqwdr",
+      priority: 6
+    });
+  }
+  
+  // CLUB PATH & BALL FLIGHT LAWS (Medium-High Priority)
+  
+  // Club Path Lesson 1 - Understanding basics
+  if ((Math.abs(clubPath) > 2 && Math.abs(faceAngle) > 1) || Math.abs(curve) > 20 || (consistency.variances.clubPath || 0) > 5) {
+    videoRecommendations.push({
       title: "Club Path on TrackMan (Lesson 1)",
       description: "Learn the 2:1 path-to-face ratio concept for consistent shot shapes",
-      url: "https://scratchgc.wistia.com/medias/ufxhjffk9q"
+      url: "https://scratchgc.wistia.com/medias/ufxhjffk9q",
+      priority: 7
     });
   }
   
-  // Ball Flight Laws - for confusing patterns
-  if (Math.abs(faceToPath) > 3 || (consistency.variances.faceToPath || 0) > 2) {
-    videos.push({
+  // Ball Flight Laws - Confusing patterns
+  if (Math.abs(faceToPath) > 3 || (consistency.variances.faceToPath || 0) > 2 || Math.abs(launchDirection - spinAxis) > 3) {
+    videoRecommendations.push({
       title: "Ball Flight Laws (Lesson 2)",
       description: "Visual explanation of face and path relationships for clearer ball flight understanding",
-      url: "https://scratchgc.wistia.com/medias/m4e3w872wt"
+      url: "https://scratchgc.wistia.com/medias/m4e3w872wt",
+      priority: 7
     });
   }
   
-  // Specific pattern fixes
-  
-  // Slice Fix - classic slice pattern
-  if (clubPath < -2 && faceToPath > 3) {
-    videos.push({
-      title: "Slice Fix Drill – 10 and 4 (Lesson 4)",
-      description: "Specific drills to fix slice by promoting in-to-out path and square face",
-      url: "https://scratchgc.wistia.com/medias/t9v6ljw08v"
-    });
-  }
-  
-  // Hook Fix - hook pattern
-  if (clubPath > 5 && faceToPath < -3) {
-    videos.push({
-      title: "Hook Fix Drill (Lesson 5)", 
-      description: "Control excessive inside path and closed face for straighter shots",
-      url: "https://scratchgc.wistia.com/medias/jgxopvfd57"
-    });
-  }
-  
-  // TourAim Drill - for inconsistent patterns
-  if ((consistency.variances.clubPath || 0) > 4 || (consistency.variances.faceToPath || 0) > 2) {
-    videos.push({
+  // TourAim Drill - Inconsistent delivery
+  if ((consistency.variances.clubPath || 0) > 4 || (consistency.variances.faceToPath || 0) > 2 || Math.abs(swingDirection) > 5) {
+    videoRecommendations.push({
       title: "TourAim Drill (Lesson 3)",
       description: "Build repeatable delivery patterns for consistent face-to-path relationships",
-      url: "https://scratchgc.wistia.com/medias/bsf7uxod06"
+      url: "https://scratchgc.wistia.com/medias/bsf7uxod06",
+      priority: 6
     });
   }
   
-  // If no specific issues found, recommend general improvement
-  if (videos.length === 0) {
-    videos.push({
-      title: "Optimizing Your Iron Play",
-      description: "Fine-tune your technique for consistent ball striking",
-      url: "https://scratchgc.wistia.com/medias/general"
+  // Slice Fix - Classic slice pattern
+  if (clubPath < -2 && faceToPath > 3 && spinAxis > 6 && curve > 20) {
+    videoRecommendations.push({
+      title: "Slice Fix Drill – 10 and 4 (Lesson 4)",
+      description: "Specific drills to fix slice by promoting in-to-out path and square face",
+      url: "https://scratchgc.wistia.com/medias/t9v6ljw08v",
+      priority: 8
     });
   }
   
-  // Limit to 3-4 most relevant videos
-  return videos.slice(0, 4);
+  // Hook Fix - Hook pattern
+  if (clubPath > 5 && faceToPath < -3 && spinAxis < -6 && curve < -20) {
+    videoRecommendations.push({
+      title: "Hook Fix Drill (Lesson 5)", 
+      description: "Control excessive inside path and closed face for straighter shots",
+      url: "https://scratchgc.wistia.com/medias/jgxopvfd57",
+      priority: 8
+    });
+  }
+  
+  // ANGLE OF ATTACK & LOW POINT (Medium Priority)
+  
+  // Angle of Attack fundamentals
+  if ((attackAngle > 0 && clubCategory !== 'driver') || (attackAngle < 0 && clubCategory === 'driver') || (consistency.variances.attackAngle || 0) > 3) {
+    videoRecommendations.push({
+      title: "Angle of Attack on TrackMan (Lesson 1)",
+      description: "Master proper angle of attack for each club type",
+      url: "https://scratchgc.wistia.com/medias/wdbfqn6l5u",
+      priority: 6
+    });
+  }
+  
+  // Low Point Distance + Drills
+  if (Math.abs(lowPointDistance) > 0.5 || (attackAngle < -4 && dynamicLoft < 20)) {
+    videoRecommendations.push({
+      title: "Low Point Distance + Drills (Low Point Lesson 1)",
+      description: "Eliminate fat shots and improve ball striking consistency",
+      url: "https://scratchgc.wistia.com/medias/6cm1m86qgi",
+      priority: 7
+    });
+  }
+  
+  // Low Point with Driver - Driver specific
+  if (clubCategory === 'driver' && (attackAngle < 0 || launchAngle < 9 || launchAngle > 16 || spinRate > 3000)) {
+    videoRecommendations.push({
+      title: "Low Point with Driver Drill",
+      description: "Promote upward strike and maximize driver distance",
+      url: "https://scratchgc.wistia.com/medias/rku7xnxyci",
+      priority: 7
+    });
+  }
+  
+  // DYNAMIC LOFT/SPIN LOFT (Medium Priority)
+  
+  // Dynamic Loft KPIs
+  const spinLoft = dynamicLoft - attackAngle;
+  if (dynamicLoft > (clubCategory === 'irons' ? 24 : 20) || spinLoft > 20 || spinLoft < 10) {
+    videoRecommendations.push({
+      title: "Dynamic Loft (KPIs – Lesson 4)",
+      description: "Optimize dynamic loft for better ball flight and distance",
+      url: "https://scratchgc.wistia.com/medias/yqsx8hrli5",
+      priority: 5
+    });
+  }
+  
+  // Dynamic Loft - Shaft Lean Drill
+  if ((consistency.variances.dynamicLoft || 0) > 4 || smashFactor < 1.3 || spinLoft > 20) {
+    videoRecommendations.push({
+      title: "Dynamic Loft – Shaft Lean Drill (Lesson 5)",
+      description: "Improve compression and impact efficiency through proper shaft lean",
+      url: "https://scratchgc.wistia.com/medias/sxzgttz5t7",
+      priority: 5
+    });
+  }
+  
+  // CARRY DISTANCE OPTIMIZATION (Lower Priority)
+  
+  // Club Speed KPIs
+  if (clubSpeed < 85 || (consistency.variances.clubSpeed || 0) > 5) {
+    videoRecommendations.push({
+      title: "Club Speed (KPIs – Lesson 1)",
+      description: "Increase club speed for more distance through proper technique",
+      url: "https://scratchgc.wistia.com/medias/qh5g3jwy0j",
+      priority: 3
+    });
+  }
+  
+  // Ball Speed KPIs
+  if ((consistency.variances.ballSpeed || 0) > 5 || ballSpeed < clubSpeed * 1.4) {
+    videoRecommendations.push({
+      title: "Ball Speed (KPIs – Lesson 2)",
+      description: "Optimize ball speed for maximum distance potential",
+      url: "https://scratchgc.wistia.com/medias/0w0yd82dp5",
+      priority: 4
+    });
+  }
+  
+  // Smash Factor KPIs
+  if (smashFactor < (clubCategory === 'driver' ? 1.45 : 1.35)) {
+    videoRecommendations.push({
+      title: "Smash Factor (KPIs – Lesson 3)",
+      description: "Maximize energy transfer from club to ball",
+      url: "https://scratchgc.wistia.com/medias/d7olpgqvqj",
+      priority: 4
+    });
+  }
+  
+  // FACE ANGLE CONTROL (Lower Priority)
+  
+  // Face Angle fundamentals
+  if (Math.abs(faceAngle) > 2 || (consistency.variances.faceAngle || 0) > 3) {
+    videoRecommendations.push({
+      title: "Face Angle on TrackMan (Lesson 1)",
+      description: "Master face control for consistent ball starting direction",
+      url: "https://scratchgc.wistia.com/medias/jic79uxex9",
+      priority: 4
+    });
+  }
+  
+  // Sort by priority (highest first) and remove duplicates
+  const uniqueVideos = videoRecommendations
+    .sort((a, b) => b.priority - a.priority)
+    .filter((video, index, array) => 
+      array.findIndex(v => v.url === video.url) === index
+    )
+    .map(({ priority, ...video }) => video); // Remove priority from final output
+  
+  // Return top 6-8 most relevant videos based on data
+  return uniqueVideos.slice(0, 8);
 };
 
 export const getTextRecommendations = (swings: any[], selectedClub: string = '') => {
