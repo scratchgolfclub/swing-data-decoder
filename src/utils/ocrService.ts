@@ -161,7 +161,7 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
     smashFactor: text.match(/1\.?\d{2}/)?.[0] || null
   };
 
-  // Extract data using both pattern matching and specific value extraction
+  // Extract data using multiple approaches for maximum coverage
   let matchCount = 0;
   
   // First try regex patterns
@@ -174,16 +174,35 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
     }
   }
   
-  // Then override with specific extractions if we found them
+  // Then try specific extractions (prioritize these as they're more accurate)
   for (const [key, value] of Object.entries(specificExtractions)) {
     if (value) {
       data[key] = value;
-      if (!Object.prototype.hasOwnProperty.call(data, key)) matchCount++;
+      if (!data.hasOwnProperty(key)) matchCount++;
       console.log(`✅ Specific extraction for ${key}: ${value}`);
     }
   }
   
-  console.log(`📊 Total matches found: ${matchCount} data points`);
+  // Add units to the extracted values for clarity
+  if (data.clubSpeed) data.clubSpeed += " mph";
+  if (data.ballSpeed) data.ballSpeed += " mph";
+  if (data.attackAngle) data.attackAngle += " deg";
+  if (data.clubPath) data.clubPath += " deg";
+  if (data.dynLoft) data.dynLoft += " deg";
+  if (data.faceAngle) data.faceAngle += " deg";
+  if (data.swingPlane) data.swingPlane += " deg";
+  if (data.swingDirection) data.swingDirection += " deg";
+  if (data.dynLie) data.dynLie += " deg";
+  if (data.spinRate) data.spinRate += " rpm";
+  if (data.spinAxis) data.spinAxis += " deg";
+  if (data.height) data.height += " ft";
+  if (data.carry) data.carry += " yds";
+  if (data.total) data.total += " yds";
+  if (data.landingAngle) data.landingAngle += " deg";
+  if (data.hangTime) data.hangTime += " s";
+  if (data.lastData) data.lastData += " yds";
+  
+  console.log(`📊 Total matches found: ${matchCount} out of 28 possible data points`);
   console.log('🔍 Final extracted data:', data);
 
   // Check if we have any meaningful data extracted
