@@ -7,9 +7,15 @@ All colors MUST be HSL.
 */
 
 @layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  
+  /* Scratch Golf Club Brand Colors */
+  --scratch-green: 142 72% 19%;
+  --scratch-green-light: 142 72% 29%;
+  --scratch-gold: 51 100% 50%;
+  --scratch-cream: 48 15% 95%;
 
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -17,7 +23,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: var(--scratch-green);
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;

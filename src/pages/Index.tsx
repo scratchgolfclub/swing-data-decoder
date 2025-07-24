@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { ResultsScreen } from "@/components/ResultsScreen";
 import { extractTrackmanData } from "@/utils/ocrService";
+import scratchLogo from "@/assets/scratch-golf-logo.png";
 
 const Index = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -42,10 +43,17 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 p-4">
       <div className="text-center max-w-2xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+          <div className="flex justify-center mb-6">
+            <img 
+              src={scratchLogo} 
+              alt="Scratch Golf Club" 
+              className="h-20 w-auto object-contain"
+            />
+          </div>
+          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             AI lessons based on your data
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
@@ -132,7 +140,7 @@ const Index = () => {
                 >
                   Choose Different Photo
                 </Button>
-                <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+                <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
                   Analyze Data
                 </Button>
               </div>

@@ -1,80 +1,63 @@
 import { useEffect, useState } from 'react';
+import scratchLogo from "@/assets/scratch-golf-logo.png";
 
 export const LoadingScreen = () => {
-  const [rotation, setRotation] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [dots, setDots] = useState('');
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setRotation(prev => (prev + 5) % 360);
-    }, 50);
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) return 0;
+        return prev + 2;
+      });
+    }, 80);
 
-    return () => clearInterval(interval);
+    const dotsInterval = setInterval(() => {
+      setDots(prev => {
+        if (prev.length >= 3) return '';
+        return prev + '.';
+      });
+    }, 500);
+
+    return () => {
+      clearInterval(progressInterval);
+      clearInterval(dotsInterval);
+    };
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950">
-      <div className="text-center">
-        <div className="mb-8 relative">
-          {/* Golf Club Animation */}
-          <div 
-            className="w-32 h-32 mx-auto mb-4 transition-transform duration-75 ease-linear"
-            style={{ transform: `rotate(${rotation}deg)` }}
-          >
-            <svg viewBox="0 0 100 100" className="w-full h-full">
-              {/* Club shaft */}
-              <line 
-                x1="20" y1="80" 
-                x2="80" y2="20" 
-                stroke="currentColor" 
-                strokeWidth="3" 
-                className="text-amber-600"
-              />
-              {/* Club head */}
-              <rect 
-                x="75" y="15" 
-                width="8" height="15" 
-                fill="currentColor"
-                className="text-gray-600"
-                rx="2"
-              />
-              {/* Grip */}
-              <rect 
-                x="17" y="77" 
-                width="8" height="15" 
-                fill="currentColor"
-                className="text-black"
-                rx="2"
-              />
-            </svg>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900">
+      <div className="text-center max-w-md mx-auto p-8">
+        {/* Logo */}
+        <div className="mb-8">
+          <img 
+            src={scratchLogo} 
+            alt="Scratch Golf Club" 
+            className="h-16 w-auto mx-auto mb-8 opacity-90"
+          />
+        </div>
+
+        {/* Elegant Progress Animation */}
+        <div className="mb-8">
+          <div className="w-80 h-1 bg-stone-200 dark:bg-stone-700 rounded-full mx-auto overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${progress}%` }}
+            />
           </div>
-          
-          {/* Ball trail effect */}
-          <div className="absolute top-16 left-1/2 transform -translate-x-1/2">
-            <div className="flex space-x-1">
-              {[...Array(5)].map((_, i) => (
-                <div 
-                  key={i}
-                  className="w-2 h-2 bg-white rounded-full animate-pulse"
-                  style={{ 
-                    animationDelay: `${i * 0.2}s`,
-                    opacity: 1 - (i * 0.2)
-                  }}
-                />
-              ))}
-            </div>
+          <div className="mt-4 text-2xl font-light text-primary">
+            {Math.round(progress)}%
           </div>
         </div>
 
-        <h2 className="text-3xl font-bold mb-4 text-green-600">
-          Analyzing Your Data
+        {/* Text */}
+        <h2 className="text-3xl font-bold mb-4 text-primary">
+          Analyzing Your Data{dots}
         </h2>
-        <p className="text-xl text-muted-foreground mb-4">
-          Generating a custom lesson...
+        <p className="text-lg text-muted-foreground">
+          Generating your personalized lesson recommendations
         </p>
-        
-        <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-        </div>
       </div>
     </div>
   );

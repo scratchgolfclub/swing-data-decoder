@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Play } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye } from "lucide-react";
 import { getVideoRecommendations, getTextRecommendations } from "@/utils/recommendationEngine";
+import scratchLogo from "@/assets/scratch-golf-logo.png";
+import { useState } from 'react';
 
 interface ResultsScreenProps {
   data: any;
@@ -11,78 +14,210 @@ interface ResultsScreenProps {
 export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
   const videoRecommendations = getVideoRecommendations(data);
   const textRecommendations = getTextRecommendations(data);
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    overview: true,
+    workOn: false,
+    drills: false,
+    goal: false
+  });
+
+  const toggleSection = (section: string) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-950 dark:to-blue-950 p-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 p-4">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <Button 
-            onClick={onReset} 
-            variant="outline" 
-            className="mb-4"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Analyze Another Photo
-          </Button>
-          <h1 className="text-4xl font-bold text-center mb-2">Your Personalized Analysis</h1>
-          <p className="text-center text-muted-foreground">Based on your TrackMan data</p>
+          <div className="flex items-center justify-between mb-6">
+            <Button 
+              onClick={onReset} 
+              variant="outline" 
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Analyze Another Photo
+            </Button>
+            <img 
+              src={scratchLogo} 
+              alt="Scratch Golf Club" 
+              className="h-12 w-auto"
+            />
+          </div>
+          <h1 className="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Your Personalized Analysis
+          </h1>
+          <p className="text-center text-xl text-muted-foreground">Based on your TrackMan data</p>
         </div>
 
         {/* Video Recommendations */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Play className="h-5 w-5 text-green-600" />
+        <Card className="mb-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Play className="h-6 w-6 text-primary" />
+              </div>
               Videos from our Pro based on your data
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {videoRecommendations.map((video, index) => (
-                <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <h3 className="font-semibold mb-2">{video.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{video.description}</p>
-                  <Button 
-                    onClick={() => window.open(video.url, '_blank')}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Watch Video
-                  </Button>
+                <div key={index} className="group relative overflow-hidden rounded-xl border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 shadow-sm hover:shadow-xl transition-all duration-300">
+                  {/* Video Thumbnail */}
+                  <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/5 overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                        <Play className="h-8 w-8 text-primary ml-1" />
+                      </div>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/20 to-transparent h-20"></div>
+                  </div>
+                  
+                  <div className="p-6">
+                    <h3 className="font-bold text-lg mb-2 text-stone-900 dark:text-stone-100">{video.title}</h3>
+                    <p className="text-muted-foreground mb-4 line-clamp-2">{video.description}</p>
+                    <Button 
+                      onClick={() => window.open(video.url, '_blank')}
+                      className="w-full bg-primary hover:bg-primary/90 shadow-sm"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Watch Video
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Text Recommendations */}
-        <Card>
-          <CardHeader>
-            <CardTitle>What to Work On</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="prose max-w-none dark:prose-invert">
-              <div className="whitespace-pre-line text-sm leading-relaxed">
-                {textRecommendations}
+        {/* Text Recommendations - Collapsible Sections */}
+        <Card className="shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-3 text-2xl">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Target className="h-6 w-6 text-primary" />
               </div>
-            </div>
+              Your Swing Analysis
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            
+            {/* Overview Section */}
+            <Collapsible open={openSections.overview} onOpenChange={() => toggleSection('overview')}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Eye className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-lg">Overview</span>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.overview ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pt-4">
+                <div className="prose prose-stone dark:prose-invert max-w-none">
+                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                    🧠 Understanding Club Path & Face Angle<br/>
+                    In simple terms:<br/><br/>
+                    Club Path is the direction the club is traveling at impact — either right (in-to-out), left (out-to-in), or neutral.<br/><br/>
+                    Face Angle is where the clubface is pointing relative to the target at impact.<br/><br/>
+                    The relationship between face angle and club path determines the ball's starting direction and curve.
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* What to Work On Section */}
+            <Collapsible open={openSections.workOn} onOpenChange={() => toggleSection('workOn')}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Target className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-lg">What to Work On</span>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.workOn ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pt-4">
+                <div className="prose prose-stone dark:prose-invert max-w-none">
+                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                    🛠️ Neutralizing Club Path<br/>
+                    Your face-to-path relationship is solid, but the out-to-in club path is the root of the fade. To hit straighter or even draw-biased shots, we want to move your club path closer to 0°, or even slightly positive (in-to-out).
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Drills Section */}
+            <Collapsible open={openSections.drills} onOpenChange={() => toggleSection('drills')}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Lightbulb className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-lg">Drills & Feel Changes</span>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.drills ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pt-4">
+                <div className="prose prose-stone dark:prose-invert max-w-none">
+                  <div className="text-stone-700 dark:text-stone-300 leading-relaxed space-y-4">
+                    <div>
+                      <strong>✅ Alignment Stick Drill:</strong><br/>
+                      Place an alignment stick on the ground pointing slightly right of your target (1–2 yards). Feel your swing path trace along the stick on your downswing to promote an in-to-out path.
+                    </div>
+                    <div>
+                      <strong>✅ Split Hand Drill:</strong><br/>
+                      Grip the club with your normal top hand. Place your bottom hand halfway down the shaft. Make slow swings feeling the club move from inside to out.
+                    </div>
+                    <div>
+                      <strong>✅ "Swing to Right Field" Feel:</strong><br/>
+                      On the range, pick a target to the right of your actual target. Make swings visualizing the ball launching in that direction.
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Goal Section */}
+            <Collapsible open={openSections.goal} onOpenChange={() => toggleSection('goal')}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full p-4 bg-stone-50 dark:bg-stone-800 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-700 transition-colors">
+                <div className="flex items-center gap-3">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  <span className="font-semibold text-lg">Goal</span>
+                </div>
+                <ChevronDown className={`h-5 w-5 transition-transform ${openSections.goal ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent className="px-4 pt-4">
+                <div className="prose prose-stone dark:prose-invert max-w-none">
+                  <p className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                    🔁 <strong>Target Goals:</strong><br/>
+                    • Shift club path from -2.7° closer to neutral (0°) or even slightly positive (+1 to +2°)<br/>
+                    • Maintain a face angle that's 1–2° closed to the path to produce a slight draw or straight shot
+                  </p>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
           </CardContent>
         </Card>
 
         {/* Extracted Data Preview */}
-        <Card className="mt-8">
+        <Card className="mt-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
           <CardHeader>
-            <CardTitle>Extracted Data</CardTitle>
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Target className="h-5 w-5 text-primary" />
+              </div>
+              Extracted TrackMan Data
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {Object.entries(data).map(([key, value]) => (
-                <div key={key} className="flex flex-col">
-                  <span className="font-medium text-muted-foreground capitalize">
+                <div key={key} className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </span>
-                  <span className="font-bold">{value as string}</span>
+                  </div>
+                  <div className="text-lg font-bold text-primary">{value as string}</div>
                 </div>
               ))}
             </div>
