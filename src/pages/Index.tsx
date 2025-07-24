@@ -9,27 +9,32 @@ import { PhotoUpload } from "@/components/PhotoUpload";
 import { extractTrackmanData } from "@/utils/ocrService";
 
 const Index = () => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedClub, setSelectedClub] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+  const handleFilesSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length > 0) {
+      setSelectedFiles(prev => [...prev, ...files]);
     }
   };
 
+  const handleFileRemove = (index: number) => {
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
-    if (!selectedFile || !selectedClub) return;
+    if (selectedFiles.length === 0 || !selectedClub) return;
     
     setIsLoading(true);
     try {
-      const extractedData = await extractTrackmanData(selectedFile);
-      setResults(extractedData);
+      const { extractMultipleTrackmanData } = await import('@/utils/ocrService');
+      const data = await extractMultipleTrackmanData(selectedFiles);
+      setResults({ swings: data, club: selectedClub });
     } catch (error) {
-      console.error('Error processing image:', error);
+      console.error('Error processing images:', error);
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +45,7 @@ const Index = () => {
   }
 
   if (results) {
-    return <ResultsScreen data={results} onReset={() => { setResults(null); setSelectedFile(null); }} />;
+    return <ResultsScreen data={results} onReset={() => { setResults(null); setSelectedFiles([]); }} />;
   }
 
   return (
@@ -72,14 +77,14 @@ const Index = () => {
             
             {/* Step 2: Photo Upload */}
             <PhotoUpload 
-              selectedFile={selectedFile}
-              onFileSelect={handleFileSelect}
-              onFileRemove={() => setSelectedFile(null)}
+              selectedFiles={selectedFiles}
+              onFilesSelect={handleFilesSelect}
+              onFileRemove={handleFileRemove}
               canUpload={!!selectedClub}
             />
             
             {/* Step 3: Submit */}
-            {selectedFile && selectedClub && (
+            {selectedFiles.length > 0 && selectedClub && (
               <div className="space-y-4">
                 <div className="flex items-center gap-3 justify-center">
                   <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
@@ -90,7 +95,7 @@ const Index = () => {
                 
                 <div className="flex justify-center">
                   <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
-                    Submit for Analysis
+                    Analyze My Swing{selectedFiles.length > 1 ? 's' : ''}
                   </Button>
                 </div>
               </div>

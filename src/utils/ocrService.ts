@@ -15,6 +15,26 @@ export const extractTrackmanData = async (imageFile: File) => {
   }
 };
 
+export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
+  try {
+    const results = await Promise.all(
+      imageFiles.map(async (file, index) => {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+          logger: m => console.log(`File ${index + 1}:`, m)
+        });
+        
+        const data = parseTrackmanText(text);
+        return { ...data, swingNumber: index + 1 };
+      })
+    );
+    
+    return results;
+  } catch (error) {
+    console.error('Multiple OCR Error:', error);
+    throw error;
+  }
+};
+
 const parseTrackmanText = (text: string) => {
   // Example parsing logic - you'll need to adjust based on actual OCR output
   const data: any = {};

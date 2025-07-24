@@ -4,37 +4,54 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Upload, Camera, HelpCircle } from "lucide-react";
 
 interface PhotoUploadProps {
-  selectedFile: File | null;
-  onFileSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onFileRemove: () => void;
+  selectedFiles: File[];
+  onFilesSelect: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileRemove: (index: number) => void;
   canUpload: boolean;
 }
 
-export const PhotoUpload = ({ selectedFile, onFileSelect, onFileRemove, canUpload }: PhotoUploadProps) => {
-  if (selectedFile) {
+export const PhotoUpload = ({ selectedFiles, onFilesSelect, onFileRemove, canUpload }: PhotoUploadProps) => {
+  if (selectedFiles.length > 0) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
             2
           </div>
-          <h3 className="text-lg font-semibold">Photo Selected</h3>
+          <h3 className="text-lg font-semibold">
+            {selectedFiles.length === 1 ? 'Photo Selected' : `${selectedFiles.length} Photos Selected`}
+          </h3>
         </div>
         
-        <div className="relative">
-          <img 
-            src={URL.createObjectURL(selectedFile)} 
-            alt="Selected TrackMan data"
-            className="max-w-full h-auto rounded-lg mx-auto max-h-96 object-contain"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {selectedFiles.map((file, index) => (
+            <div key={index} className="relative">
+              <img 
+                src={URL.createObjectURL(file)} 
+                alt={`TrackMan data ${index + 1}`}
+                className="w-full h-48 rounded-lg object-cover"
+              />
+              <Button 
+                onClick={() => onFileRemove(index)}
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
         </div>
         
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-2">
           <Button 
-            onClick={onFileRemove}
+            onClick={() => {
+              const input = document.getElementById('file-upload') as HTMLInputElement;
+              if (input) input.click();
+            }}
             variant="outline"
           >
-            Choose Different Photo
+            Add More Photos
           </Button>
         </div>
       </div>
@@ -75,7 +92,8 @@ export const PhotoUpload = ({ selectedFile, onFileSelect, onFileRemove, canUploa
           <Input
             type="file"
             accept="image/*"
-            onChange={onFileSelect}
+            multiple
+            onChange={onFilesSelect}
             className="hidden"
             id="file-upload"
           />
@@ -83,7 +101,7 @@ export const PhotoUpload = ({ selectedFile, onFileSelect, onFileRemove, canUploa
             <Button variant="outline" className="w-full h-20 cursor-pointer" asChild>
               <div className="flex flex-col items-center gap-2">
                 <Upload className="h-6 w-6" />
-                <span>Upload Photo</span>
+                <span>Upload Photos</span>
               </div>
             </Button>
           </label>
@@ -94,7 +112,7 @@ export const PhotoUpload = ({ selectedFile, onFileSelect, onFileRemove, canUploa
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={onFileSelect}
+            onChange={onFilesSelect}
             className="hidden"
             id="camera-upload"
           />
