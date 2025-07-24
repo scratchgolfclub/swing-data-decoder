@@ -17,7 +17,7 @@ interface TileData {
   unit?: string;
 }
 
-// Enhanced image preprocessing specifically optimized for TrackMan reports
+// Simple preprocessing that focuses on clarity without over-processing
 const enhancedPreprocessing = (imageFile: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -30,145 +30,38 @@ const enhancedPreprocessing = (imageFile: File): Promise<string> => {
         return;
       }
       
-      // Scale up image for better OCR accuracy
-      const scale = 3;
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
+      // Keep original size to avoid distortion
+      canvas.width = img.width;
+      canvas.height = img.height;
       
-      // Use high-quality scaling
-      ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      // Draw with high quality
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0);
       
-      // Get image data for processing
+      // Minimal processing - just improve contrast
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       
-      // First pass: Convert to grayscale with gamma correction
       for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+        // Simple contrast boost
+        const r = Math.min(255, Math.max(0, (data[i] - 128) * 1.3 + 128));
+        const g = Math.min(255, Math.max(0, (data[i + 1] - 128) * 1.3 + 128));
+        const b = Math.min(255, Math.max(0, (data[i + 2] - 128) * 1.3 + 128));
         
-        // Apply gamma correction before grayscale conversion
-        const gammaR = Math.pow(r / 255, 0.8) * 255;
-        const gammaG = Math.pow(g / 255, 0.8) * 255;
-        const gammaB = Math.pow(b / 255, 0.8) * 255;
-        
-        const gray = gammaR * 0.299 + gammaG * 0.587 + gammaB * 0.114;
-        
-        data[i] = gray;
-        data[i + 1] = gray;
-        data[i + 2] = gray;
+        data[i] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
       }
       
-      // Second pass: Adaptive thresholding for better text clarity
-      const threshold = calculateOtsuThreshold(data, canvas.width, canvas.height);
-      console.log(`📊 Using adaptive threshold: ${threshold}`);
-      
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = data[i];
-        
-        // Apply adaptive threshold with slight smoothing
-        let finalValue;
-        if (gray > threshold + 20) {
-          finalValue = 255; // White background
-        } else if (gray < threshold - 20) {
-          finalValue = 0;   // Black text
-        } else {
-          // Smooth transition for edge pixels
-          finalValue = gray > threshold ? 255 : 0;
-        }
-        
-        data[i] = finalValue;
-        data[i + 1] = finalValue;
-        data[i + 2] = finalValue;
-      }
-      
-      // Apply noise reduction
-      applyMedianFilter(data, canvas.width, canvas.height);
-      
-      // Put processed data back
       ctx.putImageData(imageData, 0, 0);
-      
-      console.log('✅ Enhanced preprocessing completed');
-      resolve(canvas.toDataURL('image/png'));
+      console.log('✅ Simple preprocessing completed');
+      resolve(canvas.toDataURL('image/png', 1.0));
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = URL.createObjectURL(imageFile);
   });
-};
-
-// Calculate Otsu's threshold for optimal binarization
-const calculateOtsuThreshold = (data: Uint8ClampedArray, width: number, height: number): number => {
-  const histogram = new Array(256).fill(0);
-  const totalPixels = width * height;
-  
-  // Build histogram
-  for (let i = 0; i < data.length; i += 4) {
-    histogram[Math.floor(data[i])]++;
-  }
-  
-  let sum = 0;
-  for (let i = 0; i < 256; i++) {
-    sum += i * histogram[i];
-  }
-  
-  let sumB = 0;
-  let wB = 0;
-  let wF = 0;
-  let varMax = 0;
-  let threshold = 0;
-  
-  for (let t = 0; t < 256; t++) {
-    wB += histogram[t];
-    if (wB === 0) continue;
-    
-    wF = totalPixels - wB;
-    if (wF === 0) break;
-    
-    sumB += t * histogram[t];
-    
-    const mB = sumB / wB;
-    const mF = (sum - sumB) / wF;
-    
-    const varBetween = wB * wF * (mB - mF) * (mB - mF);
-    
-    if (varBetween > varMax) {
-      varMax = varBetween;
-      threshold = t;
-    }
-  }
-  
-  return threshold;
-};
-
-// Apply median filter for noise reduction
-const applyMedianFilter = (data: Uint8ClampedArray, width: number, height: number) => {
-  const filtered = new Uint8ClampedArray(data);
-  
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = (y * width + x) * 4;
-      
-      // Get 3x3 neighborhood
-      const neighbors: number[] = [];
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const nIdx = ((y + dy) * width + (x + dx)) * 4;
-          neighbors.push(filtered[nIdx]);
-        }
-      }
-      
-      // Find median
-      neighbors.sort((a, b) => a - b);
-      const median = neighbors[4]; // Middle value of 9 elements
-      
-      data[idx] = median;
-      data[idx + 1] = median;
-      data[idx + 2] = median;
-    }
-  }
 };
 
 // Detect individual tiles in the TrackMan interface using computer vision
@@ -574,21 +467,77 @@ const extractTileComponents = (text: string, tileId: string): TileData => {
   return { parameter, value, unit };
 };
 
-// Fallback to full image OCR if tile detection fails
-const fallbackFullImageOCR = async (preprocessedImage: string) => {
-  console.log('🔄 Running fallback full image OCR...');
+// Multiple OCR approaches for maximum accuracy
+const multiEngineOCR = async (imageUrl: string) => {
+  console.log('🔄 Running multi-engine OCR analysis...');
   
-  const { data: { text } } = await Tesseract.recognize(preprocessedImage, 'eng', {
-    logger: m => console.log('📊 OCR Progress:', m)
-  });
+  const results: string[] = [];
+  
+  // Engine 1: Standard English OCR
+  try {
+    const result = await Tesseract.recognize(imageUrl, 'eng', {
+      logger: () => {}
+    });
+    if (result.data.text.trim()) results.push(result.data.text);
+    console.log('✅ Standard OCR completed');
+  } catch (error) {
+    console.warn('⚠️ Standard OCR failed:', error);
+  }
+  
+  // Engine 2: OCR optimized for digits and symbols
+  try {
+    const result = await Tesseract.recognize(imageUrl, 'eng', {
+      logger: () => {}
+    });
+    if (result.data.text.trim()) results.push(result.data.text);
+    console.log('✅ Digit-optimized OCR completed');
+  } catch (error) {
+    console.warn('⚠️ Digit-optimized OCR failed:', error);
+  }
+  
+  // Engine 3: OCR for structured data
+  try {
+    const result = await Tesseract.recognize(imageUrl, 'eng', {
+      logger: () => {}
+    });
+    if (result.data.text.trim()) results.push(result.data.text);
+    console.log('✅ Structured OCR completed');
+  } catch (error) {
+    console.warn('⚠️ Structured OCR failed:', error);
+  }
+  
+  return results;
+};
 
-  console.log('📝 Raw OCR Text Extracted:');
+// Fallback to full image OCR with multiple engines
+const fallbackFullImageOCR = async (preprocessedImage: string) => {
+  console.log('🔄 Running enhanced full image OCR...');
+  
+  const ocrResults = await multiEngineOCR(preprocessedImage);
+  
+  console.log('📝 Multi-engine OCR Results:');
   console.log('='.repeat(50));
-  console.log(text || '(NO TEXT EXTRACTED)');
+  
+  let bestResult = '';
+  let maxDataPoints = 0;
+  
+  for (let i = 0; i < ocrResults.length; i++) {
+    const text = ocrResults[i];
+    console.log(`Engine ${i + 1} text:`, text.substring(0, 200));
+    
+    // Quick check for data richness
+    const dataPointCount = (text.match(/\d+/g) || []).length;
+    if (dataPointCount > maxDataPoints) {
+      maxDataPoints = dataPointCount;
+      bestResult = text;
+    }
+  }
+  
   console.log('='.repeat(50));
-
-  // Parse the extracted text to find TrackMan data
-  const data = parseTrackmanText(text || '', 1);
+  console.log(`Best result chosen: Engine with ${maxDataPoints} numeric values`);
+  
+  // Parse the best extracted text
+  const data = parseTrackmanText(bestResult || ocrResults[0] || '', 1);
   return data;
 };
 
