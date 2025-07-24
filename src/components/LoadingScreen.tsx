@@ -8,7 +8,7 @@ export const LoadingScreen = () => {
   useEffect(() => {
     const progressInterval = setInterval(() => {
       setProgress(prev => {
-        if (prev >= 100) return 0;
+        if (prev >= 100) return 100; // Stop at 100% instead of resetting
         return prev + 2;
       });
     }, 80);
