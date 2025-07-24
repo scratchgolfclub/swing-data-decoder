@@ -9,6 +9,68 @@ import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import scratchLogo from "@/assets/scratch-golf-logo.png";
 import { useState, useEffect } from 'react';
 
+// Component to format swing analysis text with proper styling
+const SwingAnalysisFormatter = ({ text }: { text: string }) => {
+  // Remove ** characters and format sections
+  const cleanText = text.replace(/\*\*/g, '');
+  
+  // Split text into sections and format
+  const sections = cleanText.split('\n\n').filter(section => section.trim());
+  
+  return (
+    <div className="space-y-6">
+      {sections.map((section, index) => {
+        const lines = section.split('\n').filter(line => line.trim());
+        
+        return (
+          <div key={index} className="space-y-3">
+            {lines.map((line, lineIndex) => {
+              const trimmedLine = line.trim();
+              
+              // Section headers (with emojis)
+              if (trimmedLine.match(/^[🎯📊🚀🌲🛠️⛳]/)) {
+                return (
+                  <h3 key={lineIndex} className="text-xl font-bold text-primary mb-2 pb-2 border-b border-primary/20">
+                    {trimmedLine}
+                  </h3>
+                );
+              }
+              
+              // Subsection headers (starting with uppercase words followed by colon)
+              if (trimmedLine.match(/^[A-Z][^:]*:/) && trimmedLine.includes(':')) {
+                return (
+                  <h4 key={lineIndex} className="text-lg font-semibold text-stone-800 dark:text-stone-200 mt-4 mb-2">
+                    {trimmedLine}
+                  </h4>
+                );
+              }
+              
+              // Bullet points or list items
+              if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('• ')) {
+                return (
+                  <div key={lineIndex} className="flex items-start gap-2 ml-4">
+                    <span className="text-primary font-bold mt-1">•</span>
+                    <span className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                      {trimmedLine.replace(/^[-•]\s*/, '')}
+                    </span>
+                  </div>
+                );
+              }
+              
+              // Regular paragraphs
+              return (
+                <p key={lineIndex} className="text-stone-700 dark:text-stone-300 leading-relaxed">
+                  {trimmedLine}
+                </p>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 interface ResultsScreenProps {
   data: any;
   onReset: () => void;
@@ -103,12 +165,10 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Format the analysis text properly */}
             <div className="prose prose-stone dark:prose-invert max-w-none">
-              <div className="text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-line">
-                {textRecommendations}
-              </div>
+              <SwingAnalysisFormatter text={textRecommendations} />
             </div>
-
           </CardContent>
         </Card>
 

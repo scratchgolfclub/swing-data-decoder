@@ -8,6 +8,7 @@ interface VideoCardProps {
     title: string;
     description: string;
     url: string;
+    reason?: string; // Why this video was recommended based on user data
   };
   index: number;
 }
@@ -80,6 +81,19 @@ export const VideoCard = ({ video, index }: VideoCardProps) => {
         <h3 className="font-bold text-lg mb-2 text-stone-900 dark:text-stone-100 line-clamp-2">
           {video.title}
         </h3>
+        
+        {/* Recommendation reason - why this video was selected */}
+        {video.reason && (
+          <div className="mb-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+            <div className="text-xs font-medium text-primary/80 uppercase tracking-wide mb-1">
+              Recommended for you:
+            </div>
+            <p className="text-sm text-primary/90 font-medium">
+              {video.reason}
+            </p>
+          </div>
+        )}
+        
         <p className="text-muted-foreground mb-4 line-clamp-3 text-sm leading-relaxed">
           {video.description}
         </p>

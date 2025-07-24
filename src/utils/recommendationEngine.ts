@@ -85,20 +85,35 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   
   // Golf Posture - Critical foundation
   if (attackAngle > 0 || Math.abs(clubPath) > 4 || (consistency.variances.clubPath || 0) > 3 || attackAngle < -5 || lowPointDistance > 0.5) {
+    let reason = '';
+    if (attackAngle > 0 && clubCategory !== 'driver') reason = `Your attack angle is ${attackAngle.toFixed(1)}° (hitting up on irons)`;
+    else if (Math.abs(clubPath) > 4) reason = `Your swing path is ${clubPath.toFixed(1)}° (should be closer to 0°)`;
+    else if (attackAngle < -5) reason = `Your attack angle is too steep at ${attackAngle.toFixed(1)}°`;
+    else if (lowPointDistance > 0.5) reason = `Your low point is ${lowPointDistance.toFixed(1)}" behind the ball`;
+    else reason = 'Your swing shows inconsistent path control';
+    
     videoRecommendations.push({
       title: "Golf Posture",
       description: "Posture sets the foundation for consistent swing direction, attack angle, and low point",
       url: "https://scratchgc.wistia.com/medias/5u6i7fhjfk",
+      reason: reason,
       priority: 10
     });
   }
   
   // Balance Points - Stability issues
   if ((consistency.variances.clubPath || 0) > 3 || Math.abs(impactOffset) > 5 || Math.abs(dynamicLie - 60) > 3 || Math.abs(swingDirection) > 5) {
+    let reason = '';
+    if (Math.abs(impactOffset) > 5) reason = `You're hitting ${Math.abs(impactOffset).toFixed(0)}mm off center`;
+    else if (Math.abs(dynamicLie - 60) > 3) reason = `Your impact lie angle is ${dynamicLie.toFixed(1)}° (should be ~60°)`;
+    else if (Math.abs(swingDirection) > 5) reason = `Your swing direction is ${swingDirection.toFixed(1)}° off target`;
+    else reason = 'Your swing path varies significantly between shots';
+    
     videoRecommendations.push({
       title: "Balance Points", 
       description: "Improve balance to reduce heel/toe strikes and stabilize swing path",
       url: "https://scratchgc.wistia.com/medias/gn0lpl2dfe",
+      reason: reason,
       priority: 9
     });
   }
@@ -135,10 +150,17 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   
   // Ball Position - Impact fundamentals
   if (attackAngle < -5 || (attackAngle > 0 && clubCategory !== 'driver') || Math.abs(faceToPath) > 3 || lowPointDistance > 0.5) {
+    let reason = '';
+    if (attackAngle < -5) reason = `Your attack angle is too steep at ${attackAngle.toFixed(1)}°`;
+    else if (attackAngle > 0 && clubCategory !== 'driver') reason = `You're hitting up on ${clubCategory} (${attackAngle.toFixed(1)}°)`;
+    else if (Math.abs(faceToPath) > 3) reason = `Your face-to-path is ${faceToPath.toFixed(1)}° (should be closer to 0°)`;
+    else reason = `Your low point is ${lowPointDistance.toFixed(1)}" behind the ball`;
+    
     videoRecommendations.push({
       title: "Ball Position",
       description: "Optimize ball position to improve attack angle and launch conditions",
       url: "https://scratchgc.wistia.com/medias/a02r1906cd",
+      reason: reason,
       priority: 9
     });
   }
@@ -201,6 +223,7 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
       title: "Slice Fix Drill – 10 and 4 (Lesson 4)",
       description: "Specific drills to fix slice by promoting in-to-out path and square face",
       url: "https://scratchgc.wistia.com/medias/t9v6ljw08v",
+      reason: `You're slicing: ${clubPath.toFixed(1)}° out-to-in path with ${faceToPath.toFixed(1)}° open face`,
       priority: 8
     });
   }
@@ -211,6 +234,7 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
       title: "Hook Fix Drill (Lesson 5)", 
       description: "Control excessive inside path and closed face for straighter shots",
       url: "https://scratchgc.wistia.com/medias/jgxopvfd57",
+      reason: `You're hooking: ${clubPath.toFixed(1)}° in-to-out path with ${faceToPath.toFixed(1)}° closed face`,
       priority: 8
     });
   }
@@ -229,10 +253,15 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   
   // Low Point Distance + Drills
   if (Math.abs(lowPointDistance) > 0.5 || (attackAngle < -4 && dynamicLoft < 20)) {
+    let reason = '';
+    if (Math.abs(lowPointDistance) > 0.5) reason = `Your low point is ${lowPointDistance.toFixed(1)}" from the ball (should be 0-0.5")`;
+    else reason = `Your attack angle is ${attackAngle.toFixed(1)}° with low dynamic loft`;
+    
     videoRecommendations.push({
       title: "Low Point Distance + Drills (Low Point Lesson 1)",
       description: "Eliminate fat shots and improve ball striking consistency",
       url: "https://scratchgc.wistia.com/medias/6cm1m86qgi",
+      reason: reason,
       priority: 7
     });
   }
@@ -298,6 +327,7 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
       title: "Smash Factor (KPIs – Lesson 3)",
       description: "Maximize energy transfer from club to ball",
       url: "https://scratchgc.wistia.com/medias/d7olpgqvqj",
+      reason: `Your smash factor is ${smashFactor.toFixed(2)} (target: ${clubCategory === 'driver' ? '1.45+' : '1.35+'})`,
       priority: 4
     });
   }
