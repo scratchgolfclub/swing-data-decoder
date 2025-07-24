@@ -49,57 +49,121 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 p-4">
-      <div className="text-center max-w-2xl mx-auto">
-        <div className="mb-8">
-          <div className="flex justify-center mb-6">
-            <img 
-              src="/lovable-uploads/e186c3b0-ca71-4cc6-aed5-174afc8c4911.png" 
-              alt="Scratch Golf Club" 
-              className="h-20 w-auto object-contain"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-background via-surface to-background">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(142,76,36,0.1),transparent_50%)]"></div>
+      
+      <div className="relative flex items-center justify-center min-h-screen p-6">
+        <div className="w-full max-w-4xl mx-auto">
+          {/* Hero Section */}
+          <div className="text-center mb-16 animate-fade-up">
+            <div className="mb-8">
+              <img 
+                src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
+                alt="SGC Logo" 
+                className="h-24 w-auto mx-auto mb-8 animate-float"
+              />
+            </div>
+            
+            <h1 className="text-7xl md:text-8xl font-display font-bold mb-6 tracking-tight">
+              <span className="gradient-text">AI Golf</span>
+              <br />
+              <span className="text-foreground/80">Analysis</span>
+            </h1>
+            
+            <p className="text-xl md:text-2xl text-muted-foreground mb-4 font-light leading-relaxed max-w-2xl mx-auto">
+              Upload your TrackMan data and discover which lesson to watch next
+            </p>
+            
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground/70">
+              <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
+              <span>Powered by professional golf instruction</span>
+              <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
+            </div>
           </div>
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            AI lessons based on your data
-          </h1>
-          <p className="text-xl text-muted-foreground mb-8">
-            Upload a photo of your TrackMan data and learn which lesson to watch
-          </p>
-        </div>
 
-        <div className="bg-card rounded-lg shadow-lg p-8 border">
-          <div className="space-y-8">
-            {/* Step 1: Club Selection */}
-            <ClubSelection 
-              selectedClub={selectedClub}
-              onClubSelect={setSelectedClub}
-            />
-            
-            {/* Step 2: Photo Upload */}
-            <PhotoUpload 
-              selectedFiles={selectedFiles}
-              onFilesSelect={handleFilesSelect}
-              onFileRemove={handleFileRemove}
-              canUpload={!!selectedClub}
-            />
-            
-            {/* Step 3: Submit */}
-            {selectedFiles.length > 0 && selectedClub && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 justify-center">
-                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
-                    3
+          {/* Main Card */}
+          <div className="modern-card p-10 max-w-2xl mx-auto animate-scale-in">
+            <div className="space-y-12">
+              {/* Step 1: Club Selection */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-bold shadow-glow">
+                    1
                   </div>
-                  <h3 className="text-lg font-semibold">Analyze Your Data</h3>
+                  <div>
+                    <h3 className="text-2xl font-display font-semibold">Select Your Club</h3>
+                    <p className="text-muted-foreground">Choose the club you hit for this session</p>
+                  </div>
                 </div>
                 
-                <div className="flex justify-center">
-                  <Button onClick={handleSubmit} className="bg-primary hover:bg-primary/90">
-                    Analyze My Swing{selectedFiles.length > 1 ? 's' : ''}
-                  </Button>
-                </div>
+                <ClubSelection 
+                  selectedClub={selectedClub}
+                  onClubSelect={setSelectedClub}
+                />
               </div>
-            )}
+              
+              {/* Step 2: Photo Upload */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold transition-all duration-300 ${
+                    selectedClub 
+                      ? 'bg-gradient-to-br from-primary to-primary-600 text-primary-foreground shadow-glow' 
+                      : 'bg-muted text-muted-foreground'
+                  }`}>
+                    2
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-display font-semibold">Upload Your Data</h3>
+                    <p className="text-muted-foreground">Take or upload photos of your TrackMan screen</p>
+                  </div>
+                </div>
+                
+                <PhotoUpload 
+                  selectedFiles={selectedFiles}
+                  onFilesSelect={handleFilesSelect}
+                  onFileRemove={handleFileRemove}
+                  canUpload={!!selectedClub}
+                />
+              </div>
+              
+              {/* Step 3: Submit */}
+              {selectedFiles.length > 0 && selectedClub && (
+                <div className="space-y-6 animate-slide-up">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-bold shadow-glow">
+                      3
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-display font-semibold">Get Your Analysis</h3>
+                      <p className="text-muted-foreground">AI will analyze your swing data</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-center pt-4">
+                    <Button 
+                      onClick={handleSubmit} 
+                      className="modern-button bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 text-primary-foreground px-12 py-4 text-lg font-semibold rounded-2xl shadow-glow hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <span className="relative z-10">
+                        Analyze My Swing{selectedFiles.length > 1 ? 's' : ''}
+                      </span>
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Footer */}
+          <div className="text-center mt-16 space-y-4 animate-fade-in">
+            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground/60">
+              <span>Professional Analysis</span>
+              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full"></div>
+              <span>Instant Results</span>
+              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full"></div>
+              <span>Expert Recommendations</span>
+            </div>
           </div>
         </div>
       </div>
