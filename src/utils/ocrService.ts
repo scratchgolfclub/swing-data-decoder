@@ -22,21 +22,42 @@ export const extractTextFromImage = async (imageFile: File): Promise<string> => 
     // Convert image to base64
     const imageBase64 = await fileToBase64(imageFile);
     
-    // Call the Supabase edge function
-    const { data, error } = await supabase.functions.invoke('openai-ocr', {
-      body: { imageBase64 }
+    // Try OpenAI first
+    try {
+      const { data, error } = await supabase.functions.invoke('openai-ocr', {
+        body: { imageBase64 }
+      });
+      
+      if (!error && data?.text) {
+        console.log('✅ OpenAI OCR extraction completed:', data.text.length, 'characters');
+        return data.text;
+      }
+      
+      console.warn('⚠️ OpenAI OCR failed, falling back to Tesseract:', error?.message);
+    } catch (openaiError) {
+      console.warn('⚠️ OpenAI OCR failed, falling back to Tesseract:', openaiError);
+    }
+    
+    // Fallback to Tesseract OCR
+    console.log('🔄 Using Tesseract OCR fallback...');
+    const { extractTextWithMultiOCR, getBestOCRResult } = await import('./multiOcrService');
+    
+    const results = await extractTextWithMultiOCR(imageFile, {
+      enableTesseract: true,
+      enableCanvasOCR: true,
+      enablePaddleOCR: false,
+      enableAdvancedPreprocessing: true,
+      preferredEngine: 'auto'
     });
     
-    if (error) {
-      throw new Error(`OCR function error: ${error.message}`);
+    const text = getBestOCRResult(results);
+    
+    if (!text || text.trim().length === 0) {
+      throw new Error('No text could be extracted from the image');
     }
     
-    if (!data?.text) {
-      throw new Error('No text extracted from image');
-    }
-    
-    console.log('✅ OCR extraction completed:', data.text.length, 'characters');
-    return data.text;
+    console.log('✅ Tesseract OCR extraction completed:', text.length, 'characters');
+    return text;
     
   } catch (error) {
     console.error('❌ OCR extraction failed:', error);
@@ -46,26 +67,13 @@ export const extractTextFromImage = async (imageFile: File): Promise<string> => 
 
 export const extractTrackmanData = async (imageFile: File) => {
   try {
-    console.log('🔍 Starting TrackMan data extraction using OpenAI Vision...');
+    console.log('🔍 Starting TrackMan data extraction...');
     
-    // Convert image to base64
-    const imageBase64 = await fileToBase64(imageFile);
-    
-    // Call the Supabase edge function for TrackMan-specific extraction
-    const { data, error } = await supabase.functions.invoke('openai-ocr', {
-      body: { imageBase64 }
-    });
-    
-    if (error) {
-      throw new Error(`OCR function error: ${error.message}`);
-    }
-    
-    if (!data?.text) {
-      throw new Error('No text extracted from image');
-    }
+    // Extract text using our OCR service (with fallback)
+    const extractedText = await extractTextFromImage(imageFile);
     
     // Parse the extracted text to get structured TrackMan data
-    const extractedData = parseTrackmanText(data.text);
+    const extractedData = parseTrackmanText(extractedText);
     
     console.log(`✅ Successfully extracted ${Object.keys(extractedData).length} data points`);
     return extractedData;
