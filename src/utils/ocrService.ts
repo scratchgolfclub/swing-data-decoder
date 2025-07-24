@@ -284,18 +284,42 @@ const expandRegion = (
   let minX = startX, maxX = startX;
   let minY = startY, maxY = startY;
   
-  // Expand horizontally
-  while (minX > 0 && isLowEdgeArea(edges, width, minX - 1, startY)) minX--;
-  while (maxX < width - 1 && isLowEdgeArea(edges, width, maxX + 1, startY)) maxX++;
+  // Add iteration limits to prevent infinite loops
+  const maxExpansion = Math.min(width, height) / 4; // Max 25% of image size
+  let iterations = 0;
   
-  // Expand vertically
-  while (minY > 0 && isLowEdgeArea(edges, width, startX, minY - 1)) minY--;
-  while (maxY < height - 1 && isLowEdgeArea(edges, width, startX, maxY + 1)) maxY++;
+  // Expand horizontally with limits
+  while (minX > 0 && iterations < maxExpansion && isLowEdgeArea(edges, width, minX - 1, startY)) {
+    minX--;
+    iterations++;
+  }
+  iterations = 0;
+  while (maxX < width - 1 && iterations < maxExpansion && isLowEdgeArea(edges, width, maxX + 1, startY)) {
+    maxX++;
+    iterations++;
+  }
   
-  // Mark region as visited
-  for (let y = minY; y <= maxY; y += 5) {
-    for (let x = minX; x <= maxX; x += 5) {
-      visited.add(y * width + x);
+  // Expand vertically with limits
+  iterations = 0;
+  while (minY > 0 && iterations < maxExpansion && isLowEdgeArea(edges, width, startX, minY - 1)) {
+    minY--;
+    iterations++;
+  }
+  iterations = 0;
+  while (maxY < height - 1 && iterations < maxExpansion && isLowEdgeArea(edges, width, startX, maxY + 1)) {
+    maxY++;
+    iterations++;
+  }
+  
+  // Mark region as visited (with bounds checking)
+  const regionSize = (maxX - minX + 1) * (maxY - minY + 1);
+  if (regionSize < 10000) { // Only mark reasonable-sized regions to prevent Set overflow
+    for (let y = minY; y <= maxY; y += 5) {
+      for (let x = minX; x <= maxX; x += 5) {
+        if (y >= 0 && y < height && x >= 0 && x < width) {
+          visited.add(y * width + x);
+        }
+      }
     }
   }
   
