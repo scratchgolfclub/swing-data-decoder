@@ -30,90 +30,145 @@ const enhancedPreprocessing = (imageFile: File): Promise<string> => {
         return;
       }
       
-      // Set canvas size to image size
-      canvas.width = img.width;
-      canvas.height = img.height;
+      // Scale up image for better OCR accuracy
+      const scale = 3;
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
       
-      // Draw image
-      ctx.drawImage(img, 0, 0);
+      // Use high-quality scaling
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       
       // Get image data for processing
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       
-      // TrackMan-specific preprocessing
+      // First pass: Convert to grayscale with gamma correction
       for (let i = 0; i < data.length; i += 4) {
-        // Convert to grayscale
-        const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
         
-        // Aggressive contrast enhancement for text clarity
-        let enhanced;
-        if (gray > 180) {
-          // Very light areas - pure white
-          enhanced = 255;
-        } else if (gray < 80) {
-          // Dark areas - pure black for text
-          enhanced = 0;
+        // Apply gamma correction before grayscale conversion
+        const gammaR = Math.pow(r / 255, 0.8) * 255;
+        const gammaG = Math.pow(g / 255, 0.8) * 255;
+        const gammaB = Math.pow(b / 255, 0.8) * 255;
+        
+        const gray = gammaR * 0.299 + gammaG * 0.587 + gammaB * 0.114;
+        
+        data[i] = gray;
+        data[i + 1] = gray;
+        data[i + 2] = gray;
+      }
+      
+      // Second pass: Adaptive thresholding for better text clarity
+      const threshold = calculateOtsuThreshold(data, canvas.width, canvas.height);
+      console.log(`📊 Using adaptive threshold: ${threshold}`);
+      
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = data[i];
+        
+        // Apply adaptive threshold with slight smoothing
+        let finalValue;
+        if (gray > threshold + 20) {
+          finalValue = 255; // White background
+        } else if (gray < threshold - 20) {
+          finalValue = 0;   // Black text
         } else {
-          // Mid-tones - binary threshold
-          enhanced = gray > 128 ? 255 : 0;
+          // Smooth transition for edge pixels
+          finalValue = gray > threshold ? 255 : 0;
         }
         
-        data[i] = enhanced;     // R
-        data[i + 1] = enhanced; // G
-        data[i + 2] = enhanced; // B
-        // Alpha stays the same
+        data[i] = finalValue;
+        data[i + 1] = finalValue;
+        data[i + 2] = finalValue;
       }
       
-      // Apply morphological operations for text cleanup
-      const processedData = new Uint8ClampedArray(data);
+      // Apply noise reduction
+      applyMedianFilter(data, canvas.width, canvas.height);
       
-      // Erosion to remove noise
-      for (let y = 1; y < canvas.height - 1; y++) {
-        for (let x = 1; x < canvas.width - 1; x++) {
-          const idx = (y * canvas.width + x) * 4;
-          
-          // Check 3x3 neighborhood
-          let minValue = 255;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const nIdx = ((y + dy) * canvas.width + (x + dx)) * 4;
-              minValue = Math.min(minValue, processedData[nIdx]);
-            }
-          }
-          
-          data[idx] = data[idx + 1] = data[idx + 2] = minValue;
-        }
-      }
-      
-      // Dilation to restore text thickness
-      const dilatedData = new Uint8ClampedArray(data);
-      for (let y = 1; y < canvas.height - 1; y++) {
-        for (let x = 1; x < canvas.width - 1; x++) {
-          const idx = (y * canvas.width + x) * 4;
-          
-          let maxValue = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const nIdx = ((y + dy) * canvas.width + (x + dx)) * 4;
-              maxValue = Math.max(maxValue, dilatedData[nIdx]);
-            }
-          }
-          
-          data[idx] = data[idx + 1] = data[idx + 2] = maxValue;
-        }
-      }
-      
-      // Put enhanced image data back
+      // Put processed data back
       ctx.putImageData(imageData, 0, 0);
       
-      // Convert to data URL
+      console.log('✅ Enhanced preprocessing completed');
       resolve(canvas.toDataURL('image/png'));
     };
     
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = URL.createObjectURL(imageFile);
   });
+};
+
+// Calculate Otsu's threshold for optimal binarization
+const calculateOtsuThreshold = (data: Uint8ClampedArray, width: number, height: number): number => {
+  const histogram = new Array(256).fill(0);
+  const totalPixels = width * height;
+  
+  // Build histogram
+  for (let i = 0; i < data.length; i += 4) {
+    histogram[Math.floor(data[i])]++;
+  }
+  
+  let sum = 0;
+  for (let i = 0; i < 256; i++) {
+    sum += i * histogram[i];
+  }
+  
+  let sumB = 0;
+  let wB = 0;
+  let wF = 0;
+  let varMax = 0;
+  let threshold = 0;
+  
+  for (let t = 0; t < 256; t++) {
+    wB += histogram[t];
+    if (wB === 0) continue;
+    
+    wF = totalPixels - wB;
+    if (wF === 0) break;
+    
+    sumB += t * histogram[t];
+    
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    
+    const varBetween = wB * wF * (mB - mF) * (mB - mF);
+    
+    if (varBetween > varMax) {
+      varMax = varBetween;
+      threshold = t;
+    }
+  }
+  
+  return threshold;
+};
+
+// Apply median filter for noise reduction
+const applyMedianFilter = (data: Uint8ClampedArray, width: number, height: number) => {
+  const filtered = new Uint8ClampedArray(data);
+  
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4;
+      
+      // Get 3x3 neighborhood
+      const neighbors: number[] = [];
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nIdx = ((y + dy) * width + (x + dx)) * 4;
+          neighbors.push(filtered[nIdx]);
+        }
+      }
+      
+      // Find median
+      neighbors.sort((a, b) => a - b);
+      const median = neighbors[4]; // Middle value of 9 elements
+      
+      data[idx] = median;
+      data[idx + 1] = median;
+      data[idx + 2] = median;
+    }
+  }
 };
 
 // Detect individual tiles in the TrackMan interface using computer vision
