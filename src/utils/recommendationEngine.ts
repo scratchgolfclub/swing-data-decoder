@@ -322,14 +322,14 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
     )
     .map(({ priority, ...video }) => video); // Remove priority from final output
   
-  // Return top 6-8 most relevant videos based on data
-  return uniqueVideos.slice(0, 8);
+  // Return top 1-3 most critical videos only
+  return uniqueVideos.slice(0, 3);
 };
 
 export const getTextRecommendations = (swings: any[], selectedClub: string = '') => {
   // If no swings data, return default
   if (!swings || swings.length === 0) {
-    return `📊 No swing data available. Please upload TrackMan data photos for analysis.`;
+    return `📊 No swing data available. Please upload your TrackMan data photos for analysis.`;
   }
   
   // Get club category for context
@@ -356,9 +356,9 @@ export const getTextRecommendations = (swings: any[], selectedClub: string = '')
       .join(', ');
     
     if (inconsistentMetrics) {
-      consistencyNote = `\n\n📊 Consistency Analysis (${swings.length} swings):\nYou show inconsistency in: ${inconsistentMetrics}. This suggests focusing on setup fundamentals and repeatable delivery patterns.\n\n`;
+      consistencyNote = `\n\n📊 Consistency Check (${swings.length} swings):\nYour swing shows some inconsistency in: ${inconsistentMetrics}. This suggests working on your setup and developing a more repeatable swing.\n\n`;
     } else {
-      consistencyNote = `\n\n📊 Consistency Analysis (${swings.length} swings):\nGood news! Your swing metrics are relatively consistent across swings. This shows good fundamentals and repeatable patterns.\n\n`;
+      consistencyNote = `\n\n📊 Consistency Check (${swings.length} swings):\nGood news! Your swing is quite consistent across multiple shots. This shows you have solid fundamentals.\n\n`;
     }
   }
   
@@ -367,116 +367,114 @@ export const getTextRecommendations = (swings: any[], selectedClub: string = '')
   let outOfRangeIssues: string[] = [];
   
   if (clubCategory === 'driver') {
-    clubSpecificContext = `\n🚀 Driver Analysis:\nOptimal ranges: AoA +0° to +6°, Club Path -1° to +3°, Face-to-Path ≤1°, Spin Rate 2000-3000 rpm\n\n`;
+    clubSpecificContext = `\n🚀 Driver Goals:\nOptimal ranges: Upward strike (+0° to +6°), Straight path (-1° to +3°), Square face (within 1°), Good spin (2000-3000 rpm)\n\n`;
     
-    if (attackAngle < 0) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) is negative - should be positive for driver distance`);
-    if (Math.abs(faceToPath) > 1) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±1° - work on consistency`);
-    if (spinRate > 3000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) is high - work on upward strike`);
+    if (attackAngle < 0) outOfRangeIssues.push(`You're hitting down on the driver (${attackAngle.toFixed(1)}°) - try hitting up for more distance`);
+    if (Math.abs(faceToPath) > 1) outOfRangeIssues.push(`Your clubface isn't square to your swing path (${faceToPath.toFixed(1)}°) - work on face control`);
+    if (spinRate > 3000) outOfRangeIssues.push(`Your ball spin is high (${spinRate} rpm) - try hitting more upward`);
   }
   
   else if (clubCategory === 'woods') {
-    clubSpecificContext = `\n🌲 Woods/Hybrids Analysis:\nOptimal ranges: AoA -2° to +2°, Club Path -1° to +3°, Face-to-Path ≤2°, Spin Rate 3000-4500 rpm\n\n`;
+    clubSpecificContext = `\n🌲 Woods/Hybrids Goals:\nOptimal ranges: Shallow strike (-2° to +2°), Straight path (-1° to +3°), Square face (within 2°), Good spin (3000-4500 rpm)\n\n`;
     
-    if (attackAngle < -2 || attackAngle > 2) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-2° to +2°)`);
-    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
-    if (spinRate < 3000 || spinRate > 4500) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (3000-4500)`);
+    if (attackAngle < -2 || attackAngle > 2) outOfRangeIssues.push(`Your strike angle (${attackAngle.toFixed(1)}°) is too steep or shallow - aim for a sweeping motion`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Your clubface angle (${faceToPath.toFixed(1)}°) needs work for straighter shots`);
+    if (spinRate < 3000 || spinRate > 4500) outOfRangeIssues.push(`Your ball spin (${spinRate} rpm) could be optimized for better distance`);
   }
   
   else if (clubCategory === 'irons') {
-    clubSpecificContext = `\n🛠️ Irons Analysis:\nOptimal ranges: AoA -4° to -2°, Club Path -2° to +2°, Face-to-Path ≤2°, Spin Rate 5000-7000 rpm\n\n`;
+    clubSpecificContext = `\n🛠️ Irons Goals:\nOptimal ranges: Downward strike (-4° to -2°), Straight path (-2° to +2°), Square face (within 2°), Good spin (5000-7000 rpm)\n\n`;
     
-    if (attackAngle > -2 || attackAngle < -4) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-4° to -2°)`);
-    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
-    if (spinRate < 5000 || spinRate > 7000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (5000-7000)`);
+    if (attackAngle > -2 || attackAngle < -4) outOfRangeIssues.push(`Your strike angle (${attackAngle.toFixed(1)}°) - try hitting down on the ball more for better contact`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Your clubface angle (${faceToPath.toFixed(1)}°) could be straighter for more accurate shots`);
+    if (spinRate < 5000 || spinRate > 7000) outOfRangeIssues.push(`Your ball spin (${spinRate} rpm) could be improved for better ball flight`);
   }
   
   else if (clubCategory === 'wedges') {
-    clubSpecificContext = `\n⛳ Wedges Analysis:\nOptimal ranges: AoA -6° to -4°, Club Path -2° to +2°, Face-to-Path ≤2°, Spin Rate 7000-9000 rpm\n\n`;
+    clubSpecificContext = `\n⛳ Wedges Goals:\nOptimal ranges: Steep downward strike (-6° to -4°), Straight path (-2° to +2°), Square face (within 2°), High spin (7000-9000 rpm)\n\n`;
     
-    if (attackAngle > -4 || attackAngle < -6) outOfRangeIssues.push(`Attack angle (${attackAngle.toFixed(1)}°) outside optimal range (-6° to -4°)`);
-    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Face-to-path (${faceToPath.toFixed(1)}°) is outside ±2°`);
-    if (spinRate < 7000 || spinRate > 9000) outOfRangeIssues.push(`Spin rate (${spinRate} rpm) outside optimal range (7000-9000)`);
+    if (attackAngle > -4 || attackAngle < -6) outOfRangeIssues.push(`Your strike angle (${attackAngle.toFixed(1)}°) - try hitting down steeper for better wedge contact`);
+    if (Math.abs(faceToPath) > 2) outOfRangeIssues.push(`Your clubface angle (${faceToPath.toFixed(1)}°) could be improved for more accurate short shots`);
+    if (spinRate < 7000 || spinRate > 9000) outOfRangeIssues.push(`Your ball spin (${spinRate} rpm) could be optimized for better wedge control`);
   }
   
-  // Build out-of-range issues context
   let rangeIssuesContext = '';
   if (outOfRangeIssues.length > 0) {
-    rangeIssuesContext = `\n⚠️ Areas Outside Optimal Ranges:\n${outOfRangeIssues.map(issue => `• ${issue}`).join('\n')}\n\n`;
+    rangeIssuesContext = `\n⚠️ Areas to Improve:\n${outOfRangeIssues.map(issue => `• ${issue}`).join('\n')}\n\n`;
   }
   
-  // Specific pattern analysis - Out-to-in with open face (fade pattern)  
+  // Specific pattern analysis - Out-to-in with open face (fade/slice pattern)  
   if (clubPath < -2 && faceToPath > 1) {
-    return `🧠 Understanding Club Path & Face Angle${clubSpecificContext}In simple terms:
+    return `🧠 Understanding Your Ball Flight${clubSpecificContext}Let me explain what's happening with your swing in simple terms:
 
-Club Path is the direction the club is traveling at impact — either right (in-to-out), left (out-to-in), or neutral.
+**Club Path** is the direction your club is moving when it hits the ball — either to the right, left, or straight toward the target.
 
-Face Angle is where the clubface is pointing relative to the target at impact.
+**Clubface Angle** is where the clubface is pointing when it hits the ball.
 
-The relationship between face angle and club path determines the ball's starting direction and curve.${consistencyNote}${rangeIssuesContext}In your case:
+The relationship between these two determines where your ball starts and how it curves.${consistencyNote}${rangeIssuesContext}**What's Happening in Your Swing:**
 
-Your club is traveling ${Math.abs(clubPath).toFixed(1)}° left of target (out-to-in).
+Your club is moving ${Math.abs(clubPath).toFixed(1)}° to the left of your target (called an "outside-in" swing path).
 
-Your face is ${Math.abs(faceAngle).toFixed(1)}° closed to target, but ${faceToPath.toFixed(1)}° open to your path, which is why your shots are fading slightly right.
+Your clubface is pointing ${Math.abs(faceAngle).toFixed(1)}° closed to the target, but ${faceToPath.toFixed(1)}° open compared to where your club is swinging.
 
-🌀 This is a textbook fade setup — ball starts slightly left and curves back right.
+🌀 This creates a **fade pattern** — your ball starts slightly left and curves back to the right.
 
-🛠️ What to Work On: Neutralizing Club Path
+**What to Work On: Getting a Straighter Swing Path**
 
-Your face-to-path relationship is solid, but the out-to-in club path is the root of the fade. To hit straighter or even draw-biased shots, we want to move your club path closer to 0°, or even slightly positive (in-to-out).
+Your clubface control is actually pretty good, but the outside-in swing path is causing the fade. To hit straighter shots (or even draws), we want to get your club swinging more straight or slightly to the right.
 
-✅ Drills & Feel Changes to Try:
+✅ **Simple Drills to Try:**
 
-Alignment Stick Drill:
-Place an alignment stick on the ground pointing slightly right of your target (1–2 yards).
-Feel your swing path trace along the stick on your downswing to promote an in-to-out path.
+**Alignment Stick Drill:**
+Place a stick or club on the ground pointing slightly right of your target.
+Practice swinging along this line to feel an inside-out path.
 
-Split Hand Drill:
-Grip the club with your normal top hand (left hand for righties).
-Place your bottom hand halfway down the shaft.
-Make slow swings feeling the club move from inside to out — this exaggerates the correct path.
+**"Swing to Right Field" Feel:**
+Pick a target to the right of where you actually want the ball to go.
+Practice swinging toward that target to encourage a straighter path.
 
-"Swing to Right Field" Feel:
-On the range, pick a target to the right of your actual target.
-Make swings visualizing the ball launching in that direction — this encourages shallowing and an in-to-out move.
+**Setup Check:**
+Make sure your feet, hips, and shoulders aren't aimed left of your target — this often causes the outside-in swing naturally.
 
-Check Setup Alignment:
-Ensure your feet, hips, and shoulders aren't aimed left of target — this often promotes an out-to-in path subconsciously.
-
-🔁 Goal:
-Shift club path from ${clubPath.toFixed(1)}° closer to neutral (0°) or even slightly positive (+1 to +2°).
-Maintain a face angle that's 1–2° closed to the path to produce a slight draw or straight shot.`;
+🎯 **Goal:**
+Move your swing path from ${clubPath.toFixed(1)}° closer to straight (0°) or even slightly to the right (+1 to +2°).
+Keep your clubface control as it is — you're doing well there!`;
   }
   
   // Additional patterns based on video context
   
   // Strong slice pattern
   if (clubPath < -2 && faceToPath > 3) {
-    return `🌪️ Classic Slice Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows a strong slice pattern:
-- Club Path: ${clubPath.toFixed(1)}° (out-to-in)
-- Face to Path: ${faceToPath.toFixed(1)}° (open to path)
+    return `🌪️ Strong Slice Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows a strong slice pattern:
+- Swing Path: ${clubPath.toFixed(1)}° (swinging left)
+- Clubface: ${faceToPath.toFixed(1)}° (open to your swing)
 
-This creates excessive left-to-right curve. Focus on:
-1. Grip adjustments (strengthen lead hand)
-2. Setup alignment (check shoulder position)
-3. Swing path drills (in-to-out feel)
-4. Release pattern (active forearm rotation)
+This creates a lot of left-to-right curve. Here's what to focus on:
 
-Priority: Work on swing path first, then face control.`;
+**Priority Actions:**
+1. **Grip Check** - Try strengthening your lead hand (show more knuckles)
+2. **Setup Position** - Check that your shoulders aren't aimed left
+3. **Swing Path** - Practice swinging more to the right
+4. **Release** - Work on rotating your hands through impact
+
+**Most Important:** Start with your grip and setup first, then work on swing path.`;
   }
   
   // Hook pattern
   if (clubPath > 5 && faceToPath < -3) {
-    return `🪝 Strong Hook Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows excessive draw/hook:
-- Club Path: ${clubPath.toFixed(1)}° (in-to-out)
-- Face to Path: ${faceToPath.toFixed(1)}° (closed to path)
+    return `🪝 Strong Hook Pattern Detected${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your data shows a strong hook/draw:
+- Swing Path: ${clubPath.toFixed(1)}° (swinging right)
+- Clubface: ${faceToPath.toFixed(1)}° (closed to your swing)
 
-This creates excessive right-to-left curve. Focus on:
-1. Grip adjustments (weaken both hands slightly)
-2. Setup (check alignment and ball position)
-3. Release pattern (more passive through impact)
-4. Path control (feel more neutral delivery)
+This creates too much right-to-left curve. Here's what to focus on:
 
-Priority: Moderate the release while maintaining good path.`;
+**Priority Actions:**
+1. **Grip Check** - Try weakening both hands slightly (show fewer knuckles)
+2. **Setup** - Check your alignment and ball position
+3. **Release** - Focus on keeping hands quieter through impact
+4. **Swing Path** - Work on a more neutral swing direction
+
+**Most Important:** Start with grip adjustments while keeping your good swing path.`;
   }
   
   // Inconsistency focus
@@ -485,32 +483,35 @@ Priority: Moderate the release while maintaining good path.`;
       .sort(([,a], [,b]) => b - a)[0];
     
     if (mostInconsistent) {
-      return `🎯 Consistency Focus Needed${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your biggest inconsistency is in ${mostInconsistent[0]} (varies by ±${mostInconsistent[1].toFixed(1)}°).
+      return `🎯 Consistency is Key${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Your biggest area for improvement is consistency in ${mostInconsistent[0]} (varies by ±${mostInconsistent[1].toFixed(1)}°).
 
-This suggests focusing on:
-1. Setup fundamentals (posture, alignment, ball position)
-2. Tempo and rhythm consistency
-3. Pre-shot routine development
-4. Impact position awareness
+**What This Means:**
+Your swing changes quite a bit from shot to shot, which makes it hard to predict where the ball will go.
 
-Work on repeating the same setup and feel, rather than making big swing changes.`;
+**Focus Areas:**
+1. **Setup Routine** - Do the same thing before every shot
+2. **Tempo** - Keep the same rhythm on every swing  
+3. **Practice** - Work on repeating the same feel
+4. **Fundamentals** - Get your posture, grip, and alignment consistent
+
+**Key Point:** Right now, focus more on making the same swing every time rather than making big changes to your technique.`;
     }
   }
   
   // Default comprehensive analysis with club-specific context
-  return `📊 Your Swing Analysis${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Based on your TrackMan data, here are the key areas to focus on:
+  return `📊 Your Swing Summary${clubSpecificContext}${consistencyNote}${rangeIssuesContext}Based on your swing data, here are the key things to know:
 
-🎯 Ball Flight: Your current setup produces ${clubPath < 0 ? 'fade' : clubPath > 2 ? 'draw' : 'relatively straight'} patterns.
+🎯 **Ball Flight Pattern:** Your current swing typically produces ${clubPath < 0 ? 'fade (left-to-right)' : clubPath > 2 ? 'draw (right-to-left)' : 'relatively straight'} shots.
 
-🔧 Primary Focus Areas:
-1. Club Path: Currently ${clubPath.toFixed(1)}° - ${Math.abs(clubPath) > 2 ? 'work on neutralizing' : 'maintain good control'}
-2. Face Control: Face to path is ${faceToPath.toFixed(1)}° - ${Math.abs(faceToPath) > 2 ? 'improve face control' : 'good relationship'}
-3. Impact Quality: Continue developing consistent strike patterns
+🔧 **Main Focus Areas:**
+1. **Swing Direction:** Currently ${clubPath.toFixed(1)}° - ${Math.abs(clubPath) > 2 ? 'work on getting this more straight' : 'this looks pretty good'}
+2. **Clubface Control:** Face angle is ${faceToPath.toFixed(1)}° relative to your swing - ${Math.abs(faceToPath) > 2 ? 'work on squaring the face' : 'this is in good shape'}
+3. **Contact Quality:** Continue working on solid, consistent contact
 
-💡 Practice Recommendations:
-• Focus on tempo and rhythm in your swing
-• Work on impact position drills
-• Practice alignment and setup consistency${swings.length > 1 ? '\n• Use multiple swings to monitor consistency trends' : ''}
+💡 **Simple Practice Tips:**
+• Focus on making the same swing every time
+• Work on your setup routine and fundamentals
+• Practice with a consistent tempo and rhythm${swings.length > 1 ? '\n• Use multiple shots to check your consistency patterns' : ''}
 
-Keep up the great work and continue monitoring your progress with TrackMan data!`;
+Keep up the great work! Small improvements in consistency will make a big difference in your game.`;
 };
