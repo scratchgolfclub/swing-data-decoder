@@ -27,40 +27,24 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4o',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a golf data extraction expert. Extract ALL visible TrackMan metrics from images with perfect accuracy. Include every single data point you can see, no matter how small or unclear.'
-          },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: `Extract ALL TrackMan launch monitor data from this screenshot. Be extremely thorough and extract EVERY metric visible, including:
-
-CLUB DATA: Club Speed, Attack Angle, Club Path, Dynamic Loft, Face Angle, Spin Loft, Face to Path, Swing Plane, Swing Direction, Low Point Distance, Impact Offset, Impact Height, Dynamic Lie
-
-BALL DATA: Ball Speed, Smash Factor, Launch Angle, Launch Direction, Spin Rate, Spin Axis
-
-FLIGHT DATA: Curve, Height, Carry, Total, Side, Side Total, Landing Angle, Hang Time, Last Data
-
-Format EXACTLY as: "METRIC_NAME - VALUE UNIT"
-Example: "Club Speed - 98.5 mph"
-Extract every single number and label you can see, even if partially obscured. Be extremely thorough.`
+                text: 'Scrape all TrackMan swing data from this image. Return values line by line, including data labels and units (mph, deg, mm, ft, yds, etc.). Be precise and match the visual layout as best as possible.'
               },
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/png;base64,${imageBase64}`
+                  url: `data:image/jpeg;base64,${imageBase64}`
                 }
               }
             ]
           }
-        ],
-        max_tokens: 2000,
-        temperature: 0.1
+        ]
       }),
     });
 
