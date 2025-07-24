@@ -52,8 +52,8 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
               Analyze Another Photo
             </Button>
             <img 
-              src={scratchLogo} 
-              alt="Scratch Golf Club" 
+              src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
+              alt="SGC Logo" 
               className="h-12 w-auto"
             />
           </div>

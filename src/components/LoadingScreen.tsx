@@ -32,8 +32,8 @@ export const LoadingScreen = () => {
         {/* Logo */}
         <div className="mb-8">
           <img 
-            src={scratchLogo} 
-            alt="Scratch Golf Club" 
+            src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
+            alt="SGC Logo" 
             className="h-16 w-auto mx-auto mb-8 opacity-90"
           />
         </div>
