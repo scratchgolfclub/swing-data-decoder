@@ -38,12 +38,20 @@ const Context = () => {
   };
 
   const handleThumbnailUpload = async (videoId: string, file: File) => {
+    console.log('Starting thumbnail upload for:', videoId, file.name, file.size);
     setUploadingThumbnail(videoId);
+    
     try {
       const video = videoContexts.find(v => v.id === videoId);
-      if (!video) return;
+      if (!video) {
+        console.error('Video not found for ID:', videoId);
+        throw new Error('Video not found');
+      }
       
-      await ThumbnailService.saveThumbnail(video.link, file);
+      console.log('Found video:', video.title, 'URL:', video.link);
+      
+      const result = await ThumbnailService.saveThumbnail(video.link, file);
+      console.log('Thumbnail saved successfully:', result.substring(0, 50) + '...');
       
       // Force a re-render by updating the state
       setVideoContexts(prev => [...prev]);
@@ -54,23 +62,29 @@ const Context = () => {
         duration: 3000,
       });
     } catch (error) {
+      console.error('Error uploading thumbnail:', error);
       toast({
         title: "Error",
-        description: "Failed to upload thumbnail",
+        description: `Failed to upload thumbnail: ${error.message || 'Unknown error'}`,
         variant: "destructive",
         duration: 3000,
       });
     } finally {
+      console.log('Upload process completed, clearing uploading state');
       setUploadingThumbnail(null);
     }
   };
 
   const handleFileUpload = (videoId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File upload triggered for video:', videoId);
     const file = event.target.files?.[0];
+    
     if (file) {
+      console.log('File selected:', file.name, file.type, file.size);
       if (file.type.startsWith('image/')) {
         handleThumbnailUpload(videoId, file);
       } else {
+        console.error('Invalid file type:', file.type);
         toast({
           title: "Error",
           description: "Please select an image file",
@@ -78,7 +92,12 @@ const Context = () => {
           duration: 3000,
         });
       }
+    } else {
+      console.log('No file selected');
     }
+    
+    // Clear the input value so the same file can be selected again
+    event.target.value = '';
   };
 
   const groupedVideos = videoContexts.reduce((acc, video) => {
