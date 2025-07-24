@@ -593,7 +593,7 @@ const Context = () => {
             <CardContent>
               <Accordion type="single" collapsible>
                 <AccordionItem value="wedges">
-                  <AccordionTrigger>⛳ Wedges (60°–46°)</AccordionTrigger>
+                  <AccordionTrigger>⛳ Wedges (SW, LW, PW, 60°–46°)</AccordionTrigger>
                   <AccordionContent className="space-y-4">
                     <div>
                       <h4 className="font-medium text-sm text-card-foreground mb-2">Good Ranges:</h4>
