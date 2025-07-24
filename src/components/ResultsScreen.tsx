@@ -12,8 +12,10 @@ interface ResultsScreenProps {
 }
 
 export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
-  const videoRecommendations = getVideoRecommendations(data);
-  const textRecommendations = getTextRecommendations(data);
+  // Use the first swing data for recommendations
+  const swingData = data.swings && data.swings.length > 0 ? data.swings[0] : {};
+  const videoRecommendations = getVideoRecommendations(swingData);
+  const textRecommendations = getTextRecommendations(swingData);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     overview: true,
     workOn: false,
@@ -212,12 +214,14 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Object.entries(data).map(([key, value]) => (
+              {Object.entries(swingData).map(([key, value]) => (
                 <div key={key} className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
                   <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
                     {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
                   </div>
-                  <div className="text-lg font-bold text-primary">{value as string}</div>
+                  <div className="text-lg font-bold text-primary">
+                    {typeof value === 'object' ? JSON.stringify(value) : String(value || 'N/A')}
+                  </div>
                 </div>
               ))}
             </div>
