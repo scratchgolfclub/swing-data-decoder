@@ -44,6 +44,10 @@ const Context = () => {
       if (!video) return;
       
       await ThumbnailService.saveThumbnail(video.link, file);
+      
+      // Force a re-render by updating the state
+      setVideoContexts(prev => [...prev]);
+      
       toast({
         title: "Success",
         description: "Thumbnail uploaded successfully!",
@@ -192,6 +196,22 @@ const Context = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
+                          {/* Thumbnail Preview Section */}
+                          <div>
+                            <h4 className="font-semibold mb-2">Current Thumbnail:</h4>
+                            <div className="relative w-64 h-36 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-700">
+                              <img 
+                                src={ThumbnailService.getThumbnail(video.link) || ThumbnailService.getDefaultThumbnail(videos.indexOf(video))}
+                                alt={`${video.title} thumbnail`}
+                                className="w-full h-full object-cover"
+                                key={`${video.id}-${Date.now()}`} // Force re-render when thumbnail changes
+                              />
+                              <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                                {ThumbnailService.getThumbnail(video.link) ? 'Custom' : 'Default'}
+                              </div>
+                            </div>
+                          </div>
+
                           <div>
                             <h4 className="font-semibold mb-2">Related Data Points:</h4>
                             <div className="flex flex-wrap gap-2">
