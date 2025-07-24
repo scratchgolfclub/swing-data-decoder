@@ -48,7 +48,7 @@ const Index = () => {
         <div className="mb-8">
           <div className="flex justify-center mb-6">
             <img 
-              src={scratchLogo} 
+              src="/lovable-uploads/e186c3b0-ca71-4cc6-aed5-174afc8c4911.png" 
               alt="Scratch Golf Club" 
               className="h-20 w-auto object-contain"
             />
