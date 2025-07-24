@@ -1,4 +1,5 @@
 import Tesseract from 'tesseract.js';
+import { enhancedPreprocessingWithBackgroundRemoval } from './backgroundRemovalService';
 
 // Define types for tile-based OCR
 interface TrackManTile {
@@ -538,11 +539,19 @@ const fallbackFullImageOCR = async (preprocessedImage: string) => {
 
 export const extractTrackmanData = async (imageFile: File) => {
   try {
-    console.log('🔍 Starting tile-based OCR processing for:', imageFile.name, 'Size:', imageFile.size);
+    console.log('🔍 Starting enhanced OCR processing for:', imageFile.name, 'Size:', imageFile.size);
     
-    // Preprocess the image for better OCR results
-    console.log('⚙️  Preprocessing image for better OCR...');
-    const preprocessedImage = await enhancedPreprocessing(imageFile);
+    // Try enhanced preprocessing with background removal first
+    console.log('🎯 Using AI-enhanced preprocessing with background removal...');
+    let preprocessedImage: string;
+    
+    try {
+      preprocessedImage = await enhancedPreprocessingWithBackgroundRemoval(imageFile);
+      console.log('✅ AI background removal completed successfully');
+    } catch (error) {
+      console.warn('⚠️ AI preprocessing failed, using standard preprocessing:', error);
+      preprocessedImage = await enhancedPreprocessing(imageFile);
+    }
     
     // First, try tile-based approach with timeout protection
     console.log('🔍 Detecting individual tiles...');
