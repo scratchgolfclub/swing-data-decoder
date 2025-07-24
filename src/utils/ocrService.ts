@@ -1,6 +1,6 @@
 import Tesseract from 'tesseract.js';
 
-// Preprocess image for better OCR results
+// Enhanced image preprocessing for better OCR results
 const preprocessImage = (imageFile: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -24,18 +24,48 @@ const preprocessImage = (imageFile: File): Promise<string> => {
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       
-      // Enhance contrast and convert to grayscale
+      // Advanced preprocessing for better OCR
       for (let i = 0; i < data.length; i += 4) {
         // Convert to grayscale
         const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
         
-        // Enhance contrast (make dark text darker, light backgrounds lighter)
-        const enhanced = gray > 128 ? Math.min(255, gray * 1.2) : Math.max(0, gray * 0.8);
+        // Enhanced contrast with better thresholding
+        let enhanced;
+        if (gray > 150) {
+          // Light areas - make them brighter
+          enhanced = Math.min(255, gray * 1.3);
+        } else if (gray < 100) {
+          // Dark areas - make them darker
+          enhanced = Math.max(0, gray * 0.7);
+        } else {
+          // Mid-tones - enhance slightly
+          enhanced = gray > 128 ? Math.min(255, gray * 1.1) : Math.max(0, gray * 0.9);
+        }
         
         data[i] = enhanced;     // R
         data[i + 1] = enhanced; // G
         data[i + 2] = enhanced; // B
         // Alpha stays the same
+      }
+      
+      // Apply noise reduction by averaging neighboring pixels
+      const processedData = new Uint8ClampedArray(data);
+      for (let y = 1; y < canvas.height - 1; y++) {
+        for (let x = 1; x < canvas.width - 1; x++) {
+          const idx = (y * canvas.width + x) * 4;
+          
+          // Simple blur for noise reduction
+          const neighbors = [
+            processedData[idx - 4], // left
+            processedData[idx + 4], // right
+            processedData[idx - canvas.width * 4], // top
+            processedData[idx + canvas.width * 4], // bottom
+            processedData[idx] // center
+          ];
+          
+          const avg = neighbors.reduce((sum, val) => sum + val, 0) / neighbors.length;
+          data[idx] = data[idx + 1] = data[idx + 2] = avg;
+        }
       }
       
       // Put enhanced image data back
@@ -108,101 +138,265 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
 
 const parseTrackmanText = (text: string, swingNumber: number = 1) => {
   console.log('🔍 Parsing TrackMan text for swing', swingNumber);
+  console.log('📝 Text length:', text.length, 'characters');
   const data: any = {};
   
-  // Enhanced patterns with more flexible matching
+  // Clean and normalize text for better pattern matching
+  const cleanText = text.replace(/[^\w\s\-\.\'\"\|\:°]/g, ' ').replace(/\s+/g, ' ');
+  console.log('🧹 Cleaned text sample:', cleanText.substring(0, 200));
+  
+  // Enhanced patterns with OCR error handling and flexible matching
   const patterns = {
-    // Club data patterns - more flexible spacing and variations
-    clubSpeed: /(?:CLUB\s*SPEED|CLUBSPEED)[:\s]*(\d+\.?\d*)\s*(?:mph|MPH)/i,
-    attackAngle: /(?:ATTACK\s*ANG|ATTACK\s*ANGLE)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    clubPath: /(?:CLUB\s*PATH|CLUBPATH)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    dynLoft: /(?:DYN[\.\s]*LOFT|DYNAMIC\s*LOFT)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    faceAngle: /(?:FACE\s*ANG|FACE\s*ANGLE)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    spinLoft: /(?:SPIN\s*LOFT|SPINLOFT)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    faceToPath: /(?:FACE\s*TO\s*PATH|FACETOPATH)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    swingPlane: /(?:SWING\s*PL|SWING\s*PLANE)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    swingDirection: /(?:SWING\s*DIR|SWING\s*DIRECTION)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    lowPointDistance: /(?:LOW\s*PT\s*DIST|LOW\s*POINT)[:\s]*(\d+\.?\d*A?)\s*(?:in|IN)/i,
-    impactOffset: /(?:IMP[\.\s]*OFFSET|IMPACT\s*OFFSET)[:\s]*(-?\d+)\s*(?:mm|MM)/i,
-    impactHeight: /(?:IMP[\.\s]*HEIGHT|IMPACT\s*HEIGHT)[:\s]*(-?\d+)\s*(?:mm|MM)/i,
-    dynLie: /(?:DYN[\.\s]*LIE|DYNAMIC\s*LIE)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
+    // Club data patterns - handle OCR misreads (O vs 0, l vs 1, etc.)
+    clubSpeed: [
+      /(?:CLUB[_\s]*SPEED|CLUBSPEED)[:\s|]*([0O1l]?\d+\.?\d*)[_\s]*(?:mph|MPH|mp[hl])/i,
+      /CLUB[_\s]+(\d+\.?\d*)[_\s]*(?:mph|MPH)/i,
+      /(?:CL[UO]B|CLUB)[_\s]*(\d+\.?\d*)[_\s]*MPH/i
+    ],
+    attackAngle: [
+      /(?:ATTACK[_\s]*(?:ANG|ANGLE)|ATT[_\s]*ANG)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°|d[e3]g)/i,
+      /ATTACK[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    clubPath: [
+      /(?:CLUB[_\s]*PATH|CLUBPATH)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /PATH[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    dynLoft: [
+      /(?:DYN[_\.\s]*LOFT|DYNAMIC[_\s]*LOFT|DYN[_\s]*L[O0]FT)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /DYN[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    faceAngle: [
+      /(?:FACE[_\s]*(?:ANG|ANGLE)|F[A4]CE[_\s]*ANG)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /FACE[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    spinLoft: [
+      /(?:SPIN[_\s]*LOFT|SPINLOFT)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /SPIN[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    faceToPath: [
+      /(?:FACE[_\s]*TO[_\s]*PATH|FACETOPATH|F[A4]CE[_\s]*T[O0][_\s]*PATH)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /F[A4]CE[_\s]*T[O0][_\s]*PATH[_\s]+(-?\d+\.?\d*)/i
+    ],
+    swingPlane: [
+      /(?:SWING[_\s]*(?:PL|PLANE)|SW[I1]NG[_\s]*PL)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /SWING[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    swingDirection: [
+      /(?:SWING[_\s]*(?:DIR|DIRECTION)|SW[I1]NG[_\s]*D[I1]R)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /SWING[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i
+    ],
+    lowPointDistance: [
+      /(?:LOW[_\s]*PT[_\s]*(?:DIST|DISTANCE)|L[O0]W[_\s]*P[O0]INT)[:\s|]*(\d+\.?\d*A?)[_\s]*(?:in|IN|i[nl])/i,
+      /L[O0]W[_\s]*PT[_\s]+(\d+\.?\d*A?)/i
+    ],
+    impactOffset: [
+      /(?:IMP[_\.\s]*OFFSET|IMPACT[_\s]*OFFSET|[I1]MP[_\s]*[O0]FFSET)[:\s|]*(-?\d+)[_\s]*(?:mm|MM)/i,
+      /(?:IMP|IMPACT)[_\s]+(-?\d+)[_\s]*mm/i
+    ],
+    impactHeight: [
+      /(?:IMP[_\.\s]*HEIGHT|IMPACT[_\s]*HEIGHT|[I1]MP[_\s]*HE[I1]GHT)[:\s|]*(-?\d+)[_\s]*(?:mm|MM)/i,
+      /(?:IMP|IMPACT)[_\s]*HEIGHT[_\s]+(-?\d+)/i
+    ],
+    dynLie: [
+      /(?:DYN[_\.\s]*LIE|DYNAMIC[_\s]*LIE|DYN[_\s]*L[I1]E)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /DYN[_\s]*LIE[_\s]+(\d+\.?\d*)/i
+    ],
     
-    // Ball data patterns
-    ballSpeed: /(?:BALL\s*SPEED|BALLSPEED)[:\s]*(\d+\.?\d*)\s*(?:mph|MPH)/i,
-    smashFactor: /(?:SMASH\s*FAC|SMASH\s*FACTOR)[:\s]*(\d+\.?\d*)/i,
-    launchAngle: /(?:LAUNCH\s*ANG|LAUNCH\s*ANGLE)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    launchDirection: /(?:LAUNCH\s*DIR|LAUNCH\s*DIRECTION)[:\s]*(-?\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    spinRate: /(?:SPIN\s*RATE|SPINRATE)[:\s]*(\d+)\s*(?:rpm|RPM)/i,
-    spinAxis: /(?:SPIN\s*AXIS|SPINAXIS)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
+    // Ball data patterns with OCR error handling
+    ballSpeed: [
+      /(?:BALL[_\s]*SPEED|B[A4]LL[_\s]*SPEED|BALLSPEED)[:\s|]*([01l]?\d+\.?\d*)[_\s]*(?:mph|MPH|mp[hl])/i,
+      /BALL[_\s]+(\d+\.?\d*)[_\s]*(?:mph|MPH)/i
+    ],
+    smashFactor: [
+      /(?:SMASH[_\s]*(?:FAC|FACTOR)|SM[A4]SH[_\s]*F[A4]C)[:\s|]*([01l]\.?\d*)/i,
+      /SMASH[_\s]+([01l]\.?\d*)/i
+    ],
+    launchAngle: [
+      /(?:LAUNCH[_\s]*(?:ANG|ANGLE)|L[A4]UNCH[_\s]*ANG)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /LAUNCH[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+    ],
+    launchDirection: [
+      /(?:LAUNCH[_\s]*(?:DIR|DIRECTION)|L[A4]UNCH[_\s]*D[I1]R)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /LAUNCH[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i
+    ],
+    spinRate: [
+      /(?:SPIN[_\s]*RATE|SP[I1]N[_\s]*R[A4]TE|SPINRATE)[:\s|]*(\d+)[_\s]*(?:rpm|RPM|rp[ml])/i,
+      /SPIN[_\s]*RATE[_\s]+(\d+)/i,
+      /(\d{4,5})[_\s]*(?:rpm|RPM)/i
+    ],
+    spinAxis: [
+      /(?:SPIN[_\s]*AXIS|SP[I1]N[_\s]*[A4]X[I1]S|SPINAXIS)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /SPIN[_\s]*AXIS[_\s]+(\d+\.?\d*)/i
+    ],
     
-    // Flight data patterns
-    curve: /(?:CURVE)[:\s]*(\d+R?)\s*(?:ft|FT)/i,
-    height: /(?:HEIGHT)[:\s]*(\d+)\s*(?:ft|FT)/i,
-    carry: /(?:CARRY)[:\s]*(\d+\.?\d*)\s*(?:yds|YDS|yards)/i,
-    total: /(?:TOTAL)[:\s]*(\d+\.?\d*)\s*(?:yds|YDS|yards)/i,
-    side: /(?:SIDE)[:\s]*(\d+'\s*\d+"?R?)/i,
-    sideTotal: /(?:SIDE\s*TOT|SIDE\s*TOTAL)[:\s]*(\d+'\s*\d+"?R?)/i,
-    landingAngle: /(?:LAND[\.\s]*ANG|LANDING\s*ANGLE)[:\s]*(\d+\.?\d*)\s*(?:deg|DEG|°)/i,
-    hangTime: /(?:HANG\s*TIME|HANGTIME)[:\s]*(\d+\.?\d*)\s*(?:s|sec)/i,
-    lastData: /(?:LAST\s*DATA|LASTDATA)[:\s]*(\d+\.?\d*)\s*(?:yds|YDS|yards)/i
+    // Flight data patterns with OCR variations
+    curve: [
+      /(?:CURVE|CURV[E3])[:\s|]*(\d+R?)[_\s]*(?:ft|FT|f[tl])/i,
+      /CURVE[_\s]+(\d+R?)/i
+    ],
+    height: [
+      /(?:HEIGHT|HE[I1]GHT)[:\s|]*(\d+)[_\s]*(?:ft|FT|f[tl])/i,
+      /HEIGHT[_\s]+(\d+)/i,
+      /\|[_\s]*(\d{2,3})[_\s]*\|/  // Table format like |63|
+    ],
+    carry: [
+      /(?:CARRY|C[A4]RRY)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards|y[a4]rds)/i,
+      /CARRY[_\s]+(\d+\.?\d*)/i
+    ],
+    total: [
+      /(?:TOTAL|T[O0]T[A4]L)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
+      /TOTAL[_\s]+(\d+\.?\d*)/i
+    ],
+    side: [
+      /(?:SIDE)[:\s|]*(\d+'\s*\d+"?R?)/i,
+      /SIDE[_\s]+(\d+['\s]*\d+"?R?)/i
+    ],
+    sideTotal: [
+      /(?:SIDE[_\s]*(?:TOT|TOTAL)|S[I1]DE[_\s]*T[O0]T)[:\s|]*(\d+'\s*\d+"?R?)/i,
+      /SIDE[_\s]*TOTAL[_\s]+(\d+['\s]*\d+"?R?)/i
+    ],
+    landingAngle: [
+      /(?:LAND[_\.\s]*(?:ANG|ANGLE)|LANDING[_\s]*(?:ANG|ANGLE)|L[A4]ND[_\s]*ANG)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /LANDING[_\s]*ANGLE[_\s]+(\d+\.?\d*)/i
+    ],
+    hangTime: [
+      /(?:HANG[_\s]*TIME|H[A4]NG[_\s]*T[I1]ME|HANGTIME)[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i,
+      /HANG[_\s]*TIME[_\s]+(\d+\.?\d*)/i
+    ],
+    lastData: [
+      /(?:LAST[_\s]*DATA|L[A4]ST[_\s]*D[A4]T[A4]|LASTDATA)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
+      /LAST[_\s]*DATA[_\s]+(\d+\.?\d*)/i
+    ]
   };
-
-  // Direct value extraction based on known TrackMan values
-  const specificExtractions = {
-    // Club data - exact values from the image
-    clubSpeed: text.match(/845/)?.[0] ? "84.5" : text.match(/84\.5/)?.[0],
-    attackAngle: text.match(/-?3\.5/)?.[0] || text.match(/35/)?.[0] ? "-3.5" : null,
-    clubPath: text.match(/-?2\.7/)?.[0] || text.match(/27/)?.[0] ? "-2.7" : null,
-    dynLoft: text.match(/17\.7/)?.[0] || text.match(/177/)?.[0] ? "17.7" : null,
-    faceAngle: text.match(/-?1\.1/)?.[0] || text.match(/11/)?.[0] ? "-1.1" : null,
-    spinLoft: text.match(/21\.6/)?.[0] || text.match(/216/)?.[0] ? "21.6" : null,
-    faceToPath: text.match(/1\.6/)?.[0] || text.match(/16/)?.[0] ? "1.6" : null,
-    swingPlane: text.match(/55\.0/)?.[0] || text.match(/550/)?.[0] ? "55.0" : null,
-    swingDirection: text.match(/-?5\.7/)?.[0] || text.match(/57/)?.[0] ? "-5.7" : null,
-    lowPointDistance: text.match(/2\.9A/)?.[0] || text.match(/29A/)?.[0] ? "2.9A" : null,
-    impactOffset: text.match(/\b4\b/)?.[0] ? "4" : null,
-    impactHeight: text.match(/-?6/)?.[0] ? "-6" : null,
-    dynLie: text.match(/60\.7/)?.[0] || text.match(/607/)?.[0] ? "60.7" : null,
+  
+  // Table-based parsing for pipe-separated data
+  const parseTableData = (text: string) => {
+    const tableData: any = {};
+    const lines = text.split('\n');
     
-    // Ball data - exact values
-    ballSpeed: text.match(/118\.1/)?.[0] || (text.match(/130/) && text.match(/1181/)) ? "118.1" : null,
-    smashFactor: text.match(/1\.39/)?.[0] || text.match(/139/)?.[0] ? "1.39" : null,
-    launchAngle: text.match(/13\.2/)?.[0] || text.match(/132/)?.[0] ? "13.2" : null,
-    launchDirection: text.match(/-?1\.3/)?.[0] || text.match(/13/)?.[0] ? "-1.3" : null,
-    spinRate: text.match(/4686/)?.[0],
-    spinAxis: text.match(/4\.7/)?.[0] || text.match(/47/)?.[0] ? "4.7" : null,
+    for (const line of lines) {
+      if (line.includes('|')) {
+        const parts = line.split('|').map(p => p.trim());
+        
+        // Look for numeric values in table format
+        for (let i = 0; i < parts.length; i++) {
+          const part = parts[i];
+          const numMatch = part.match(/(-?\d+\.?\d*)/);
+          
+          if (numMatch) {
+            const value = numMatch[1];
+            
+            // Try to identify what this value represents based on context
+            if (part.match(/mph|MPH/i) && parseFloat(value) > 50 && parseFloat(value) < 200) {
+              if (parseFloat(value) > 100) {
+                tableData.ballSpeed = value;
+              } else {
+                tableData.clubSpeed = value;
+              }
+            } else if (part.match(/deg|DEG|°/i) && parseFloat(value) > -50 && parseFloat(value) < 100) {
+              // Could be various angle measurements
+              if (parseFloat(value) > 50) {
+                tableData.swingPlane = value;
+              } else if (parseFloat(value) > 10 && parseFloat(value) < 30) {
+                tableData.launchAngle = value;
+              }
+            } else if (part.match(/rpm|RPM/i)) {
+              tableData.spinRate = value;
+            } else if (part.match(/yds|YDS|yards/i)) {
+              if (parseFloat(value) > 100 && parseFloat(value) < 250) {
+                if (!tableData.carry) tableData.carry = value;
+                else tableData.total = value;
+              }
+            } else if (part.match(/ft|FT/i) && parseFloat(value) > 20 && parseFloat(value) < 200) {
+              tableData.height = value;
+            }
+          }
+        }
+      }
+    }
     
-    // Flight data - exact values
-    curve: text.match(/17R/)?.[0] || (text.match(/17/) && text.match(/R/)) ? "17R" : null,
-    height: text.match(/\b63\b/)?.[0],
-    carry: text.match(/166\.6/)?.[0],
-    total: text.match(/181\.9/)?.[0],
-    side: text.match(/5'\s*1"R/)?.[0] || text.match(/5.*1.*R/)?.[0] ? "5' 1\"R" : null,
-    sideTotal: text.match(/6'\s*6"R/)?.[0] || text.match(/6.*6.*R/)?.[0] ? "6' 6\"R" : null,
-    landingAngle: text.match(/37\.3/)?.[0] || text.match(/373/)?.[0] ? "37.3" : null,
-    hangTime: text.match(/5\.31/)?.[0] || text.match(/531/)?.[0] ? "5.31" : null,
-    lastData: text.match(/155\.0/)?.[0] || text.match(/1550/)?.[0] ? "155.0" : null
+    return tableData;
   };
 
   // Extract data using multiple approaches for maximum coverage
   let matchCount = 0;
   
-  // First try regex patterns
-  for (const [key, pattern] of Object.entries(patterns)) {
-    const match = text.match(pattern);
-    if (match) {
-      data[key] = match[1];
-      matchCount++;
-      console.log(`✅ Pattern match for ${key}: ${match[1]}`);
+  // Try multiple pattern variations for each data point
+  for (const [key, patternArray] of Object.entries(patterns)) {
+    let matched = false;
+    
+    for (const pattern of patternArray) {
+      const match = text.match(pattern) || cleanText.match(pattern);
+      if (match && match[1]) {
+        let value = match[1];
+        
+        // Clean up OCR errors in numbers
+        value = value.replace(/[Oo]/g, '0').replace(/[Il]/g, '1').replace(/[S]/g, '5');
+        
+        // Handle special cases
+        if (key === 'spinRate' && value.length === 3) {
+          // If we got something like "468" it might be "4686" with missing digit
+          const possibleFullNumber = text.match(new RegExp(value + '\\d'));
+          if (possibleFullNumber) value = possibleFullNumber[0];
+        }
+        
+        // Handle decimal point corrections for specific measurements
+        if (['clubSpeed', 'ballSpeed'].includes(key) && !value.includes('.') && value.length >= 3) {
+          // Convert "845" to "84.5", "1181" to "118.1"
+          value = value.slice(0, -1) + '.' + value.slice(-1);
+        }
+        
+        data[key] = value;
+        matchCount++;
+        matched = true;
+        console.log(`✅ Pattern match for ${key}: ${value} (pattern: ${pattern.source.substring(0, 50)}...)`);
+        break;
+      }
+    }
+    
+    if (!matched) {
+      console.log(`❌ No match found for ${key}`);
     }
   }
   
-  // Then try specific extractions (prioritize these as they're more accurate)
-  for (const [key, value] of Object.entries(specificExtractions)) {
-    if (value) {
+  // Try table-based parsing as fallback
+  console.log('🔍 Attempting table-based parsing...');
+  const tableData = parseTableData(text);
+  for (const [key, value] of Object.entries(tableData)) {
+    if (!data[key] && value) {
       data[key] = value;
-      if (!data.hasOwnProperty(key)) matchCount++;
-      console.log(`✅ Specific extraction for ${key}: ${value}`);
+      matchCount++;
+      console.log(`✅ Table extraction for ${key}: ${value}`);
+    }
+  }
+  
+  // Advanced pattern matching for missed values
+  console.log('🔍 Attempting advanced number extraction...');
+  const advancedPatterns = [
+    // Look for standalone numbers that might be TrackMan data
+    { pattern: /(\d{2,3}\.\d)\s*mph/gi, keys: ['clubSpeed', 'ballSpeed'] },
+    { pattern: /(-?\d{1,2}\.\d)\s*deg/gi, keys: ['attackAngle', 'clubPath', 'launchAngle'] },
+    { pattern: /(\d{4,5})\s*rpm/gi, keys: ['spinRate'] },
+    { pattern: /(\d{2,3})\s*ft/gi, keys: ['height', 'curve'] },
+    { pattern: /(\d{2,3}\.\d)\s*yds/gi, keys: ['carry', 'total'] },
+    { pattern: /(1\.\d{2})/g, keys: ['smashFactor'] }
+  ];
+  
+  for (const { pattern, keys } of advancedPatterns) {
+    const matches = Array.from(text.matchAll(pattern));
+    for (const match of matches) {
+      for (const key of keys) {
+        if (!data[key]) {
+          const value = match[1];
+          // Validate the value makes sense for this measurement
+          if (validateMeasurement(key, parseFloat(value))) {
+            data[key] = value;
+            matchCount++;
+            console.log(`✅ Advanced extraction for ${key}: ${value}`);
+            break;
+          }
+        }
+      }
     }
   }
   
@@ -275,4 +469,23 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
   }
 
   return data;
+};
+
+// Validate if a measurement value makes sense for the given parameter
+const validateMeasurement = (key: string, value: number): boolean => {
+  const ranges: Record<string, [number, number]> = {
+    clubSpeed: [40, 150],
+    ballSpeed: [60, 220],
+    attackAngle: [-15, 15],
+    clubPath: [-20, 20],
+    launchAngle: [0, 45],
+    spinRate: [1000, 8000],
+    height: [10, 200],
+    carry: [50, 400],
+    total: [50, 450],
+    smashFactor: [1.0, 1.6]
+  };
+  
+  const range = ranges[key];
+  return range ? value >= range[0] && value <= range[1] : true;
 };
