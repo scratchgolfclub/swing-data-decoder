@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Upload, 
@@ -17,7 +18,8 @@ import {
   Brain, 
   Play,
   CheckCircle,
-  Eye
+  Eye,
+  Stethoscope
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProgressModal from '@/components/ProgressModal';
@@ -273,10 +275,11 @@ const Dashboard = () => {
     const drillsSection = textRecs.match(/(?:Recommended drills|Practice Tips|Drills to Try):(.*?)(?=\n\n|\*\*|Swing feels|Remember|$)/is);
     const feelsSection = textRecs.match(/(?:Swing feels|Feel thoughts|Key feels):(.*?)(?=\n\n|\*\*|Remember|Goal|$)/is);
     
-    // Extract bullet points or numbered items
-    const extractItems = (text: string) => {
-      if (!text) return [];
-      return text
+    // Extract bullet points or numbered items with enhanced details
+    const extractDetailedItems = (text: string, type: 'drills' | 'feels') => {
+      if (!text) return getDefaultItems(type);
+      
+      const items = text
         .split('\n')
         .map(line => line.trim())
         .filter(line => 
@@ -286,28 +289,65 @@ const Dashboard = () => {
           /^\d+\./.test(line)
         )
         .map(line => line.replace(/^[•\-*\d.]\s*/, '').trim())
-        .filter(line => line.length > 10) // Filter out very short items
+        .filter(line => line.length > 10)
         .slice(0, 3);
+      
+      return items.length > 0 ? items.map(item => enhanceItem(item, type)) : getDefaultItems(type);
     };
 
-    const drills = drillsSection ? extractItems(drillsSection[1]) : [
-      "Practice with alignment sticks to improve swing path",
-      "Work on tempo with slow motion swings",
-      "Focus on consistent setup routine"
-    ];
+    const enhanceItem = (item: string, type: 'drills' | 'feels') => {
+      if (type === 'drills') {
+        // Add more detailed drill instructions
+        if (item.toLowerCase().includes('alignment')) {
+          return `${item}. Place alignment sticks on the ground - one pointing at your target, another parallel to it for your feet. Practice hitting balls while staying aligned with these guides. This helps develop consistent setup and swing path.`;
+        }
+        if (item.toLowerCase().includes('tempo')) {
+          return `${item}. Count "1-2-3" during your swing: 1 for takeaway, 2 for top of backswing, 3 for impact. Practice this rhythm to develop consistent timing and avoid rushing your downswing.`;
+        }
+        if (item.toLowerCase().includes('setup')) {
+          return `${item}. Spend 2-3 minutes before each practice session going through your setup checklist: grip pressure, stance width, ball position, and posture. Consistency here leads to better swing consistency.`;
+        }
+        return `${item}. Focus on quality repetitions rather than quantity - 10 focused swings are better than 50 mindless ones.`;
+      } else {
+        // Add more detailed feel descriptions
+        if (item.toLowerCase().includes('tempo') || item.toLowerCase().includes('smooth')) {
+          return `${item}. Think of swinging at 80% effort while maintaining balance. The feeling should be smooth and controlled, like you're swinging underwater. Good tempo creates better sequencing and more consistent contact.`;
+        }
+        if (item.toLowerCase().includes('head') || item.toLowerCase().includes('behind')) {
+          return `${item}. Feel like your head stays in place while your body rotates around it. This helps maintain your spine angle and promotes better weight transfer through the swing.`;
+        }
+        if (item.toLowerCase().includes('face') || item.toLowerCase().includes('square')) {
+          return `${item}. Imagine the clubface is a clock face pointing at 6 o'clock at address and impact. This mental image helps maintain square contact for straighter shots.`;
+        }
+        return `${item}. Trust this feeling during practice and focus on recreating it consistently.`;
+      }
+    };
 
-    const feels = feelsSection ? extractItems(feelsSection[1]) : [
-      "Feel like you're swinging to the right of target",
-      "Keep your head behind the ball at impact",
-      "Smooth tempo, don't rush the downswing"
-    ];
+    const getDefaultItems = (type: 'drills' | 'feels') => {
+      if (type === 'drills') {
+        return [
+          "Alignment Stick Drill. Place alignment sticks on the ground - one pointing at your target, another parallel to it for your feet. Practice hitting balls while staying aligned with these guides to develop consistent setup and swing path.",
+          "Tempo Training. Count '1-2-3' during your swing: 1 for takeaway, 2 for top of backswing, 3 for impact. Practice this rhythm to develop consistent timing and avoid rushing your downswing.",
+          "Setup Routine Practice. Spend 2-3 minutes before each session going through your setup checklist: grip pressure, stance width, ball position, and posture. Consistency here leads to better swing consistency."
+        ];
+      } else {
+        return [
+          "Smooth Tempo Feel. Think of swinging at 80% effort while maintaining balance. The feeling should be smooth and controlled, like you're swinging underwater for better sequencing and contact.",
+          "Stay Behind the Ball. Feel like your head stays in place while your body rotates around it. This helps maintain your spine angle and promotes better weight transfer through the swing.",
+          "Square Clubface Feel. Imagine the clubface is a clock face pointing at 6 o'clock at address and impact. This mental image helps maintain square contact for straighter shots."
+        ];
+      }
+    };
+
+    const drills = extractDetailedItems(drillsSection?.[1] || '', 'drills');
+    const feels = extractDetailedItems(feelsSection?.[1] || '', 'feels');
 
     // Get video recommendations
     const videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
 
     return { 
-      drills: drills.length > 0 ? drills : ["Practice with alignment sticks", "Work on tempo", "Focus on setup routine"],
-      feels: feels.length > 0 ? feels : ["Smooth tempo", "Stay behind ball", "Square clubface"],
+      drills,
+      feels,
       videos: videoRecs 
     };
   };
@@ -370,193 +410,164 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Quick Stats - Removed Last Session */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        {/* Top Stats Row - Compact */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="border-muted/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Total Swings</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-3">
               <div className="text-2xl font-bold">{swingData.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Analyzed swings
-              </p>
+              <p className="text-xs text-muted-foreground">Analyzed swings</p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="border-muted/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Latest Score</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {latestSwing?.swing_score || 'N/A'}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Out of 100
-              </p>
+            <CardContent className="pb-3">
+              <div className="text-2xl font-bold">{latestSwing?.swing_score || 'N/A'}</div>
+              <p className="text-xs text-muted-foreground">Out of 100</p>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Main Widget Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-          
-          {/* Progress Tracker - Simplified */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Progress Tracker</CardTitle>
-              <CardDescription>
-                View your improvement over time
-              </CardDescription>
+          <Card className="border-muted/40">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-medium">Progress Tracker</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
+            <CardContent className="pb-3">
               {latestSwing && baselineSwing ? (
                 <Button 
                   onClick={() => setShowProgressModal(true)}
-                  className="w-full"
+                  size="sm"
                   variant="secondary"
+                  className="w-full h-8"
                 >
-                  View Progress Report
+                  View Report
                 </Button>
               ) : (
-                <div className="text-center py-4">
-                  <p className="text-muted-foreground">
-                    {swingData.length === 0 
-                      ? "Upload your first swing to start tracking"
-                      : "Need at least 2 swings to compare"
-                    }
-                  </p>
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {swingData.length === 0 ? "Upload first swing" : "Need 2+ swings"}
+                </p>
               )}
             </CardContent>
           </Card>
-
-          {/* Biggest Strength */}
-          {latestSwing && analysis?.strength && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                  Biggest Strength
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold mb-2">
-                  {analysis.strength.metric}: {analysis.strength.value}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {analysis.strength.description}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Biggest Weakness */}
-          {latestSwing && analysis?.weakness && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
-                  Biggest Weakness
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold mb-2">
-                  {analysis.weakness.metric}: {analysis.weakness.value}
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {analysis.weakness.description}
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Your Drills */}
-          {latestSwing && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <BookOpen className="h-5 w-5 mr-2 text-blue-500" />
-                  Your Drills
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {recommendations.drills.map((drill, index) => (
-                    <li key={index} className="text-sm flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{drill.replace(/^-\s*/, '')}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Your Feels */}
-          {latestSwing && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Brain className="h-5 w-5 mr-2 text-purple-500" />
-                  Your Feels
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">
-                  {recommendations.feels.map((feel, index) => (
-                    <li key={index} className="text-sm flex items-start">
-                      <span className="mr-2">•</span>
-                      <span>{feel.replace(/^-\s*/, '')}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Your Videos */}
-          {recommendations.videos.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Play className="h-5 w-5 mr-2 text-green-500" />
-                  Your Videos
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {recommendations.videos.map((video, index) => {
-                  const isWatched = videoViews.some(view => view.video_url === video.url);
-                  return (
-                    <div key={index} className="flex items-start justify-between">
-                      <div className="flex-1 mr-3">
-                        <h4 className="text-sm font-medium mb-1 flex items-center">
-                          {video.title}
-                          {isWatched && (
-                            <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
-                          )}
-                        </h4>
-                        <p className="text-xs text-muted-foreground">
-                          {video.reason}
-                        </p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={isWatched ? "secondary" : "default"}
-                        onClick={() => handleVideoClick(video.url, video.title)}
-                      >
-                        <Play className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          )}
         </div>
+
+        {/* Your Practice Prescription */}
+        {latestSwing && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
+                Your Practice Prescription
+              </CardTitle>
+              <CardDescription>
+                Personalized recommendations based on your latest swing analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" defaultValue="drills" className="w-full">
+                <AccordionItem value="drills" className="border-b border-muted/40">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center">
+                      <BookOpen className="h-4 w-4 mr-2 text-blue-500" />
+                      <span className="font-medium">Your Drills</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4">
+                    <div className="space-y-4">
+                      {recommendations.drills.map((drill, index) => (
+                        <div key={index} className="p-4 bg-muted/30 rounded-lg">
+                          <div className="flex items-start">
+                            <span className="flex-shrink-0 w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                              {index + 1}
+                            </span>
+                            <p className="text-sm leading-relaxed">{drill}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="feels" className="border-b border-muted/40">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center">
+                      <Brain className="h-4 w-4 mr-2 text-purple-500" />
+                      <span className="font-medium">Your Feels</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4">
+                    <div className="space-y-4">
+                      {recommendations.feels.map((feel, index) => (
+                        <div key={index} className="p-4 bg-muted/30 rounded-lg">
+                          <div className="flex items-start">
+                            <span className="flex-shrink-0 w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3 mt-0.5">
+                              {index + 1}
+                            </span>
+                            <p className="text-sm leading-relaxed">{feel}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="videos">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-center">
+                      <Play className="h-4 w-4 mr-2 text-green-500" />
+                      <span className="font-medium">Your Videos</span>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4">
+                    <div className="space-y-4">
+                      {recommendations.videos.map((video, index) => {
+                        const isWatched = videoViews.some(view => view.video_url === video.url);
+                        return (
+                          <div key={index} className="p-4 bg-muted/30 rounded-lg">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1 mr-4">
+                                <div className="flex items-center mb-2">
+                                  <span className="flex-shrink-0 w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-3">
+                                    {index + 1}
+                                  </span>
+                                  <h4 className="text-sm font-medium flex items-center">
+                                    {video.title}
+                                    {isWatched && (
+                                      <CheckCircle className="h-4 w-4 ml-2 text-green-500" />
+                                    )}
+                                  </h4>
+                                </div>
+                                <p className="text-xs text-muted-foreground ml-9 leading-relaxed">
+                                  {video.reason}
+                                </p>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant={isWatched ? "secondary" : "default"}
+                                onClick={() => handleVideoClick(video.url, video.title)}
+                                className="flex-shrink-0"
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                {isWatched ? 'Rewatch' : 'Watch'}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Swing History */}
         <SwingHistoryList swingData={swingData} onDataUpdate={loadUserData} />
