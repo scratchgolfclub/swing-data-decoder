@@ -63,6 +63,7 @@ const Dashboard = () => {
   const [videoViews, setVideoViews] = useState<VideoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [selectedClubCategory, setSelectedClubCategory] = useState<string>('all');
 
   useEffect(() => {
     if (user) {
@@ -155,10 +156,43 @@ const Dashboard = () => {
     window.open(videoUrl, '_blank');
   };
 
+  // Helper function to match club type to category
+  const getClubCategory = (clubType: string): string => {
+    const type = clubType.toLowerCase();
+    
+    if (type.includes('wedge') || type.includes('sw') || type.includes('pw') || type.includes('gap') || type.includes('lob')) {
+      return 'wedges';
+    }
+    if (type.includes('iron') || /[4-9]/.test(type)) {
+      return 'irons';
+    }
+    if (type.includes('driver') || type.includes('1w')) {
+      return 'driver';
+    }
+    if (type.includes('wood') || type.includes('hybrid') || type.includes('rescue')) {
+      return 'woods';
+    }
+    
+    return 'all'; // default category
+  };
+
+  // Filter swing data based on selected club category
+  const getFilteredSwingData = () => {
+    if (selectedClubCategory === 'all') {
+      return swingData;
+    }
+    
+    return swingData.filter(swing => {
+      const clubCategory = getClubCategory(swing.club_type);
+      return clubCategory === selectedClubCategory;
+    });
+  };
+
   const getLatestSwingMetrics = () => {
-    const latestSwing = swingData[0];
+    const filteredData = getFilteredSwingData();
+    const latestSwing = filteredData[0];
     if (!latestSwing) {
-      console.log('No latest swing found');
+      console.log('No latest swing found for category:', selectedClubCategory);
       return null;
     }
     
@@ -167,6 +201,8 @@ const Dashboard = () => {
       : latestSwing.swing_data_non_baseline;
     
     console.log('Latest swing metrics:', {
+      clubCategory: selectedClubCategory,
+      clubType: latestSwing.club_type,
       isBaseline: latestSwing.is_baseline,
       metrics: metrics,
       hasTrackManCombine: !!metrics?.TrackManCombine
@@ -192,17 +228,59 @@ const Dashboard = () => {
       return { strength: null, weakness: null };
     }
 
-    // Define ideal ranges based on actual metric names from database
-    const idealRanges = {
-      'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
-      'ballSpeed': { min: 120, max: 150, unit: ' mph', label: 'Ball Speed' },
-      'smashFactor': { min: 1.40, max: 1.50, unit: '', label: 'Smash Factor' },
-      'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
-      'faceAngle': { min: -2, max: 2, unit: '°', label: 'Face Angle' },
-      'clubPath': { min: -2, max: 2, unit: '°', label: 'Club Path' },
-      'faceToPath': { min: -2, max: 2, unit: '°', label: 'Face to Path' },
-      'spinRate': { min: 5000, max: 7000, unit: ' rpm', label: 'Spin Rate' }
+    // Define club-specific ideal ranges based on actual metric names from database
+    const getIdealRanges = () => {
+      const baseRanges = {
+        'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
+        'ballSpeed': { min: 120, max: 150, unit: ' mph', label: 'Ball Speed' },
+        'smashFactor': { min: 1.40, max: 1.50, unit: '', label: 'Smash Factor' },
+        'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
+        'faceAngle': { min: -2, max: 2, unit: '°', label: 'Face Angle' },
+        'clubPath': { min: -2, max: 2, unit: '°', label: 'Club Path' },
+        'faceToPath': { min: -2, max: 2, unit: '°', label: 'Face to Path' },
+        'spinRate': { min: 5000, max: 7000, unit: ' rpm', label: 'Spin Rate' }
+      };
+
+      // Adjust ranges based on club category
+      switch (selectedClubCategory) {
+        case 'driver':
+          return {
+            ...baseRanges,
+            'clubSpeed': { min: 95, max: 115, unit: ' mph', label: 'Club Speed' },
+            'ballSpeed': { min: 140, max: 170, unit: ' mph', label: 'Ball Speed' },
+            'launchAngle': { min: 10, max: 15, unit: '°', label: 'Launch Angle' },
+            'spinRate': { min: 2000, max: 3000, unit: ' rpm', label: 'Spin Rate' }
+          };
+        case 'woods':
+          return {
+            ...baseRanges,
+            'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
+            'ballSpeed': { min: 130, max: 160, unit: ' mph', label: 'Ball Speed' },
+            'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
+            'spinRate': { min: 3000, max: 4500, unit: ' rpm', label: 'Spin Rate' }
+          };
+        case 'irons':
+          return {
+            ...baseRanges,
+            'clubSpeed': { min: 75, max: 95, unit: ' mph', label: 'Club Speed' },
+            'ballSpeed': { min: 110, max: 140, unit: ' mph', label: 'Ball Speed' },
+            'launchAngle': { min: 15, max: 25, unit: '°', label: 'Launch Angle' },
+            'spinRate': { min: 6000, max: 8000, unit: ' rpm', label: 'Spin Rate' }
+          };
+        case 'wedges':
+          return {
+            ...baseRanges,
+            'clubSpeed': { min: 65, max: 85, unit: ' mph', label: 'Club Speed' },
+            'ballSpeed': { min: 90, max: 120, unit: ' mph', label: 'Ball Speed' },
+            'launchAngle': { min: 20, max: 35, unit: '°', label: 'Launch Angle' },
+            'spinRate': { min: 8000, max: 12000, unit: ' rpm', label: 'Spin Rate' }
+          };
+        default:
+          return baseRanges;
+      }
     };
+
+    const idealRanges = getIdealRanges();
 
     const scores = Object.entries(idealRanges).map(([key, range]) => {
       const rawValue = data[key];
@@ -322,9 +400,10 @@ const Dashboard = () => {
   };
 
   const getRecommendations = () => {
-    if (!swingData.length) return { drills: [], feels: [], videos: [] };
+    const filteredData = getFilteredSwingData();
+    if (!filteredData.length) return { drills: [], feels: [], videos: [] };
 
-    const latestSwing = swingData[0];
+    const latestSwing = filteredData[0];
     const metrics = getLatestSwingMetrics();
     if (!metrics) return { drills: [], feels: [], videos: [] };
 
@@ -418,8 +497,10 @@ const Dashboard = () => {
     };
   };
 
-  const latestSwing = swingData[0];
-  const baselineSwing = swingData.find(swing => swing.is_baseline);
+  // Get filtered data for current club category
+  const filteredSwingData = getFilteredSwingData();
+  const latestSwing = filteredSwingData[0];
+  const baselineSwing = filteredSwingData.find(swing => swing.is_baseline);
   const latestProgress = progressData[0];
   const latestMetrics = getLatestSwingMetrics();
   const analysis = latestMetrics ? analyzeStrengthAndWeakness(latestMetrics) : null;
@@ -488,6 +569,87 @@ const Dashboard = () => {
           </Button>
         </div>
 
+        {/* Club Category Selection */}
+        <div className="mb-8">
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={() => setSelectedClubCategory('all')}
+              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
+                selectedClubCategory === 'all' 
+                  ? 'bg-primary text-primary-foreground shadow-lg' 
+                  : 'bg-muted/30 hover:bg-muted/50'
+              }`}
+            >
+              <Target className="h-8 w-8" />
+              <span className="text-sm font-medium">All Clubs</span>
+            </button>
+            
+            <button
+              onClick={() => setSelectedClubCategory('wedges')}
+              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
+                selectedClubCategory === 'wedges' 
+                  ? 'bg-primary text-primary-foreground shadow-lg' 
+                  : 'bg-muted/30 hover:bg-muted/50'
+              }`}
+            >
+              <img 
+                src="/lovable-uploads/31bea9bb-6c26-43d2-977c-77aabc5fd016.png" 
+                alt="Wedges" 
+                className="h-8 w-8"
+              />
+              <span className="text-sm font-medium">Wedges</span>
+            </button>
+            
+            <button
+              onClick={() => setSelectedClubCategory('irons')}
+              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
+                selectedClubCategory === 'irons' 
+                  ? 'bg-primary text-primary-foreground shadow-lg' 
+                  : 'bg-muted/30 hover:bg-muted/50'
+              }`}
+            >
+              <img 
+                src="/lovable-uploads/c57a3149-6ebc-4ae7-9d9b-68fc874185c5.png" 
+                alt="Irons" 
+                className="h-8 w-8"
+              />
+              <span className="text-sm font-medium">Irons</span>
+            </button>
+            
+            <button
+              onClick={() => setSelectedClubCategory('woods')}
+              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
+                selectedClubCategory === 'woods' 
+                  ? 'bg-primary text-primary-foreground shadow-lg' 
+                  : 'bg-muted/30 hover:bg-muted/50'
+              }`}
+            >
+              <img 
+                src="/lovable-uploads/15f0eff5-f556-4cb0-81bd-7b4e714d4c75.png" 
+                alt="Woods/Hybrids" 
+                className="h-8 w-8"
+              />
+              <span className="text-sm font-medium">Woods/Hybrids</span>
+            </button>
+            
+            <button
+              onClick={() => setSelectedClubCategory('driver')}
+              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
+                selectedClubCategory === 'driver' 
+                  ? 'bg-primary text-primary-foreground shadow-lg' 
+                  : 'bg-muted/30 hover:bg-muted/50'
+              }`}
+            >
+              <img 
+                src="/lovable-uploads/827c70c1-d6d2-49aa-8382-bccca369dea4.png" 
+                alt="Driver" 
+                className="h-8 w-8"
+              />
+              <span className="text-sm font-medium">Driver</span>
+            </button>
+          </div>
+        </div>
+
         {/* Top Stats Row - Compact */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="border-muted/40">
@@ -496,8 +658,10 @@ const Dashboard = () => {
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="pb-3">
-              <div className="text-2xl font-bold">{swingData.length}</div>
-              <p className="text-xs text-muted-foreground">Analyzed swings</p>
+              <div className="text-2xl font-bold">{filteredSwingData.length}</div>
+              <p className="text-xs text-muted-foreground">
+                {selectedClubCategory === 'all' ? 'Analyzed swings' : `${selectedClubCategory} swings`}
+              </p>
             </CardContent>
           </Card>
 
@@ -692,7 +856,7 @@ const Dashboard = () => {
         )}
 
         {/* Swing History */}
-        <SwingHistoryList swingData={swingData} onDataUpdate={loadUserData} />
+        <SwingHistoryList swingData={filteredSwingData} onDataUpdate={loadUserData} />
       </div>
 
       {/* Progress Modal */}
