@@ -580,7 +580,11 @@ const Dashboard = () => {
                   : 'bg-muted/30 hover:bg-muted/50'
               }`}
             >
-              <Target className="h-8 w-8" />
+              <img 
+                src="/lovable-uploads/8a0a0e9f-0b6f-4cf8-821e-369fa9e4f703.png" 
+                alt="All Clubs" 
+                className="h-8 w-8"
+              />
               <span className="text-sm font-medium">All Clubs</span>
             </button>
             
@@ -593,7 +597,7 @@ const Dashboard = () => {
               }`}
             >
               <img 
-                src="/lovable-uploads/31bea9bb-6c26-43d2-977c-77aabc5fd016.png" 
+                src="/lovable-uploads/97faaec3-4379-4d26-bbf2-27f2530baac8.png" 
                 alt="Wedges" 
                 className="h-8 w-8"
               />
