@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Demo from "./pages/Demo";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import SwingResults from "./pages/SwingResults";
 import NotFound from "./pages/NotFound";
 import Context from "./pages/Context";
 
@@ -67,6 +68,11 @@ const App = () => (
             <Route path="/analyze" element={
               <ProtectedRoute>
                 <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/swing/:swingId" element={
+              <ProtectedRoute>
+                <SwingResults />
               </ProtectedRoute>
             } />
             <Route path="/context" element={<Context />} />

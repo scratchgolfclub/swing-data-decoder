@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ interface SwingHistoryListProps {
 }
 
 const SwingHistoryList: React.FC<SwingHistoryListProps> = ({ swingData, onDataUpdate }) => {
+  const navigate = useNavigate();
   const [selectedSwing, setSelectedSwing] = useState<SwingData | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
@@ -94,7 +96,7 @@ const SwingHistoryList: React.FC<SwingHistoryListProps> = ({ swingData, onDataUp
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => handleViewDetails(swing)}
+                      onClick={() => navigate(`/swing/${swing.id}`)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
