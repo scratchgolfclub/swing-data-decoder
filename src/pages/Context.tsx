@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,6 +17,53 @@ interface VideoContext {
   recommendWhen: string[];
   contextSummary: string;
 }
+
+// Component for handling async thumbnail loading
+const ThumbnailPreview = ({ videoLink, videoTitle, videoIndex }: { videoLink: string; videoTitle: string; videoIndex: number }) => {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadThumbnail = async () => {
+      try {
+        const customThumbnail = await ThumbnailService.getThumbnail(videoLink);
+        if (customThumbnail) {
+          setThumbnailUrl(customThumbnail);
+        } else {
+          setThumbnailUrl(ThumbnailService.getDefaultThumbnail(videoIndex));
+        }
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading thumbnail:', error);
+        setThumbnailUrl(ThumbnailService.getDefaultThumbnail(videoIndex));
+        setIsLoading(false);
+      }
+    };
+
+    loadThumbnail();
+  }, [videoLink, videoIndex]);
+
+  return (
+    <div className="relative w-64 h-36 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-700">
+      {isLoading ? (
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full"></div>
+        </div>
+      ) : (
+        <>
+          <img 
+            src={thumbnailUrl || ThumbnailService.getDefaultThumbnail(videoIndex)}
+            alt={`${videoTitle} thumbnail`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+            {thumbnailUrl && !thumbnailUrl.includes('unsplash.com') ? 'Custom' : 'Default'}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 const Context = () => {
   const { toast } = useToast();
@@ -218,17 +265,12 @@ const Context = () => {
                           {/* Thumbnail Preview Section */}
                           <div>
                             <h4 className="font-semibold mb-2">Current Thumbnail:</h4>
-                            <div className="relative w-64 h-36 bg-stone-100 dark:bg-stone-800 rounded-lg overflow-hidden border border-stone-200 dark:border-stone-700">
-                              <img 
-                                src={ThumbnailService.getThumbnail(video.link) || ThumbnailService.getDefaultThumbnail(videos.indexOf(video))}
-                                alt={`${video.title} thumbnail`}
-                                className="w-full h-full object-cover"
-                                key={`${video.id}-${Date.now()}`} // Force re-render when thumbnail changes
-                              />
-                              <div className="absolute bottom-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                                {ThumbnailService.getThumbnail(video.link) ? 'Custom' : 'Default'}
-                              </div>
-                            </div>
+                            <ThumbnailPreview 
+                              videoLink={video.link}
+                              videoTitle={video.title}
+                              videoIndex={videos.indexOf(video)}
+                              key={`${video.id}-${uploadingThumbnail}`} // Force re-render when thumbnail changes
+                            />
                           </div>
 
                           <div>

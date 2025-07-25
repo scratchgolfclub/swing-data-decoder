@@ -18,19 +18,27 @@ export const VideoCard = ({ video, index }: VideoCardProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const loadThumbnail = () => {
-      // Try to get custom thumbnail first
-      const customThumbnail = ThumbnailService.getThumbnail(video.url);
-      if (customThumbnail) {
-        setThumbnail(customThumbnail);
+    const loadThumbnail = async () => {
+      try {
+        // Try to get custom thumbnail first
+        const customThumbnail = await ThumbnailService.getThumbnail(video.url);
+        if (customThumbnail) {
+          setThumbnail(customThumbnail);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Use default thumbnail if no custom one exists
+        const defaultThumbnail = ThumbnailService.getDefaultThumbnail(index);
+        setThumbnail(defaultThumbnail);
         setIsLoading(false);
-        return;
+      } catch (error) {
+        console.error('Error loading thumbnail:', error);
+        // Use default thumbnail on error
+        const defaultThumbnail = ThumbnailService.getDefaultThumbnail(index);
+        setThumbnail(defaultThumbnail);
+        setIsLoading(false);
       }
-      
-      // Use default thumbnail if no custom one exists
-      const defaultThumbnail = ThumbnailService.getDefaultThumbnail(index);
-      setThumbnail(defaultThumbnail);
-      setIsLoading(false);
     };
 
     loadThumbnail();

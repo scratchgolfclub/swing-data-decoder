@@ -1,11 +1,14 @@
+import { supabase } from '@/integrations/supabase/client';
+
 interface ThumbnailMapping {
   [videoUrl: string]: string;
 }
 
 export class ThumbnailService {
   private static STORAGE_KEY = 'video_thumbnails';
+  private static BUCKET_NAME = 'video-thumbnails';
 
-  static async compressImage(file: File, maxWidth: number = 400, maxHeight: number = 225, quality: number = 0.8): Promise<string> {
+  static async compressImage(file: File, maxWidth: number = 400, maxHeight: number = 225, quality: number = 0.8): Promise<File> {
     return new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => {
@@ -38,10 +41,22 @@ export class ThumbnailService {
         // Draw and compress the image
         ctx.drawImage(img, 0, 0, width, height);
         
-        // Convert to compressed JPEG
-        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
-        console.log(`Image compressed from ${file.size} bytes to ~${Math.round(compressedDataUrl.length * 0.75)} bytes`);
-        resolve(compressedDataUrl);
+        // Convert to blob
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            reject(new Error('Failed to create blob'));
+            return;
+          }
+          
+          // Create a new File from the blob
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          
+          console.log(`Image compressed from ${file.size} bytes to ${compressedFile.size} bytes`);
+          resolve(compressedFile);
+        }, 'image/jpeg', quality);
       };
       
       img.onerror = () => reject(new Error('Failed to load image'));
@@ -54,27 +69,145 @@ export class ThumbnailService {
       console.log(`Starting compression for ${thumbnailFile.name} (${thumbnailFile.size} bytes)`);
       
       // Compress the image before saving
-      const compressedData = await this.compressImage(thumbnailFile);
+      const compressedFile = await this.compressImage(thumbnailFile);
       
-      // Save to localStorage
-      const mappings = this.getThumbnailMappings();
-      mappings[videoUrl] = compressedData;
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mappings));
+      // Generate a unique filename
+      const timestamp = Date.now();
+      const fileExtension = 'jpg';
+      const fileName = `thumbnail_${timestamp}.${fileExtension}`;
       
+      // Upload to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from(this.BUCKET_NAME)
+        .upload(fileName, compressedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw new Error(`Failed to upload thumbnail: ${uploadError.message}`);
+      }
+
+      if (!uploadData) {
+        throw new Error('Upload failed: No data returned');
+      }
+
+      // Save mapping in database
+      const { error: dbError } = await supabase
+        .from('video_thumbnails')
+        .upsert({
+          video_url: videoUrl,
+          thumbnail_path: uploadData.path
+        }, {
+          onConflict: 'video_url'
+        });
+
+      if (dbError) {
+        console.error('Database error:', dbError);
+        // Clean up uploaded file if database save fails
+        await supabase.storage.from(this.BUCKET_NAME).remove([uploadData.path]);
+        throw new Error(`Failed to save thumbnail mapping: ${dbError.message}`);
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(this.BUCKET_NAME)
+        .getPublicUrl(uploadData.path);
+
       console.log('Thumbnail compressed and saved successfully');
-      return compressedData;
+      return publicUrl;
     } catch (error) {
       console.error('Error in saveThumbnail:', error);
       throw error;
     }
   }
 
-  static getThumbnail(videoUrl: string): string | null {
+  static async getThumbnail(videoUrl: string): Promise<string | null> {
+    try {
+      // First check local storage for legacy thumbnails
+      const legacyThumbnail = this.getLegacyThumbnail(videoUrl);
+      if (legacyThumbnail) {
+        return legacyThumbnail;
+      }
+
+      // Query database for thumbnail
+      const { data, error } = await supabase
+        .from('video_thumbnails')
+        .select('thumbnail_path')
+        .eq('video_url', videoUrl)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching thumbnail:', error);
+        return null;
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from(this.BUCKET_NAME)
+        .getPublicUrl(data.thumbnail_path);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Error getting thumbnail:', error);
+      return null;
+    }
+  }
+
+  static async deleteThumbnail(videoUrl: string): Promise<void> {
+    try {
+      // Get the thumbnail path first
+      const { data, error: fetchError } = await supabase
+        .from('video_thumbnails')
+        .select('thumbnail_path')
+        .eq('video_url', videoUrl)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('Error fetching thumbnail for deletion:', fetchError);
+        return;
+      }
+
+      if (data) {
+        // Delete from storage
+        const { error: storageError } = await supabase.storage
+          .from(this.BUCKET_NAME)
+          .remove([data.thumbnail_path]);
+
+        if (storageError) {
+          console.error('Error deleting from storage:', storageError);
+        }
+
+        // Delete from database
+        const { error: dbError } = await supabase
+          .from('video_thumbnails')
+          .delete()
+          .eq('video_url', videoUrl);
+
+        if (dbError) {
+          console.error('Error deleting from database:', dbError);
+        }
+      }
+
+      // Also clean up legacy localStorage
+      this.deleteLegacyThumbnail(videoUrl);
+    } catch (error) {
+      console.error('Error deleting thumbnail:', error);
+    }
+  }
+
+  // Legacy support methods for localStorage thumbnails
+  private static getLegacyThumbnail(videoUrl: string): string | null {
     const mappings = this.getThumbnailMappings();
     return mappings[videoUrl] || null;
   }
 
-  static deleteThumbnail(videoUrl: string): void {
+  private static deleteLegacyThumbnail(videoUrl: string): void {
     const mappings = this.getThumbnailMappings();
     delete mappings[videoUrl];
     localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mappings));
