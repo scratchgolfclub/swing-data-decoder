@@ -156,8 +156,9 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
       /DYN[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
     ],
     faceAngle: [
-      /(?:FACE[_\s]*(?:ANG|ANGLE)|F[A4]CE[_\s]*ANG)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /FACE[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
+      /(?:FACE[_\s]*(?:ANG\.?|ANGLE)|F[A4]CE[_\s]*ANG\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /FACE[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i,
+      /(?:ANG\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
     ],
     spinLoft: [
       /(?:SPIN[_\s]*LOFT|SPINLOFT)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
@@ -198,16 +199,18 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
       /BALL[_\s]+(\d+\.?\d*)[_\s]*(?:mph|MPH)/i
     ],
     smashFactor: [
-      /(?:SMASH[_\s]*(?:FAC|FACTOR)|SM[A4]SH[_\s]*F[A4]C)[:\s|]*([01l]\.?\d*)/i,
-      /SMASH[_\s]+([01l]\.?\d*)/i
+      /(?:SMASH[_\s]*(?:FAC\.?|FACTOR)|SM[A4]SH[_\s]*F[A4]C\.?)[:\s|]*([01l]\.?\d*)/i,
+      /SMASH[_\s]+([01l]\.?\d*)/i,
+      /(?:FAC\.?)[:\s|]*([01l]\.?\d*)/i
     ],
     launchAngle: [
-      /(?:LAUNCH[_\s]*(?:ANG|ANGLE)|L[A4]UNCH[_\s]*ANG)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /(?:LAUNCH[_\s]*(?:ANG\.?|ANGLE)|L[A4]UNCH[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
       /LAUNCH[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
     ],
     launchDirection: [
-      /(?:LAUNCH[_\s]*(?:DIR|DIRECTION)|L[A4]UNCH[_\s]*D[I1]R)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /LAUNCH[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i
+      /(?:LAUNCH[_\s]*(?:DIR\.?|DIRECTION)|L[A4]UNCH[_\s]*D[I1]R\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /LAUNCH[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i,
+      /(?:DIR\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
     ],
     spinRate: [
       /(?:SPIN[_\s]*RATE|SP[I1]N[_\s]*R[A4]TE|SPINRATE)[:\s|]*(\d+)[_\s]*(?:rpm|RPM|rp[ml])/i,
@@ -221,21 +224,24 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
     
     // Flight data patterns with OCR variations
     curve: [
-      /(?:CURVE|CURV[E3])[:\s|]*(\d+R?)[_\s]*(?:ft|FT|f[tl])/i,
-      /CURVE[_\s]+(\d+R?)/i
+      /(?:CURVE|CURV[E3])[:\s|]*(\d+)\s*(?:R|ft|FT|f[tl])/i,
+      /CURVE[_\s]+(\d+)/i,
+      /(\d+)\s*R(?:\s|$)/i
     ],
     height: [
       /(?:HEIGHT|HE[I1]GHT)[:\s|]*(\d+)[_\s]*(?:ft|FT|f[tl])/i,
       /HEIGHT[_\s]+(\d+)/i,
-      /\|[_\s]*(\d{2,3})[_\s]*\|/  // Table format like |63|
+      /\|[_\s]*(\d{2,3})[_\s]*\|/,  // Table format like |63|
+      /(?:^|\s)(\d{2,3})\s*(?:ft|FT)(?:\s|$)/i  // Standalone format like "63 ft"
     ],
     carry: [
       /(?:CARRY|C[A4]RRY)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards|y[a4]rds)/i,
       /CARRY[_\s]+(\d+\.?\d*)/i
     ],
     total: [
-      /(?:TOTAL|T[O0]T[A4]L)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
-      /TOTAL[_\s]+(\d+\.?\d*)/i
+      /(?:TOTAL|T[O0]T[A4]L|TOT\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
+      /TOTAL[_\s]+(\d+\.?\d*)/i,
+      /TOT\.?[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i
     ],
     side: [
       /(?:SIDE)[:\s|]*(\d+'\s*\d+"?R?)/i,
@@ -246,12 +252,14 @@ const parseTrackmanText = (text: string, swingNumber: number = 1) => {
       /SIDE[_\s]*TOTAL[_\s]+(\d+['\s]*\d+"?R?)/i
     ],
     landingAngle: [
-      /(?:LAND[_\.\s]*(?:ANG|ANGLE)|LANDING[_\s]*(?:ANG|ANGLE)|L[A4]ND[_\s]*ANG)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /LANDING[_\s]*ANGLE[_\s]+(\d+\.?\d*)/i
+      /(?:LAND[_\.\s]*(?:ANG\.?|ANGLE)|LANDING[_\s]*(?:ANG\.?|ANGLE)|L[A4]ND[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
+      /LANDING[_\s]*ANGLE[_\s]+(\d+\.?\d*)/i,
+      /(?:LAND\.?[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
     ],
     hangTime: [
-      /(?:HANG[_\s]*TIME|H[A4]NG[_\s]*T[I1]ME|HANGTIME)[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i,
-      /HANG[_\s]*TIME[_\s]+(\d+\.?\d*)/i
+      /(?:HANG[_\s]*TIME|H[A4]NG[_\s]*T[I1]ME|HANGTIME|HAND[_\s]*TIME)[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i,
+      /HANG[_\s]*TIME[_\s]+(\d+\.?\d*)/i,
+      /HAND[_\s]*TIME[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i
     ],
     lastData: [
       /(?:LAST[_\s]*DATA|L[A4]ST[_\s]*D[A4]T[A4]|LASTDATA)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
