@@ -878,7 +878,10 @@ const Dashboard = () => {
         )}
 
         {/* Badge Section */}
-        <BadgeSection className="mb-8" />
+        <BadgeSection 
+          className="mb-8" 
+          onBadgeInteraction={dismissBadgeNotification}
+        />
 
         {/* Swing History */}
         <SwingHistoryList swingData={filteredSwingData} onDataUpdate={loadUserData} />

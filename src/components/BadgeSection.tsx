@@ -3,21 +3,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { BadgeDisplay } from './BadgeDisplay';
 import { badgeService, BadgeProgress } from '@/utils/badgeService';
 import { useAuth } from '@/contexts/AuthContext';
-import { Trophy, Star, Target, Users } from 'lucide-react';
+import { Trophy, Star, Target, Users, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BadgeSectionProps {
   className?: string;
+  onBadgeInteraction?: (badgeId: string) => void;
 }
 
-export function BadgeSection({ className }: BadgeSectionProps) {
+export function BadgeSection({ className, onBadgeInteraction }: BadgeSectionProps) {
   const { user } = useAuth();
   const [badgeProgress, setBadgeProgress] = useState<BadgeProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -54,6 +57,26 @@ export function BadgeSection({ className }: BadgeSectionProps) {
     }
   };
 
+  const handleBadgeInteraction = async (badgeId: string) => {
+    if (!user) return;
+    
+    const badge = badgeProgress.find(bp => bp.badge.id === badgeId);
+    if (badge?.earned && badge.is_new) {
+      await badgeService.markBadgesAsViewed(user.id, [badgeId]);
+      // Update local state
+      setBadgeProgress(prev => 
+        prev.map(bp => 
+          bp.badge.id === badgeId 
+            ? { ...bp, is_new: false }
+            : bp
+        )
+      );
+      
+      // Call parent callback if provided
+      onBadgeInteraction?.(badgeId);
+    }
+  };
+
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'upload': return <Target className="h-4 w-4" />;
@@ -67,6 +90,10 @@ export function BadgeSection({ className }: BadgeSectionProps) {
   const filteredBadges = badgeProgress.filter(bp => 
     selectedCategory === 'all' || bp.badge.badge_type === selectedCategory
   );
+
+  // For collapsed view, show max 8 badges (typical single row)
+  const visibleBadges = isExpanded ? filteredBadges : filteredBadges.slice(0, 8);
+  const hasMoreBadges = filteredBadges.length > 8;
 
   const earnedBadges = badgeProgress.filter(bp => bp.earned);
   const newBadges = badgeProgress.filter(bp => bp.earned && bp.is_new);
@@ -82,7 +109,7 @@ export function BadgeSection({ className }: BadgeSectionProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-4 text-muted-foreground">
             Loading achievements...
           </div>
         </CardContent>
@@ -139,22 +166,66 @@ export function BadgeSection({ className }: BadgeSectionProps) {
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value={selectedCategory} className="mt-6">
+          <TabsContent value={selectedCategory} className="mt-4">
             {filteredBadges.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-4 text-muted-foreground">
                 No badges in this category yet.
               </div>
             ) : (
-              <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-4">
-                {filteredBadges.map((badgeProgress) => (
-                  <BadgeDisplay
-                    key={badgeProgress.badge.id}
-                    badgeProgress={badgeProgress}
-                    size="md"
-                    showProgress={!badgeProgress.earned}
-                    className="flex flex-col items-center"
-                  />
-                ))}
+              <div className="space-y-4">
+                {/* Always visible badges */}
+                <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                  {visibleBadges.map((badgeProgress) => (
+                    <BadgeDisplay
+                      key={badgeProgress.badge.id}
+                      badgeProgress={badgeProgress}
+                      size="md"
+                      showProgress={!badgeProgress.earned}
+                      className="flex flex-col items-center"
+                      onInteraction={() => handleBadgeInteraction(badgeProgress.badge.id)}
+                    />
+                  ))}
+                </div>
+                
+                {/* Collapsible section for remaining badges */}
+                {hasMoreBadges && (
+                  <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                    <CollapsibleTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full flex items-center gap-2"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="h-4 w-4" />
+                            Show Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4" />
+                            Show {filteredBadges.length - 8} More Badges
+                          </>
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                    
+                    <CollapsibleContent className="mt-4">
+                      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
+                        {filteredBadges.slice(8).map((badgeProgress) => (
+                          <BadgeDisplay
+                            key={badgeProgress.badge.id}
+                            badgeProgress={badgeProgress}
+                            size="md"
+                            showProgress={!badgeProgress.earned}
+                            className="flex flex-col items-center"
+                            onInteraction={() => handleBadgeInteraction(badgeProgress.badge.id)}
+                          />
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
               </div>
             )}
           </TabsContent>

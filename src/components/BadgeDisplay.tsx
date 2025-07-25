@@ -9,13 +9,15 @@ interface BadgeDisplayProps {
   size?: 'sm' | 'md' | 'lg';
   showProgress?: boolean;
   className?: string;
+  onInteraction?: () => void;
 }
 
 export function BadgeDisplay({ 
   badgeProgress, 
   size = 'md', 
   showProgress = false,
-  className 
+  className,
+  onInteraction 
 }: BadgeDisplayProps) {
   const { badge, earned, progress, total, is_new } = badgeProgress;
   
@@ -26,6 +28,18 @@ export function BadgeDisplay({
   };
 
   const progressPercentage = total > 0 ? (progress / total) * 100 : 0;
+
+  const handleClick = () => {
+    if (earned && is_new && onInteraction) {
+      onInteraction();
+    }
+  };
+
+  const handleMouseEnter = () => {
+    if (earned && is_new && onInteraction) {
+      onInteraction();
+    }
+  };
 
   return (
     <div className={cn('relative group', className)}>
@@ -38,8 +52,11 @@ export function BadgeDisplay({
             ? 'border-primary bg-primary/10 text-primary shadow-lg shadow-primary/20' 
             : 'border-muted bg-muted/20 text-muted-foreground grayscale',
           earned && 'hover:scale-110 hover:shadow-xl hover:shadow-primary/30',
-          is_new && 'animate-pulse ring-2 ring-primary ring-offset-2'
+          is_new && 'animate-pulse ring-2 ring-primary ring-offset-2',
+          (earned && is_new) && 'cursor-pointer'
         )}
+        onClick={handleClick}
+        onMouseEnter={handleMouseEnter}
       >
         <span className="font-medium">{badge.icon_emoji}</span>
         
