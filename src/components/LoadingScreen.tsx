@@ -2,18 +2,20 @@ import { useEffect, useState } from 'react';
 import { Target, Brain, Zap, TrendingUp, Star, Award } from 'lucide-react';
 
 const loadingPhrases = [
-  { text: "Scanning your TrackMan data...", icon: Target, duration: 2000 },
-  { text: "Calling Scottie Scheffler for consultation...", icon: Brain, duration: 3000 },
-  { text: "Analyzing swing mechanics...", icon: Zap, duration: 2500 },
-  { text: "Building your personalized lesson plan...", icon: TrendingUp, duration: 2800 },
-  { text: "Adding some PGA Tour magic...", icon: Star, duration: 2200 },
-  { text: "Finalizing your path to improvement...", icon: Award, duration: 2000 },
+  { text: "Scanning your TrackMan data...", icon: Target, duration: 3500 },
+  { text: "Calling Scottie Scheffler for consultation...", icon: Brain, duration: 4000 },
+  { text: "Analyzing swing mechanics...", icon: Zap, duration: 3800 },
+  { text: "Building your personalized lesson plan...", icon: TrendingUp, duration: 4200 },
+  { text: "Adding some PGA Tour magic...", icon: Star, duration: 3600 },
+  { text: "Finalizing your path to improvement...", icon: Award, duration: 3500 },
 ];
 
 export const LoadingScreen = ({ onComplete }: { onComplete?: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [currentPhrase, setCurrentPhrase] = useState(0);
   const [showPulse, setShowPulse] = useState(true);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
   useEffect(() => {
     // Progress animation that stops at 95% until ready
@@ -27,16 +29,40 @@ export const LoadingScreen = ({ onComplete }: { onComplete?: () => void }) => {
       });
     }, 80);
 
-    // Cycle through loading phrases
-    const phraseInterval = setInterval(() => {
-      setCurrentPhrase(prev => (prev + 1) % loadingPhrases.length);
-    }, 2500);
-
     return () => {
       clearInterval(progressInterval);
-      clearInterval(phraseInterval);
     };
   }, []);
+
+  // Typewriter effect for each phrase
+  useEffect(() => {
+    const currentPhraseData = loadingPhrases[currentPhrase];
+    const text = currentPhraseData.text;
+    let timeoutId: NodeJS.Timeout;
+    
+    setIsTyping(true);
+    setDisplayedText('');
+    
+    // Type out the text character by character
+    const typeText = (index: number) => {
+      if (index <= text.length) {
+        setDisplayedText(text.slice(0, index));
+        timeoutId = setTimeout(() => typeText(index + 1), 50); // 50ms per character
+      } else {
+        setIsTyping(false);
+        // Wait for the specified duration before moving to next phrase
+        timeoutId = setTimeout(() => {
+          setCurrentPhrase(prev => (prev + 1) % loadingPhrases.length);
+        }, currentPhraseData.duration - (text.length * 50)); // Subtract typing time
+      }
+    };
+
+    typeText(0);
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [currentPhrase]);
 
   // External completion handler to finish progress
   const completeLoading = () => {
@@ -129,11 +155,14 @@ export const LoadingScreen = ({ onComplete }: { onComplete?: () => void }) => {
           </div>
         </div>
 
-        {/* Dynamic Loading Text with Enhanced Animations */}
+        {/* Dynamic Loading Text with Typewriter Effect */}
         <div className="h-24 flex items-center justify-center">
           <div className="animate-fade-in text-center" key={currentPhrase}>
-            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-transparent bg-gradient-to-r from-primary via-emerald-600 to-primary bg-clip-text animate-pulse">
-              {currentPhraseData.text}
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-transparent bg-gradient-to-r from-primary via-emerald-600 to-primary bg-clip-text">
+              {displayedText}
+              {isTyping && (
+                <span className="animate-pulse text-primary">|</span>
+              )}
             </h2>
             <div className="flex justify-center space-x-2">
               {[...Array(5)].map((_, i) => (
