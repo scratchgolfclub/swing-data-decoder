@@ -131,9 +131,10 @@ const getSwingSummary = (swingData: any) => {
 interface ResultsScreenProps {
   data: any;
   onReset: () => void;
+  isDemoMode?: boolean;
 }
 
-export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
+export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScreenProps) => {
   // Pass all swing data AND selected club to recommendation functions for analysis
   const swings = data.swings || [];
   const selectedClub = data.club || '';
@@ -155,6 +156,42 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(158,155,135,0.03),transparent_50%)]"></div>
       
       <div className="container-premium py-12">
+        {/* Demo Mode CTA */}
+        {isDemoMode && (
+          <Card className="border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10 mb-16">
+            <CardContent className="p-6 text-center">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-foreground">
+                    🎯 Love Your Results? Save Your Progress!
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Create an account to save your swing data, track your progress over time, 
+                    and get a personalized dashboard showing where you're improving.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => window.location.href = '/auth'}
+                    size="lg"
+                    className="whitespace-nowrap"
+                  >
+                    Create Account
+                  </Button>
+                  <Button 
+                    onClick={() => window.location.href = '/auth'}
+                    variant="outline"
+                    size="lg"
+                    className="whitespace-nowrap"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Header */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-12">
