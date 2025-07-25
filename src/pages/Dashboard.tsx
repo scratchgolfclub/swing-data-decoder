@@ -458,7 +458,51 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Your Practice Prescription */}
+        {/* Strength & Weakness Analysis */}
+        {latestSwing && analysis && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            {/* Biggest Strength */}
+            {analysis.strength && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
+                    Biggest Strength
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold mb-2">
+                    {analysis.strength.metric}: {analysis.strength.value}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {analysis.strength.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Biggest Weakness */}
+            {analysis.weakness && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+                    Biggest Weakness
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold mb-2">
+                    {analysis.weakness.metric}: {analysis.weakness.value}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {analysis.weakness.description}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        )}
+
         {latestSwing && (
           <Card className="mb-8">
             <CardHeader>
