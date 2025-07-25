@@ -538,17 +538,17 @@ const Dashboard = () => {
             {/* Biggest Strength */}
             {analysis.strength && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center text-lg">
                     <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
                     Biggest Strength
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mb-2">
+                  <div className="text-xl font-bold mb-3 text-green-600">
                     {analysis.strength.metric}: {analysis.strength.value}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {analysis.strength.description}
                   </p>
                 </CardContent>
@@ -558,17 +558,17 @@ const Dashboard = () => {
             {/* Biggest Weakness */}
             {analysis.weakness && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center text-lg">
                     <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
                     Biggest Weakness
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold mb-2">
+                  <div className="text-xl font-bold mb-3 text-orange-600">
                     {analysis.weakness.metric}: {analysis.weakness.value}
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {analysis.weakness.description}
                   </p>
                 </CardContent>
