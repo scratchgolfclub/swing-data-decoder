@@ -4,39 +4,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Target, TrendingUp, ArrowRight } from 'lucide-react';
-import { getUserLeaderboardStats, LeaderboardStats } from '@/utils/leaderboardService';
-import { useNavigate } from 'react-router-dom';
+import { leaderboardService } from '@/utils/leaderboardService';
+import { Link } from 'react-router-dom';
 
 const LeaderboardPreview = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [stats, setStats] = useState<LeaderboardStats | null>(null);
+  const [userRankings, setUserRankings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchUserRankings = async () => {
       if (!user?.id) return;
       
       setLoading(true);
       try {
-        const userStats = await getUserLeaderboardStats(user.id);
-        setStats(userStats);
+        const rankings = await leaderboardService.getUserRankings(user.id);
+        setUserRankings(rankings);
       } catch (error) {
-        console.error('Error fetching leaderboard stats:', error);
+        console.error('Error fetching user rankings:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    fetchUserRankings();
   }, [user?.id]);
 
-  const formatRank = (rank: number | null, total: number) => {
-    if (rank === null) return 'Unranked';
-    return `#${rank} of ${total}`;
-  };
-
-  if (loading) {
+  if (loading || !userRankings) {
     return (
       <Card>
         <CardHeader>
@@ -44,19 +38,16 @@ const LeaderboardPreview = () => {
             <Trophy className="h-5 w-5" />
             Your Rankings
           </CardTitle>
+          <CardDescription>See how you compare to other members</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-            <div className="h-4 bg-muted rounded w-2/3"></div>
+          <div className="flex items-center justify-center h-24">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
         </CardContent>
       </Card>
     );
   }
-
-  if (!stats) return null;
 
   return (
     <Card>
@@ -65,46 +56,32 @@ const LeaderboardPreview = () => {
           <Trophy className="h-5 w-5" />
           Your Rankings
         </CardTitle>
-        <CardDescription>See how you compare to other players</CardDescription>
+        <CardDescription>See how you compare to other members</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-3">
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" />
-              <span className="font-medium">Longest Drive</span>
-            </div>
-            <Badge variant="secondary">
-              {formatRank(stats.longest_drive_rank, stats.total_users)}
-            </Badge>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <Trophy className="h-4 w-4 mx-auto mb-1 text-yellow-600" />
+            <p className="text-xs text-muted-foreground">Drive</p>
+            <p className="text-sm font-semibold">#{userRankings.rankings.longestDrive}</p>
           </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-green-500" />
-              <span className="font-medium">Accuracy</span>
-            </div>
-            <Badge variant="secondary">
-              {formatRank(stats.accuracy_rank, stats.total_users)}
-            </Badge>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <Target className="h-4 w-4 mx-auto mb-1 text-blue-600" />
+            <p className="text-xs text-muted-foreground">Accuracy</p>
+            <p className="text-sm font-semibold">#{userRankings.rankings.mostAccurate}</p>
           </div>
-
-          <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-blue-500" />
-              <span className="font-medium">Improvement</span>
-            </div>
-            <Badge variant="secondary">Coming Soon</Badge>
+          <div className="text-center p-3 rounded-lg bg-muted/50">
+            <TrendingUp className="h-4 w-4 mx-auto mb-1 text-green-600" />
+            <p className="text-xs text-muted-foreground">Improvement</p>
+            <p className="text-sm font-semibold">#{userRankings.rankings.mostImprovement}</p>
           </div>
         </div>
-
-        <Button 
-          onClick={() => navigate('/leaderboard')} 
-          className="w-full"
-          variant="outline"
-        >
-          View Full Leaderboards
-          <ArrowRight className="h-4 w-4 ml-2" />
+        
+        <Button asChild variant="outline" className="w-full">
+          <Link to="/leaderboard" className="flex items-center gap-2">
+            View Full Leaderboards
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </Button>
       </CardContent>
     </Card>

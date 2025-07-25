@@ -48,24 +48,27 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          first_name: string | null
           id: string
-          name: string
+          last_name: string | null
           updated_at: string | null
           user_id: string
         }
         Insert: {
           created_at?: string | null
           email: string
+          first_name?: string | null
           id?: string
-          name: string
+          last_name?: string | null
           updated_at?: string | null
           user_id: string
         }
         Update: {
           created_at?: string | null
           email?: string
+          first_name?: string | null
           id?: string
-          name?: string
+          last_name?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -201,6 +204,47 @@ export type Database = {
           },
         ]
       }
+      user_stats: {
+        Row: {
+          accuracy_average: number | null
+          created_at: string | null
+          id: string
+          improvement_score: number | null
+          last_updated: string | null
+          longest_drive: number | null
+          total_swings: number | null
+          user_id: string
+        }
+        Insert: {
+          accuracy_average?: number | null
+          created_at?: string | null
+          id?: string
+          improvement_score?: number | null
+          last_updated?: string | null
+          longest_drive?: number | null
+          total_swings?: number | null
+          user_id: string
+        }
+        Update: {
+          accuracy_average?: number | null
+          created_at?: string | null
+          id?: string
+          improvement_score?: number | null
+          last_updated?: string | null
+          longest_drive?: number | null
+          total_swings?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_video_views: {
         Row: {
           created_at: string
@@ -260,7 +304,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_accuracy_average: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
+      calculate_longest_drive: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
+      update_user_stats: {
+        Args: { user_uuid: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
