@@ -14,6 +14,155 @@ export type Database = {
   }
   public: {
     Tables: {
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      progress_tracker: {
+        Row: {
+          created_at: string | null
+          id: string
+          improvement_areas: string[] | null
+          notes: string | null
+          overall_score: number | null
+          progress_summary: string | null
+          strengths: string[] | null
+          swing_data_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          improvement_areas?: string[] | null
+          notes?: string | null
+          overall_score?: number | null
+          progress_summary?: string | null
+          strengths?: string[] | null
+          swing_data_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          improvement_areas?: string[] | null
+          notes?: string | null
+          overall_score?: number | null
+          progress_summary?: string | null
+          strengths?: string[] | null
+          swing_data_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_tracker_swing_data_id_fkey"
+            columns: ["swing_data_id"]
+            isOneToOne: false
+            referencedRelation: "swing_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      swing_data: {
+        Row: {
+          club_type: string
+          coaching_notes: string | null
+          created_at: string | null
+          id: string
+          initial_metrics: Json
+          is_baseline: boolean | null
+          session_name: string | null
+          swing_data_non_baseline: Json | null
+          swing_score: number | null
+          trackman_image_url: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          club_type: string
+          coaching_notes?: string | null
+          created_at?: string | null
+          id?: string
+          initial_metrics?: Json
+          is_baseline?: boolean | null
+          session_name?: string | null
+          swing_data_non_baseline?: Json | null
+          swing_score?: number | null
+          trackman_image_url?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          club_type?: string
+          coaching_notes?: string | null
+          created_at?: string | null
+          id?: string
+          initial_metrics?: Json
+          is_baseline?: boolean | null
+          session_name?: string | null
+          swing_data_non_baseline?: Json | null
+          swing_score?: number | null
+          trackman_image_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_video_views: {
+        Row: {
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          video_title: string
+          video_url: string
+          watched_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          video_title: string
+          video_url: string
+          watched_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          video_title?: string
+          video_url?: string
+          watched_at?: string
+        }
+        Relationships: []
+      }
       video_thumbnails: {
         Row: {
           created_at: string
