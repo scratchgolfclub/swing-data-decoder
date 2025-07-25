@@ -10,23 +10,22 @@ const loadingPhrases = [
   { text: "Finalizing your path to improvement...", icon: Award, duration: 2000 },
 ];
 
-export const LoadingScreen = () => {
+export const LoadingScreen = ({ onComplete }: { onComplete?: () => void }) => {
   const [progress, setProgress] = useState(0);
   const [currentPhrase, setCurrentPhrase] = useState(0);
   const [showPulse, setShowPulse] = useState(true);
 
   useEffect(() => {
-    // Progress animation that smoothly fills to 100% and then pulses
+    // Progress animation that stops at 95% until ready
     const progressInterval = setInterval(() => {
       setProgress(prev => {
-        if (prev >= 100) {
-          // Create a pulsing effect when at 100%
-          setShowPulse(true);
-          return 100;
+        if (prev >= 95) {
+          // Stop at 95% and wait for external completion signal
+          return prev;
         }
-        return prev + 1.2;
+        return prev + 1.5;
       });
-    }, 60);
+    }, 80);
 
     // Cycle through loading phrases
     const phraseInterval = setInterval(() => {
@@ -39,30 +38,33 @@ export const LoadingScreen = () => {
     };
   }, []);
 
+  // External completion handler to finish progress
+  const completeLoading = () => {
+    setProgress(100);
+    setTimeout(() => {
+      onComplete?.();
+    }, 800);
+  };
+
+  // Make completeLoading available globally for testing
+  useEffect(() => {
+    (window as any).completeLoading = completeLoading;
+    return () => {
+      delete (window as any).completeLoading;
+    };
+  }, [onComplete]);
+
   const currentPhraseData = loadingPhrases[currentPhrase];
   const IconComponent = currentPhraseData.icon;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-stone-50 to-stone-100 dark:from-emerald-950 dark:via-stone-950 dark:to-stone-900 relative overflow-hidden">
-      {/* Animated Background Elements */}
+      {/* Simplified Animated Background */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Floating Golf Balls */}
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-3 h-3 bg-white/20 rounded-full animate-float"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${i * 0.8}s`,
-              animationDuration: `${4 + Math.random() * 2}s`
-            }}
-          />
-        ))}
-        
-        {/* Gradient Orbs */}
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-emerald-300/20 to-primary/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-primary/20 to-emerald-300/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+        {/* Elegant gradient orbs */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-emerald-300/10 to-primary/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-r from-primary/10 to-emerald-300/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-emerald-400/5 to-primary/5 rounded-full blur-2xl animate-pulse transform -translate-x-1/2 -translate-y-1/2" style={{ animationDelay: '4s' }} />
       </div>
 
       <div className="text-center max-w-lg mx-auto p-8 z-10 relative">
@@ -140,18 +142,21 @@ export const LoadingScreen = () => {
           </div>
         </div>
 
-        {/* Dynamic Loading Text with Smooth Transitions */}
-        <div className="h-20 flex items-center justify-center">
-          <div className="animate-fade-in" key={currentPhrase}>
-            <h2 className="text-2xl md:text-3xl font-bold mb-2 text-transparent bg-gradient-to-r from-primary via-emerald-600 to-primary bg-clip-text">
+        {/* Dynamic Loading Text with Enhanced Animations */}
+        <div className="h-24 flex items-center justify-center">
+          <div className="animate-fade-in text-center" key={currentPhrase}>
+            <h2 className="text-2xl md:text-3xl font-bold mb-4 text-transparent bg-gradient-to-r from-primary via-emerald-600 to-primary bg-clip-text animate-pulse">
               {currentPhraseData.text}
             </h2>
-            <div className="flex justify-center space-x-1">
-              {[...Array(3)].map((_, i) => (
+            <div className="flex justify-center space-x-2">
+              {[...Array(5)].map((_, i) => (
                 <div
                   key={i}
-                  className="w-2 h-2 bg-primary rounded-full animate-bounce"
-                  style={{ animationDelay: `${i * 0.2}s` }}
+                  className="w-1.5 h-1.5 bg-gradient-to-r from-primary to-emerald-500 rounded-full animate-bounce"
+                  style={{ 
+                    animationDelay: `${i * 0.15}s`,
+                    animationDuration: '1.2s'
+                  }}
                 />
               ))}
             </div>

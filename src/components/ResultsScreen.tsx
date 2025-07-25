@@ -81,31 +81,52 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 
 // Component to analyze swing data and provide summary
 const getSwingSummary = (swingData: any) => {
-  const goodPoints = [];
-  const needsWork = [];
+  const allMetrics = [];
   
-  // Example analysis - you can expand this based on actual data structure
-  if (swingData.ballSpeed && parseFloat(swingData.ballSpeed) > 150) {
-    goodPoints.push({ metric: "Ball Speed", value: swingData.ballSpeed, reason: "Great power generation" });
-  }
-  if (swingData.smashFactor && parseFloat(swingData.smashFactor) > 1.4) {
-    goodPoints.push({ metric: "Smash Factor", value: swingData.smashFactor, reason: "Excellent contact efficiency" });
-  }
-  if (swingData.carryDistance && parseFloat(swingData.carryDistance) > 200) {
-    goodPoints.push({ metric: "Carry Distance", value: swingData.carryDistance, reason: "Solid distance coverage" });
-  }
+  // Analyze all available metrics with ideal ranges
+  const metrics = [
+    { key: 'ballSpeed', name: 'Ball Speed', ideal: { min: 145, max: 180 }, unit: 'mph', goodAbove: true },
+    { key: 'smashFactor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 }, unit: '', goodAbove: true },
+    { key: 'carryDistance', name: 'Carry Distance', ideal: { min: 200, max: 280 }, unit: 'yds', goodAbove: true },
+    { key: 'clubPath', name: 'Club Path', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+    { key: 'faceAngle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+    { key: 'attackAngle', name: 'Attack Angle', ideal: { min: -2, max: 3 }, unit: '°', goodAbove: false },
+    { key: 'launchAngle', name: 'Launch Angle', ideal: { min: 12, max: 18 }, unit: '°', goodAbove: false },
+    { key: 'spinRate', name: 'Spin Rate', ideal: { min: 2000, max: 3500 }, unit: 'rpm', goodAbove: false }
+  ];
+
+  metrics.forEach(metric => {
+    const value = swingData[metric.key];
+    if (value && !isNaN(parseFloat(value))) {
+      const numValue = parseFloat(value);
+      const isInRange = numValue >= metric.ideal.min && numValue <= metric.ideal.max;
+      const deviation = isInRange ? 0 : Math.min(
+        Math.abs(numValue - metric.ideal.min),
+        Math.abs(numValue - metric.ideal.max)
+      );
+      
+      allMetrics.push({
+        ...metric,
+        value: `${value}${metric.unit}`,
+        numValue,
+        isGood: isInRange,
+        deviation,
+        reason: isInRange 
+          ? `Excellent ${metric.name.toLowerCase()} within ideal range`
+          : `Work on ${metric.name.toLowerCase()} for better performance`
+      });
+    }
+  });
+
+  // Get one best metric (in good range)
+  const goodMetrics = allMetrics.filter(m => m.isGood);
+  const goodPoints = goodMetrics.length > 0 ? [goodMetrics[0]] : [];
   
-  // Areas needing work
-  if (swingData.clubPath && Math.abs(parseFloat(swingData.clubPath)) > 3) {
-    needsWork.push({ metric: "Club Path", value: swingData.clubPath, reason: "Work on swing plane for straighter shots" });
-  }
-  if (swingData.faceAngle && Math.abs(parseFloat(swingData.faceAngle)) > 2) {
-    needsWork.push({ metric: "Face Angle", value: swingData.faceAngle, reason: "Focus on face control for better accuracy" });
-  }
-  if (swingData.attackAngle && parseFloat(swingData.attackAngle) < -5) {
-    needsWork.push({ metric: "Attack Angle", value: swingData.attackAngle, reason: "Optimize angle of attack for better launch" });
-  }
-  
+  // Get one worst metric (furthest from ideal) or pick one for improvement even if all are good
+  const needsWork = allMetrics.length > 0 
+    ? [allMetrics.sort((a, b) => b.deviation - a.deviation)[0]]
+    : [];
+
   return { goodPoints, needsWork };
 };
 
@@ -170,10 +191,10 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             <CardContent>
               {goodPoints.length > 0 ? (
                 <div className="space-y-3">
-                  {goodPoints.slice(0, 3).map((point, index) => (
+                  {goodPoints.slice(0, 1).map((point, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                       <div>
-                        <div className="font-semibold text-green-800 dark:text-green-200">{point.metric}</div>
+                        <div className="font-semibold text-green-800 dark:text-green-200">{point.name}</div>
                         <div className="text-sm text-green-600 dark:text-green-400">{point.reason}</div>
                       </div>
                       <div className="text-lg font-bold text-green-700 dark:text-green-300">{point.value}</div>
@@ -197,10 +218,10 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             <CardContent>
               {needsWork.length > 0 ? (
                 <div className="space-y-3">
-                  {needsWork.slice(0, 3).map((point, index) => (
+                  {needsWork.slice(0, 1).map((point, index) => (
                     <div key={index} className="flex items-center justify-between p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
                       <div>
-                        <div className="font-semibold text-amber-800 dark:text-amber-200">{point.metric}</div>
+                        <div className="font-semibold text-amber-800 dark:text-amber-200">{point.name}</div>
                         <div className="text-sm text-amber-600 dark:text-amber-400">{point.reason}</div>
                       </div>
                       <div className="text-lg font-bold text-amber-700 dark:text-amber-300">{point.value}</div>
@@ -217,20 +238,38 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
         {/* Mode Toggle */}
         <Card className="mb-8 border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
           <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-4">
-              <ToggleGroup 
-                type="single" 
-                value={isSimpleMode ? "simple" : "advanced"} 
-                onValueChange={(value) => setIsSimpleMode(value === "simple")}
-                className="bg-stone-100 dark:bg-stone-800 p-1 rounded-lg"
-              >
-                <ToggleGroupItem value="simple" className="px-6 py-2">
-                  Simple
-                </ToggleGroupItem>
-                <ToggleGroupItem value="advanced" className="px-6 py-2">
-                  Advanced
-                </ToggleGroupItem>
-              </ToggleGroup>
+            <div className="flex flex-col items-center space-y-6">
+              <h3 className="text-lg font-semibold text-center">Report Detail Level</h3>
+              <div className="relative bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
+                <div 
+                  className={`absolute top-1 h-8 bg-primary rounded-md transition-all duration-300 ease-in-out ${
+                    isSimpleMode ? 'left-1 w-20' : 'left-24 w-24'
+                  }`}
+                />
+                <ToggleGroup 
+                  type="single" 
+                  value={isSimpleMode ? "simple" : "advanced"} 
+                  onValueChange={(value) => setIsSimpleMode(value === "simple")}
+                  className="relative z-10"
+                >
+                  <ToggleGroupItem 
+                    value="simple" 
+                    className={`px-6 py-2 transition-colors duration-300 ${
+                      isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Simple
+                  </ToggleGroupItem>
+                  <ToggleGroupItem 
+                    value="advanced" 
+                    className={`px-6 py-2 transition-colors duration-300 ${
+                      !isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Advanced
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
               <p className="text-sm text-muted-foreground text-center max-w-2xl">
                 <strong>Simple:</strong> Get 1 key video and concise analysis highlights. 
                 <strong className="ml-4">Advanced:</strong> Access 2-3 videos with detailed technical breakdown and comprehensive recommendations.
@@ -246,20 +285,27 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Play className="h-6 w-6 text-primary" />
               </div>
-              Videos from our Pro based on your data
+              Your {isSimpleMode ? 'Simple' : 'Advanced'} Lesson Plan
               <span className="text-sm font-normal text-muted-foreground">
                 ({isSimpleMode ? '1' : displayedVideos.length} video{displayedVideos.length !== 1 ? 's' : ''})
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-6">
               {displayedVideos.map((video, index) => (
-                <VideoCard 
-                  key={index} 
-                  video={video} 
-                  index={index}
-                />
+                <div key={index} className="space-y-4">
+                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Why we're recommending this video:</h4>
+                    <p className="text-blue-700 dark:text-blue-300 text-sm">
+                      {video.reason || `Based on your ${needsWork[0]?.name || 'swing data'}, this video will help you improve your technique and consistency.`}
+                    </p>
+                  </div>
+                  <VideoCard 
+                    video={video} 
+                    index={index}
+                  />
+                </div>
               ))}
             </div>
             {displayedVideos.length === 0 && (
@@ -271,23 +317,102 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           </CardContent>
         </Card>
 
-        {/* Text Recommendations - Collapsible Sections */}
-        <Card className="shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Target className="h-6 w-6 text-primary" />
+        {/* Redesigned Swing Analysis */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Summary */}
+          <Card className="shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <Target className="h-5 w-5 text-primary" />
+                Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+                <p>Based on your TrackMan data, we've identified key areas for improvement.</p>
+                {goodPoints.length > 0 && (
+                  <p className="text-green-700 dark:text-green-300">
+                    ✓ Your <strong>{goodPoints[0].name}</strong> is excellent at {goodPoints[0].value}
+                  </p>
+                )}
+                {needsWork.length > 0 && (
+                  <p className="text-amber-700 dark:text-amber-300">
+                    → Focus on improving your <strong>{needsWork[0].name}</strong> from {needsWork[0].value}
+                  </p>
+                )}
+                <p>Our lesson plan targets these specific metrics to help you shoot lower scores.</p>
               </div>
-              Your Swing Analysis
-              <span className="text-sm font-normal text-muted-foreground">
-                ({isSimpleMode ? 'Simple' : 'Advanced'} mode)
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SwingAnalysisFormatter text={textRecommendations} isSimpleMode={isSimpleMode} />
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+
+          {/* Goal */}
+          <Card className="shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <Trophy className="h-5 w-5 text-primary" />
+                Goal
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
+                <p><strong>Primary Focus:</strong> {needsWork[0]?.name || 'Overall swing consistency'}</p>
+                {needsWork[0] && (
+                  <p><strong>Target Range:</strong> {needsWork[0].ideal?.min}-{needsWork[0].ideal?.max}{needsWork[0].unit}</p>
+                )}
+                <p><strong>Expected Timeline:</strong> 2-4 weeks with consistent practice</p>
+                <p><strong>Success Metric:</strong> More consistent ball striking and improved distance control</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Drills/Feels */}
+          <Card className="shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur lg:col-span-2">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center gap-3">
+                <Lightbulb className="h-5 w-5 text-primary" />
+                Drills & Feels
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="font-semibold mb-3 text-primary">Practice Drills</h4>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Alignment stick drill for better swing plane</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Impact bag work for solid contact</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Tempo training with metronome</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-3 text-primary">Swing Feels</h4>
+                  <div className="space-y-2 text-sm text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Feel like you're hitting up on the ball</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Maintain steady head position through impact</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="text-primary mt-1">●</span>
+                      <span>Focus on smooth, controlled acceleration</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Extracted Data Preview */}
         <Card className="mt-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
