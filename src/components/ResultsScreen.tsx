@@ -240,25 +240,31 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-6">
               <h3 className="text-lg font-semibold text-center">Report Detail Level</h3>
-              <div className="relative bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
+              <div className="relative bg-gradient-to-r from-stone-100 to-stone-50 dark:from-stone-800 dark:to-stone-750 p-1.5 rounded-xl shadow-inner border border-stone-200 dark:border-stone-700">
                 <div 
-                  className={`absolute top-1 h-8 bg-primary rounded-md transition-all duration-300 ease-in-out ${
-                    isSimpleMode ? 'left-1 w-20' : 'left-[84px] w-24'
+                  className={`absolute top-1.5 bottom-1.5 bg-gradient-to-r from-primary to-primary/90 rounded-lg shadow-lg transition-all duration-500 ease-out transform ${
+                    isSimpleMode 
+                      ? 'left-1.5 right-[50%] translate-x-0' 
+                      : 'left-[50%] right-1.5 translate-x-0'
                   }`}
                 />
-                <div className="relative z-10 flex">
+                <div className="relative z-10 flex w-full">
                   <button
                     onClick={() => setIsSimpleMode(true)}
-                    className={`px-6 py-2 transition-colors duration-300 ${
-                      isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg ${
+                      isSimpleMode 
+                        ? 'text-primary-foreground shadow-sm' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-stone-700/50'
                     }`}
                   >
                     Simple
                   </button>
                   <button
                     onClick={() => setIsSimpleMode(false)}
-                    className={`px-6 py-2 transition-colors duration-300 ${
-                      !isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg ${
+                      !isSimpleMode 
+                        ? 'text-primary-foreground shadow-sm' 
+                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-stone-700/50'
                     }`}
                   >
                     Advanced
