@@ -66,7 +66,7 @@ const Index = () => {
           </div>
           
           <h1 className="mb-12 text-premium leading-none overflow-visible">
-            <span className="gradient-text-premium block">Analyze</span>
+            <span className="gradient-text-premium block leading-normal py-1">Analyze</span>
             <span className="text-foreground/70 font-light block mt-4">My Swing</span>
           </h1>
           
