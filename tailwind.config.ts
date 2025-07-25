@@ -124,8 +124,8 @@ export default {
 					'100%': { boxShadow: '0 0 40px rgba(22, 163, 74, 0.6)' }
 				},
 				'float': {
-					'0%, 100%': { transform: 'translateY(0px)' },
-					'50%': { transform: 'translateY(-10px)' }
+					'0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+					'50%': { transform: 'translateY(-20px) rotate(180deg)' }
 				}
 			},
 			animation: {
