@@ -7,6 +7,7 @@ import { Edit, Save, X, Image } from 'lucide-react';
 import { ThumbnailService } from '@/utils/thumbnailService';
 import { VIDEO_CONTEXTS } from '@/utils/videoContextService';
 import { useToast } from '@/components/ui/use-toast';
+import { ThumbnailMigration } from '@/components/ThumbnailMigration';
 
 interface VideoContext {
   id: string;
@@ -166,6 +167,19 @@ const Context = () => {
             Manage video thumbnails and recommendation context for the personalized analysis system.
           </p>
         </div>
+
+        {/* Thumbnail Migration Section */}
+        <Card className="mb-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
+          <CardHeader>
+            <CardTitle className="text-xl">Local Thumbnail Migration</CardTitle>
+            <CardDescription>
+              Migrate your locally stored thumbnails to Supabase for production use.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ThumbnailMigration />
+          </CardContent>
+        </Card>
 
         {/* Video Recommendations Section */}
         <Card className="mb-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">

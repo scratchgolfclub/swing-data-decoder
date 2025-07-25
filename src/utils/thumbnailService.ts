@@ -222,6 +222,55 @@ export class ThumbnailService {
     }
   }
 
+  static async migrateLocalThumbnailsToSupabase(): Promise<{ success: number; failed: number; errors: string[] }> {
+    const mappings = this.getThumbnailMappings();
+    const results = { success: 0, failed: 0, errors: [] as string[] };
+    
+    console.log(`Starting migration of ${Object.keys(mappings).length} thumbnails`);
+    
+    for (const [videoUrl, base64Data] of Object.entries(mappings)) {
+      try {
+        // Convert base64 to File
+        const file = this.base64ToFile(base64Data, `thumbnail_${Date.now()}.jpg`);
+        
+        // Upload to Supabase
+        await this.saveThumbnail(videoUrl, file);
+        
+        // Remove from localStorage after successful upload
+        delete mappings[videoUrl];
+        results.success++;
+        
+        console.log(`Successfully migrated thumbnail for: ${videoUrl}`);
+      } catch (error) {
+        console.error(`Failed to migrate thumbnail for ${videoUrl}:`, error);
+        results.failed++;
+        results.errors.push(`${videoUrl}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+    
+    // Update localStorage with remaining mappings (failed ones)
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(mappings));
+    
+    console.log(`Migration complete: ${results.success} success, ${results.failed} failed`);
+    return results;
+  }
+
+  static base64ToFile(base64Data: string, filename: string): File {
+    // Remove data URL prefix if present
+    const base64String = base64Data.includes(',') ? base64Data.split(',')[1] : base64Data;
+    
+    // Convert base64 to binary
+    const binaryString = atob(base64String);
+    const bytes = new Uint8Array(binaryString.length);
+    
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Create and return File object
+    return new File([bytes], filename, { type: 'image/jpeg' });
+  }
+
   static getDefaultThumbnail(index: number): string {
     const defaultThumbnails = [
       'https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=400&h=225&fit=crop&crop=center',
