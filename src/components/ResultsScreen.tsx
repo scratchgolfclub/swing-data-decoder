@@ -240,27 +240,30 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-6">
               <h3 className="text-lg font-semibold text-center">Report Detail Level</h3>
-              <div className="flex bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
-                <button
-                  onClick={() => setIsSimpleMode(true)}
-                  className={`px-6 py-2 rounded-md transition-all duration-300 ${
-                    isSimpleMode 
-                      ? 'bg-primary text-primary-foreground shadow-sm' 
-                      : 'text-muted-foreground hover:text-foreground'
+              <div className="relative bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
+                <div 
+                  className={`absolute top-1 h-8 bg-primary rounded-md transition-all duration-300 ease-in-out ${
+                    isSimpleMode ? 'left-1 w-20' : 'left-[84px] w-24'
                   }`}
-                >
-                  Simple
-                </button>
-                <button
-                  onClick={() => setIsSimpleMode(false)}
-                  className={`px-6 py-2 rounded-md transition-all duration-300 ${
-                    !isSimpleMode 
-                      ? 'bg-primary text-primary-foreground shadow-sm' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Advanced
-                </button>
+                />
+                <div className="relative z-10 flex">
+                  <button
+                    onClick={() => setIsSimpleMode(true)}
+                    className={`px-6 py-2 transition-colors duration-300 ${
+                      isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Simple
+                  </button>
+                  <button
+                    onClick={() => setIsSimpleMode(false)}
+                    className={`px-6 py-2 transition-colors duration-300 ${
+                      !isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Advanced
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-muted-foreground text-center max-w-2xl">
                 <strong>Simple:</strong> Get 1 key video and concise analysis highlights. 
