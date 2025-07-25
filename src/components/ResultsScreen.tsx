@@ -107,7 +107,7 @@ const getSwingSummary = (swingData: any) => {
       
       allMetrics.push({
         ...metric,
-        value: metric.unit ? `${value}${metric.unit}` : value,
+        value: metric.unit && !value.toString().includes(metric.unit) ? `${value}${metric.unit}` : value,
         numValue,
         isGood: isInRange,
         deviation,
