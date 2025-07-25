@@ -167,15 +167,20 @@ const Dashboard = () => {
 
     const data = metrics.TrackManCombine;
     const idealRanges = {
-      'Club Speed': { min: 95, max: 115, weight: 0.2 },
-      'Ball Speed': { min: 140, max: 165, weight: 0.2 },
-      'Smash Factor': { min: 1.45, max: 1.52, weight: 0.15 },
-      'Launch Angle': { min: 8, max: 15, weight: 0.15 },
-      'Club Face': { min: -2, max: 2, weight: 0.3 }
+      'Club Speed': { min: 95, max: 115, weight: 0.2, unit: ' mph' },
+      'Ball Speed': { min: 140, max: 165, weight: 0.2, unit: ' mph' },
+      'Smash Factor': { min: 1.45, max: 1.52, weight: 0.15, unit: '' },
+      'Launch Angle': { min: 8, max: 15, weight: 0.15, unit: '°' },
+      'Club Face': { min: -2, max: 2, weight: 0.3, unit: '°' },
+      'Attack Angle': { min: -1, max: 3, weight: 0.2, unit: '°' },
+      'Club Path': { min: -2, max: 2, weight: 0.2, unit: '°' }
     };
 
     const scores = Object.entries(idealRanges).map(([key, range]) => {
-      const value = parseFloat(data[key]?.replace(/[^\d.-]/g, '') || '0');
+      const rawValue = data[key];
+      if (!rawValue) return { key, value: 0, score: 0, weight: range.weight, unit: range.unit };
+      
+      const value = parseFloat(rawValue.toString().replace(/[^\d.-]/g, '') || '0');
       let score = 0;
       
       if (value >= range.min && value <= range.max) {
@@ -186,8 +191,10 @@ const Dashboard = () => {
         score = Math.max(0, 100 - ((value - range.max) / range.max) * 100);
       }
       
-      return { key, value, score, weight: range.weight };
-    });
+      return { key, value, score, weight: range.weight, unit: range.unit };
+    }).filter(item => item.value !== 0);
+
+    if (scores.length === 0) return { strength: null, weakness: null };
 
     const bestMetric = scores.reduce((best, current) => 
       current.score > best.score ? current : best
@@ -219,6 +226,14 @@ const Dashboard = () => {
           return isStrength 
             ? `Outstanding face control - this is what tour players strive for!`
             : `Focus on square face at impact for straighter shots.`;
+        case 'Attack Angle':
+          return isStrength 
+            ? `Perfect attack angle for solid contact!`
+            : `Too steep, work on shallow approach for better contact.`;
+        case 'Club Path':
+          return isStrength 
+            ? `Great swing path for straight shots!`
+            : `Work on swing path for more consistent direction.`;
         default:
           return isStrength ? 'Great execution!' : 'Area for improvement.';
       }
@@ -227,12 +242,12 @@ const Dashboard = () => {
     return {
       strength: {
         metric: bestMetric.key,
-        value: bestMetric.value,
+        value: `${bestMetric.value}${bestMetric.unit}`,
         description: getDescription(bestMetric.key, bestMetric.value, true)
       },
       weakness: {
         metric: worstMetric.key,
-        value: worstMetric.value,
+        value: `${worstMetric.value}${worstMetric.unit}`,
         description: getDescription(worstMetric.key, worstMetric.value, false)
       }
     };
@@ -245,20 +260,56 @@ const Dashboard = () => {
     const metrics = getLatestSwingMetrics();
     if (!metrics) return { drills: [], feels: [], videos: [] };
 
+    // Create a combined swing object for the recommendation engine
+    const combinedSwing = {
+      ...latestSwing,
+      ...metrics
+    };
+
     // Get text recommendations and parse drills/feels
-    const textRecs = getTextRecommendations([{ ...latestSwing, ...metrics }], latestSwing.club_type);
+    const textRecs = getTextRecommendations([combinedSwing], latestSwing.club_type);
     
-    // Extract drills and feels from text recommendations
-    const drillsMatch = textRecs.match(/Recommended drills:(.*?)(?=Swing feels:|$)/s);
-    const feelsMatch = textRecs.match(/Swing feels:(.*?)(?=Remember:|$)/s);
+    // More robust parsing for drills and feels
+    const drillsSection = textRecs.match(/(?:Recommended drills|Practice Tips|Drills to Try):(.*?)(?=\n\n|\*\*|Swing feels|Remember|$)/is);
+    const feelsSection = textRecs.match(/(?:Swing feels|Feel thoughts|Key feels):(.*?)(?=\n\n|\*\*|Remember|Goal|$)/is);
     
-    const drills = drillsMatch ? drillsMatch[1].split('\n').filter(line => line.trim().startsWith('-')).slice(0, 3) : [];
-    const feels = feelsMatch ? feelsMatch[1].split('\n').filter(line => line.trim().startsWith('-')).slice(0, 3) : [];
+    // Extract bullet points or numbered items
+    const extractItems = (text: string) => {
+      if (!text) return [];
+      return text
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => 
+          line.startsWith('•') || 
+          line.startsWith('-') || 
+          line.startsWith('*') ||
+          /^\d+\./.test(line)
+        )
+        .map(line => line.replace(/^[•\-*\d.]\s*/, '').trim())
+        .filter(line => line.length > 10) // Filter out very short items
+        .slice(0, 3);
+    };
+
+    const drills = drillsSection ? extractItems(drillsSection[1]) : [
+      "Practice with alignment sticks to improve swing path",
+      "Work on tempo with slow motion swings",
+      "Focus on consistent setup routine"
+    ];
+
+    const feels = feelsSection ? extractItems(feelsSection[1]) : [
+      "Feel like you're swinging to the right of target",
+      "Keep your head behind the ball at impact",
+      "Smooth tempo, don't rush the downswing"
+    ];
 
     // Get video recommendations
-    const videoRecs = getVideoRecommendations([{ ...latestSwing, ...metrics }], latestSwing.club_type).slice(0, 3);
+    const videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
 
-    return { drills, feels, videos: videoRecs };
+    return { 
+      drills: drills.length > 0 ? drills : ["Practice with alignment sticks", "Work on tempo", "Focus on setup routine"],
+      feels: feels.length > 0 ? feels : ["Smooth tempo", "Stay behind ball", "Square clubface"],
+      videos: videoRecs 
+    };
   };
 
   const latestSwing = swingData[0];
@@ -384,7 +435,7 @@ const Dashboard = () => {
           </Card>
 
           {/* Biggest Strength */}
-          {analysis?.strength && (
+          {latestSwing && analysis?.strength && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -394,7 +445,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold mb-2">
-                  {analysis.strength.metric}: {analysis.strength.value}°
+                  {analysis.strength.metric}: {analysis.strength.value}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {analysis.strength.description}
@@ -404,7 +455,7 @@ const Dashboard = () => {
           )}
 
           {/* Biggest Weakness */}
-          {analysis?.weakness && (
+          {latestSwing && analysis?.weakness && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -414,7 +465,7 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold mb-2">
-                  {analysis.weakness.metric}: {analysis.weakness.value}°
+                  {analysis.weakness.metric}: {analysis.weakness.value}
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {analysis.weakness.description}
@@ -424,7 +475,7 @@ const Dashboard = () => {
           )}
 
           {/* Your Drills */}
-          {recommendations.drills.length > 0 && (
+          {latestSwing && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -446,7 +497,7 @@ const Dashboard = () => {
           )}
 
           {/* Your Feels */}
-          {recommendations.feels.length > 0 && (
+          {latestSwing && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
