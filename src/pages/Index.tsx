@@ -61,7 +61,7 @@ const Index = () => {
               <img 
                 src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
                 alt="SGC Logo" 
-                className="h-24 w-auto mx-auto mb-8 animate-float"
+                className="h-24 w-auto mx-auto mb-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 drop-shadow-xl hover:drop-shadow-2xl cursor-pointer"
               />
             </div>
             
