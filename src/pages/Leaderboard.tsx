@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Target, TrendingUp, Medal, Award, Crown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Header from '@/components/Header';
 
 const Leaderboard = () => {
   const { user } = useAuth();
@@ -134,7 +135,9 @@ const Leaderboard = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <Header />
+      <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3 mb-8">
         <Trophy className="h-8 w-8 text-primary" />
         <div>
@@ -211,6 +214,7 @@ const Leaderboard = () => {
           />
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 };
