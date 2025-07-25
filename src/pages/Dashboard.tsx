@@ -24,6 +24,9 @@ import {
 import { useNavigate } from 'react-router-dom';
 import ProgressModal from '@/components/ProgressModal';
 import SwingHistoryList from '@/components/SwingHistoryList';
+import { BadgeSection } from '@/components/BadgeSection';
+import { BadgeNotificationManager } from '@/components/BadgeNotification';
+import { useBadges } from '@/hooks/useBadges';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
 
 interface SwingData {
@@ -64,12 +67,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [selectedClubCategory, setSelectedClubCategory] = useState<string>('all');
+  
+  // Badge system integration
+  const { 
+    badgeProgress, 
+    newBadges, 
+    checkForNewBadges, 
+    dismissBadgeNotification 
+  } = useBadges();
 
   useEffect(() => {
     if (user) {
       loadUserData();
     }
   }, [user]);
+
+  // Check for new badges after data loads
+  useEffect(() => {
+    if (user && swingData.length > 0) {
+      checkForNewBadges();
+    }
+  }, [user, swingData, checkForNewBadges]);
 
   const loadUserData = async () => {
     if (!user?.id) return;
@@ -859,9 +877,18 @@ const Dashboard = () => {
           </Card>
         )}
 
+        {/* Badge Section */}
+        <BadgeSection className="mb-8" />
+
         {/* Swing History */}
         <SwingHistoryList swingData={filteredSwingData} onDataUpdate={loadUserData} />
       </div>
+
+      {/* Badge Notifications */}
+      <BadgeNotificationManager 
+        newBadges={newBadges}
+        onBadgeDismissed={dismissBadgeNotification}
+      />
 
       {/* Progress Modal */}
       {showProgressModal && latestSwing && baselineSwing && (
