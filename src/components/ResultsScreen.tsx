@@ -107,7 +107,7 @@ const getSwingSummary = (swingData: any) => {
       
       allMetrics.push({
         ...metric,
-        value: `${value}${metric.unit}`,
+        value: metric.unit ? `${value}${metric.unit}` : value,
         numValue,
         isGood: isInRange,
         deviation,
@@ -240,35 +240,27 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           <CardContent className="pt-6">
             <div className="flex flex-col items-center space-y-6">
               <h3 className="text-lg font-semibold text-center">Report Detail Level</h3>
-              <div className="relative bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
-                <div 
-                  className={`absolute top-1 h-8 bg-primary rounded-md transition-all duration-300 ease-in-out ${
-                    isSimpleMode ? 'left-1 w-20' : 'left-24 w-24'
+              <div className="flex bg-stone-100 dark:bg-stone-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setIsSimpleMode(true)}
+                  className={`px-6 py-2 rounded-md transition-all duration-300 ${
+                    isSimpleMode 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'text-muted-foreground hover:text-foreground'
                   }`}
-                />
-                <ToggleGroup 
-                  type="single" 
-                  value={isSimpleMode ? "simple" : "advanced"} 
-                  onValueChange={(value) => setIsSimpleMode(value === "simple")}
-                  className="relative z-10"
                 >
-                  <ToggleGroupItem 
-                    value="simple" 
-                    className={`px-6 py-2 transition-colors duration-300 ${
-                      isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Simple
-                  </ToggleGroupItem>
-                  <ToggleGroupItem 
-                    value="advanced" 
-                    className={`px-6 py-2 transition-colors duration-300 ${
-                      !isSimpleMode ? 'text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Advanced
-                  </ToggleGroupItem>
-                </ToggleGroup>
+                  Simple
+                </button>
+                <button
+                  onClick={() => setIsSimpleMode(false)}
+                  className={`px-6 py-2 rounded-md transition-all duration-300 ${
+                    !isSimpleMode 
+                      ? 'bg-primary text-primary-foreground shadow-sm' 
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Advanced
+                </button>
               </div>
               <p className="text-sm text-muted-foreground text-center max-w-2xl">
                 <strong>Simple:</strong> Get 1 key video and concise analysis highlights. 
