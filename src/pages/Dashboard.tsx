@@ -28,6 +28,7 @@ import { BadgeSection } from '@/components/BadgeSection';
 import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
+import LeaderboardPreview from '@/components/LeaderboardPreview';
 
 interface SwingData {
   id: string;
@@ -673,7 +674,7 @@ const Dashboard = () => {
         </div>
 
         {/* Top Stats Row - Compact */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="border-muted/40">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Total Swings</CardTitle>
@@ -720,6 +721,9 @@ const Dashboard = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Leaderboard Preview */}
+          <LeaderboardPreview />
         </div>
 
         {/* Strength & Weakness Analysis */}

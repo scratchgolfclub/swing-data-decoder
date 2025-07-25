@@ -21,7 +21,8 @@ const Auth = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
-  const [signupName, setSignupName] = useState('');
+  const [signupFirstName, setSignupFirstName] = useState('');
+  const [signupLastName, setSignupLastName] = useState('');
 
   // Set tab based on URL parameter
   useEffect(() => {
@@ -57,7 +58,7 @@ const Auth = () => {
     setLoading(true);
     setError('');
 
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
+    const { error } = await signUp(signupEmail, signupPassword, signupFirstName, signupLastName);
     
     if (error) {
       setError(error.message);
@@ -122,16 +123,29 @@ const Auth = () => {
               
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignup} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      type="text"
-                      value={signupName}
-                      onChange={(e) => setSignupName(e.target.value)}
-                      required
-                      disabled={loading}
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-first-name">First Name</Label>
+                      <Input
+                        id="signup-first-name"
+                        type="text"
+                        value={signupFirstName}
+                        onChange={(e) => setSignupFirstName(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-last-name">Last Name</Label>
+                      <Input
+                        id="signup-last-name"
+                        type="text"
+                        value={signupLastName}
+                        onChange={(e) => setSignupLastName(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
