@@ -59,8 +59,8 @@ const Index = () => {
           <div className="text-center mb-16 animate-fade-up">
             <div className="mb-8">
               <img 
-                src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
-                alt="SGC Logo" 
+                src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
+                alt="Scratch Golf Club Logo" 
                 className="h-24 w-auto mx-auto mb-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 drop-shadow-xl hover:drop-shadow-2xl cursor-pointer"
               />
             </div>
