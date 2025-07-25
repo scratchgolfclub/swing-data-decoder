@@ -48,12 +48,17 @@ const Dashboard = () => {
   }, [user]);
 
   const loadUserData = async () => {
+    if (!user?.id) return;
+    
     try {
       setLoading(true);
       
-      // Load swing data
-      const { data: swings, error: swingError } = await supabase
-        .rpc('get_user_swing_data', { p_user_id: user?.id });
+      // Load swing data - using any to bypass type issues since tables were created manually
+      const { data: swings, error: swingError } = await (supabase as any)
+        .from('swing_data')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (swingError) {
         console.error('Error loading swing data:', swingError);
@@ -62,9 +67,12 @@ const Dashboard = () => {
         setSwingData(swings as SwingData[] || []);
       }
 
-      // Load progress data
-      const { data: progress, error: progressError } = await supabase
-        .rpc('get_user_progress_data', { p_user_id: user?.id });
+      // Load progress data - using any to bypass type issues since tables were created manually
+      const { data: progress, error: progressError } = await (supabase as any)
+        .from('progress_tracker')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
       if (progressError) {
         console.error('Error loading progress data:', progressError);
