@@ -71,7 +71,10 @@ export const VideoCard = ({ video, index }: VideoCardProps) => {
         )}
         
         {/* Play button overlay */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div 
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+          onClick={() => window.open(video.url, '_blank')}
+        >
           <div className="w-20 h-20 bg-white/90 dark:bg-black/90 rounded-full flex items-center justify-center shadow-lg">
             <Play className="h-10 w-10 text-primary ml-1" />
           </div>

@@ -249,30 +249,34 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
                 <div className="relative z-10 flex w-full">
                   <button
                     onClick={() => setIsSimpleMode(true)}
-                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg ${
+                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg relative z-20 ${
                       isSimpleMode 
                         ? 'text-primary-foreground shadow-sm' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-stone-700/50'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     Simple
                   </button>
                   <button
                     onClick={() => setIsSimpleMode(false)}
-                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg ${
+                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg relative z-20 ${
                       !isSimpleMode 
                         ? 'text-primary-foreground shadow-sm' 
-                        : 'text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-stone-700/50'
+                        : 'text-muted-foreground hover:text-foreground'
                     }`}
                   >
                     Advanced
                   </button>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground text-center max-w-2xl">
-                <strong>Simple:</strong> Get 1 key video and concise analysis highlights. 
-                <strong className="ml-4">Advanced:</strong> Access 2-3 videos with detailed technical breakdown and comprehensive recommendations.
-              </p>
+              <div className="text-center space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  <strong>Simple:</strong> Get 1 key video and concise analysis highlights.
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <strong>Advanced:</strong> Access 2-3 videos with detailed technical breakdown and comprehensive recommendations.
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

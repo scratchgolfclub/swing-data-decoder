@@ -66,9 +66,9 @@ const Index = () => {
             </div>
             
             <h1 className="text-7xl md:text-8xl font-display font-bold mb-6 tracking-tight">
-              <span className="gradient-text">AI Golf</span>
+              <span className="gradient-text">Analyze</span>
               <br />
-              <span className="text-foreground/80">Analysis</span>
+              <span className="text-foreground/80">My Swing</span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-4 font-light leading-relaxed max-w-2xl mx-auto">
