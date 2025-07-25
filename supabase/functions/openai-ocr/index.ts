@@ -34,7 +34,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Scrape all TrackMan swing data from this image. Return values line by line, including data labels and units (mph, deg, mm, ft, yds, etc.). Be precise and match the visual layout as best as possible.'
+                text: 'Read and extract all displayed golf swing metrics from this launch monitor screen. This is for personal swing analysis and improvement. Please transcribe all visible data points including labels and units (mph, deg, mm, ft, yds, etc.). Return the data line by line as it appears on screen, matching the visual layout as precisely as possible.'
               },
               {
                 type: 'image_url',
