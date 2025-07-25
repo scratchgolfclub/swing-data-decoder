@@ -161,7 +161,7 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             <Button 
               onClick={onReset} 
               variant="outline" 
-              className="flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium"
+              className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium cursor-pointer"
             >
               <ArrowLeft className="h-4 w-4" />
               Analyze Another Photo
