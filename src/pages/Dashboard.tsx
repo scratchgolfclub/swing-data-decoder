@@ -183,84 +183,127 @@ const Dashboard = () => {
       return { strength: null, weakness: null };
     }
 
-    // Check both possible data structures
-    const data = metrics.TrackManCombine || metrics;
+    // Use the actual data structure from the database
+    const data = metrics;
     console.log('Using data:', data);
     
     if (!data || typeof data !== 'object') {
       console.log('No valid data found');
       return { strength: null, weakness: null };
     }
+
+    // Define ideal ranges based on actual metric names from database
     const idealRanges = {
-      'Club Speed': { min: 95, max: 115, weight: 0.2, unit: ' mph' },
-      'Ball Speed': { min: 140, max: 165, weight: 0.2, unit: ' mph' },
-      'Smash Factor': { min: 1.45, max: 1.52, weight: 0.15, unit: '' },
-      'Launch Angle': { min: 8, max: 15, weight: 0.15, unit: '°' },
-      'Club Face': { min: -2, max: 2, weight: 0.3, unit: '°' },
-      'Attack Angle': { min: -1, max: 3, weight: 0.2, unit: '°' },
-      'Club Path': { min: -2, max: 2, weight: 0.2, unit: '°' }
+      'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
+      'ballSpeed': { min: 120, max: 150, unit: ' mph', label: 'Ball Speed' },
+      'smashFactor': { min: 1.40, max: 1.50, unit: '', label: 'Smash Factor' },
+      'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
+      'faceAngle': { min: -2, max: 2, unit: '°', label: 'Face Angle' },
+      'clubPath': { min: -2, max: 2, unit: '°', label: 'Club Path' },
+      'faceToPath': { min: -2, max: 2, unit: '°', label: 'Face to Path' },
+      'spinRate': { min: 5000, max: 7000, unit: ' rpm', label: 'Spin Rate' }
     };
 
     const scores = Object.entries(idealRanges).map(([key, range]) => {
       const rawValue = data[key];
-      if (!rawValue) return { key, value: 0, score: 0, weight: range.weight, unit: range.unit };
+      if (!rawValue) return null;
       
-      const value = parseFloat(rawValue.toString().replace(/[^\d.-]/g, '') || '0');
+      // Parse numeric value from string (remove units)
+      const value = parseFloat(rawValue.toString().replace(/[^\d.-]/g, ''));
+      if (isNaN(value)) return null;
+      
       let score = 0;
+      let distanceFromIdeal = 0;
       
       if (value >= range.min && value <= range.max) {
-        score = 100;
+        // In ideal range - calculate how close to center
+        const center = (range.min + range.max) / 2;
+        const rangeSize = range.max - range.min;
+        distanceFromIdeal = Math.abs(value - center) / rangeSize;
+        score = 100 - (distanceFromIdeal * 20); // Small penalty for being away from center
       } else if (value < range.min) {
-        score = Math.max(0, 100 - ((range.min - value) / range.min) * 100);
+        distanceFromIdeal = (range.min - value) / range.min;
+        score = Math.max(0, 100 - (distanceFromIdeal * 100));
       } else {
-        score = Math.max(0, 100 - ((value - range.max) / range.max) * 100);
+        distanceFromIdeal = (value - range.max) / range.max;
+        score = Math.max(0, 100 - (distanceFromIdeal * 100));
       }
       
-      return { key, value, score, weight: range.weight, unit: range.unit };
-    }).filter(item => item.value !== 0);
+      return { 
+        key: range.label, 
+        value, 
+        score, 
+        unit: range.unit,
+        distanceFromIdeal,
+        inIdealRange: value >= range.min && value <= range.max
+      };
+    }).filter(item => item !== null);
 
     if (scores.length === 0) return { strength: null, weakness: null };
 
-    const bestMetric = scores.reduce((best, current) => 
-      current.score > best.score ? current : best
-    );
+    // Find best metric (highest score, preferably in ideal range)
+    const bestMetric = scores.reduce((best, current) => {
+      if (current.inIdealRange && !best.inIdealRange) return current;
+      if (!current.inIdealRange && best.inIdealRange) return best;
+      return current.score > best.score ? current : best;
+    });
 
-    const worstMetric = scores.reduce((worst, current) => 
-      current.score < worst.score ? current : worst
-    );
+    // Find worst metric (lowest score, furthest from ideal)
+    const worstMetric = scores.reduce((worst, current) => {
+      if (!current.inIdealRange && worst.inIdealRange) return current;
+      if (current.inIdealRange && !worst.inIdealRange) return worst;
+      return current.score < worst.score ? current : worst;
+    });
 
-    const getDescription = (key: string, value: number, isStrength: boolean) => {
-      switch (key) {
-        case 'Club Speed':
-          return isStrength 
-            ? `Great club speed! This generates good distance.`
-            : `Work on generating more club speed through better sequence.`;
-        case 'Ball Speed':
-          return isStrength 
-            ? `Excellent ball speed - you're maximizing energy transfer!`
-            : `Focus on solid contact to increase ball speed.`;
-        case 'Smash Factor':
-          return isStrength 
-            ? `Perfect contact efficiency - you're hitting it pure!`
-            : `Work on center face contact to improve efficiency.`;
-        case 'Launch Angle':
-          return isStrength 
-            ? `Ideal launch angle for maximum carry distance!`
-            : `Adjust your angle of attack for optimal trajectory.`;
-        case 'Club Face':
-          return isStrength 
-            ? `Outstanding face control - this is what tour players strive for!`
-            : `Focus on square face at impact for straighter shots.`;
-        case 'Attack Angle':
-          return isStrength 
-            ? `Perfect attack angle for solid contact!`
-            : `Too steep, work on shallow approach for better contact.`;
-        case 'Club Path':
-          return isStrength 
-            ? `Great swing path for straight shots!`
-            : `Work on swing path for more consistent direction.`;
-        default:
-          return isStrength ? 'Great execution!' : 'Area for improvement.';
+    const getDescription = (metric: any, isStrength: boolean) => {
+      const { key, value, inIdealRange } = metric;
+      
+      if (isStrength) {
+        if (inIdealRange) {
+          switch (key) {
+            case 'Club Speed':
+              return `Excellent club speed! You're generating great power for distance.`;
+            case 'Ball Speed':
+              return `Outstanding ball speed - perfect energy transfer!`;
+            case 'Smash Factor':
+              return `Perfect contact efficiency - you're hitting it pure!`;
+            case 'Launch Angle':
+              return `Ideal launch angle for maximum carry distance!`;
+            case 'Face Angle':
+              return `Outstanding face control - this is what tour players strive for!`;
+            case 'Club Path':
+              return `Great swing path for straight, consistent shots!`;
+            case 'Face to Path':
+              return `Excellent face-to-path relationship for straight ball flight!`;
+            case 'Spin Rate':
+              return `Perfect spin rate for optimal ball flight and control!`;
+            default:
+              return `This metric is in the ideal range - great execution!`;
+          }
+        } else {
+          return `Your best performing metric - keep building on this strength!`;
+        }
+      } else {
+        switch (key) {
+          case 'Club Speed':
+            return `Work on generating more club speed through better sequence and rotation.`;
+          case 'Ball Speed':
+            return `Focus on solid contact and center face hits to increase ball speed.`;
+          case 'Smash Factor':
+            return `Work on center face contact to improve efficiency and distance.`;
+          case 'Launch Angle':
+            return `Adjust your angle of attack and ball position for optimal trajectory.`;
+          case 'Face Angle':
+            return `Focus on square face at impact for straighter shots.`;
+          case 'Club Path':
+            return `Work on swing path for more consistent direction and ball flight.`;
+          case 'Face to Path':
+            return `Focus on squaring the clubface relative to your swing path.`;
+          case 'Spin Rate':
+            return `Work on strike and angle of attack to optimize spin rate.`;
+          default:
+            return `This is your biggest area for improvement - focus here in practice.`;
+        }
       }
     };
 
@@ -268,12 +311,12 @@ const Dashboard = () => {
       strength: {
         metric: bestMetric.key,
         value: `${bestMetric.value}${bestMetric.unit}`,
-        description: getDescription(bestMetric.key, bestMetric.value, true)
+        description: getDescription(bestMetric, true)
       },
       weakness: {
         metric: worstMetric.key,
         value: `${worstMetric.value}${worstMetric.unit}`,
-        description: getDescription(worstMetric.key, worstMetric.value, false)
+        description: getDescription(worstMetric, false)
       }
     };
   };
