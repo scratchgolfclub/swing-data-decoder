@@ -45,7 +45,7 @@ const Index = () => {
   }
 
   if (results) {
-    return <ResultsScreen data={results} onReset={() => { setResults(null); setSelectedFiles([]); }} />;
+    return <ResultsScreen data={results} onReset={() => { setResults(null); setSelectedFiles([]); setSelectedClub(''); }} />;
   }
 
   return (
