@@ -11,6 +11,17 @@ export const saveSwingAnalysis = async (data: SwingAnalysisData, userId: string)
   try {
     console.log('Saving swing analysis for user:', userId);
     
+    // Check if user has existing baseline swing
+    const { data: existingBaseline } = await (supabase as any)
+      .from('swing_data')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('is_baseline', true)
+      .maybeSingle();
+    
+    const hasBaseline = !!existingBaseline;
+    console.log('User has existing baseline:', hasBaseline);
+    
     // Save each swing to the database
     const savedSwings = [];
     
@@ -38,17 +49,21 @@ export const saveSwingAnalysis = async (data: SwingAnalysisData, userId: string)
         }
       }
       
+      // Determine if this is baseline and where to store data
+      const isFirstSwingEver = !hasBaseline && i === 0;
+      
       // Save swing data to database
       const { data: swingData, error: swingError } = await (supabase as any)
         .from('swing_data')
         .insert({
           user_id: userId,
           club_type: data.club,
-          initial_metrics: swing,
+          initial_metrics: isFirstSwingEver ? swing : {},
+          swing_data_non_baseline: isFirstSwingEver ? {} : swing,
           trackman_image_url: imageUrl,
           session_name: `Session ${new Date().toLocaleDateString()}`,
           swing_score: calculateSwingScore(swing),
-          is_baseline: i === 0 // First swing is baseline
+          is_baseline: isFirstSwingEver
         })
         .select()
         .single();
