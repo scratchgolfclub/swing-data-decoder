@@ -27,14 +27,18 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o',
+        model: 'gpt-4.1-2025-04-14',
         messages: [
+          {
+            role: 'system',
+            content: 'You are an expert at reading TrackMan golf swing analysis screens. Extract ALL visible golf swing data metrics with their exact values and units (mph, deg, ft, yds, etc.). Be thorough and precise in capturing every data point shown on the screen.'
+          },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: 'Scrape all TrackMan swing data from this image. Return values line by line, including data labels and units (mph, deg, mm, ft, yds, etc.). Be precise and match the visual layout as best as possible.'
+                text: 'Extract all TrackMan swing data from this image. Return each metric with its value and unit. Include metrics like: Ball Speed, Club Head Speed, Smash Factor, Attack Angle, Club Path, Face Angle, Launch Angle, Spin Rate, Carry Distance, Total Distance, etc. Be comprehensive and include ALL visible data points.'
               },
               {
                 type: 'image_url',
