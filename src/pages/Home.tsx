@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import scratchLogo from "@/assets/scratch-golf-logo-main.png";
+import scratchLogo from "@/assets/scratch-golf-logo.png";
 
 const Home = () => {
   const navigate = useNavigate();
