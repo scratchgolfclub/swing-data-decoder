@@ -70,13 +70,12 @@ const Header = () => {
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <img 
-            src="/src/assets/scratch-golf-logo.png" 
-            alt="Scratch Golf" 
-            className="h-8 w-8"
+            src="/lovable-uploads/6b2a3a0f-ee63-46a5-893e-8fdb1833e4f1.png" 
+            alt="Scratch Golf Club" 
+            className="h-10"
           />
-          <span className="font-bold text-xl text-primary">Scratch Golf</span>
         </div>
 
         {/* Navigation */}
