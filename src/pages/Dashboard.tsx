@@ -157,17 +157,40 @@ const Dashboard = () => {
 
   const getLatestSwingMetrics = () => {
     const latestSwing = swingData[0];
-    if (!latestSwing) return null;
+    if (!latestSwing) {
+      console.log('No latest swing found');
+      return null;
+    }
     
-    return latestSwing.is_baseline 
+    const metrics = latestSwing.is_baseline 
       ? latestSwing.initial_metrics 
       : latestSwing.swing_data_non_baseline;
+    
+    console.log('Latest swing metrics:', {
+      isBaseline: latestSwing.is_baseline,
+      metrics: metrics,
+      hasTrackManCombine: !!metrics?.TrackManCombine
+    });
+    
+    return metrics;
   };
 
   const analyzeStrengthAndWeakness = (metrics: any) => {
-    if (!metrics || !metrics.TrackManCombine) return { strength: null, weakness: null };
+    console.log('Analyzing strength and weakness with metrics:', metrics);
+    
+    if (!metrics) {
+      console.log('No metrics provided');
+      return { strength: null, weakness: null };
+    }
 
-    const data = metrics.TrackManCombine;
+    // Check both possible data structures
+    const data = metrics.TrackManCombine || metrics;
+    console.log('Using data:', data);
+    
+    if (!data || typeof data !== 'object') {
+      console.log('No valid data found');
+      return { strength: null, weakness: null };
+    }
     const idealRanges = {
       'Club Speed': { min: 95, max: 115, weight: 0.2, unit: ' mph' },
       'Ball Speed': { min: 140, max: 165, weight: 0.2, unit: ' mph' },
@@ -358,6 +381,14 @@ const Dashboard = () => {
   const latestMetrics = getLatestSwingMetrics();
   const analysis = latestMetrics ? analyzeStrengthAndWeakness(latestMetrics) : null;
   const recommendations = getRecommendations();
+
+  // Debug logging
+  console.log('Dashboard Debug:', {
+    hasLatestSwing: !!latestSwing,
+    latestMetrics: latestMetrics,
+    analysis: analysis,
+    swingDataLength: swingData.length
+  });
 
   if (loading) {
     return (
