@@ -151,174 +151,179 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
   const displayedVideos = isSimpleMode ? videoRecommendations.slice(0, 1) : videoRecommendations.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 p-4">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-background via-surface to-surface-muted">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(158,155,135,0.03),transparent_50%)]"></div>
+      
+      <div className="container-premium py-12">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
+        <div className="mb-16">
+          <div className="flex items-center justify-between mb-12">
             <Button 
               onClick={onReset} 
               variant="outline" 
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium"
             >
               <ArrowLeft className="h-4 w-4" />
               Analyze Another Photo
             </Button>
             <img 
-              src="/lovable-uploads/8ca06ed2-bd76-4910-ad83-6e8259bf704b.png" 
-              alt="SGC Logo" 
-              className="h-12 w-auto"
+              src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
+              alt="Scratch Golf Club Logo" 
+              className="h-10 w-auto opacity-80"
             />
           </div>
-          <h1 className="text-5xl font-bold text-center mb-2 bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Your Personalized Analysis
-          </h1>
-          <p className="text-center text-xl text-muted-foreground">Based on your TrackMan data</p>
+          <div className="text-center">
+            <h1 className="text-5xl font-light text-premium mb-4 leading-tight">
+              Your <span className="gradient-text-premium">Personalized</span> Analysis
+            </h1>
+            <p className="text-xl text-premium-muted">Based on your TrackMan data</p>
+          </div>
         </div>
 
         {/* Quick Summary Section */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
           {/* Good Points */}
-          <Card className="border-0 bg-green-50 dark:bg-green-950/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                These Numbers Look Great
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {goodPoints.length > 0 ? (
-                <div className="space-y-3">
-                  {goodPoints.slice(0, 1).map((point, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+          <div className="premium-card p-8 border-0 bg-gradient-to-br from-green-50/80 to-green-100/40 dark:from-green-950/40 dark:to-green-900/20">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="text-xl font-medium text-premium">These Numbers Look Great</h3>
+            </div>
+            
+            {goodPoints.length > 0 ? (
+              <div className="space-y-4">
+                {goodPoints.slice(0, 1).map((point, index) => (
+                  <div key={index} className="p-4 bg-green-100/60 dark:bg-green-900/30 rounded-xl">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-semibold text-green-800 dark:text-green-200">{point.name}</div>
-                        <div className="text-sm text-green-600 dark:text-green-400">{point.reason}</div>
+                        <div className="font-medium text-green-800 dark:text-green-200 mb-1">{point.name}</div>
+                        <div className="text-sm text-green-700 dark:text-green-300">{point.reason}</div>
                       </div>
-                      <div className="text-lg font-bold text-green-700 dark:text-green-300">{point.value}</div>
+                      <div className="text-xl font-medium text-green-800 dark:text-green-200">{point.value}</div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-green-700 dark:text-green-300">Upload more data to see your strengths!</p>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-green-700 dark:text-green-300 text-premium-muted">Upload more data to see your strengths!</p>
+            )}
+          </div>
 
           {/* Areas for Improvement */}
-          <Card className="border-0 bg-amber-50 dark:bg-amber-950/20">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-3 text-lg">
-                <AlertCircle className="h-5 w-5 text-amber-600" />
-                These Numbers Need Work
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {needsWork.length > 0 ? (
-                <div className="space-y-3">
-                  {needsWork.slice(0, 1).map((point, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+          <div className="premium-card p-8 border-0 bg-gradient-to-br from-amber-50/80 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <h3 className="text-xl font-medium text-premium">These Numbers Need Work</h3>
+            </div>
+            
+            {needsWork.length > 0 ? (
+              <div className="space-y-4">
+                {needsWork.slice(0, 1).map((point, index) => (
+                  <div key={index} className="p-4 bg-amber-100/60 dark:bg-amber-900/30 rounded-xl">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-semibold text-amber-800 dark:text-amber-200">{point.name}</div>
-                        <div className="text-sm text-amber-600 dark:text-amber-400">{point.reason}</div>
+                        <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">{point.name}</div>
+                        <div className="text-sm text-amber-700 dark:text-amber-300">{point.reason}</div>
                       </div>
-                      <div className="text-lg font-bold text-amber-700 dark:text-amber-300">{point.value}</div>
+                      <div className="text-xl font-medium text-amber-800 dark:text-amber-200">{point.value}</div>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-amber-700 dark:text-amber-300">Your swing metrics look solid overall!</p>
-              )}
-            </CardContent>
-          </Card>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-amber-700 dark:text-amber-300 text-premium-muted">Your swing metrics look solid overall!</p>
+            )}
+          </div>
         </div>
 
         {/* Mode Toggle */}
-        <Card className="mb-8 border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
-          <CardContent className="pt-6">
-            <div className="flex flex-col items-center space-y-6">
-              <h3 className="text-lg font-semibold text-center">Report Detail Level</h3>
-              <div className="relative bg-gradient-to-r from-stone-100 to-stone-50 dark:from-stone-800 dark:to-stone-750 p-1.5 rounded-xl shadow-inner border border-stone-200 dark:border-stone-700">
-                <div 
-                  className={`absolute top-1.5 bottom-1.5 bg-gradient-to-r from-primary to-primary/90 rounded-lg shadow-lg transition-all duration-500 ease-out transform ${
+        <div className="premium-card p-8 mb-16">
+          <div className="flex flex-col items-center space-y-8">
+            <h3 className="text-xl font-medium text-premium">Report Detail Level</h3>
+            <div className="relative bg-gradient-to-r from-surface to-surface-muted p-2 rounded-2xl shadow-card border border-border/40">
+              <div 
+                className={`absolute top-2 bottom-2 bg-gradient-to-r from-primary to-primary/90 rounded-xl shadow-premium transition-all duration-500 ease-out transform ${
+                  isSimpleMode 
+                    ? 'left-2 right-[50%] translate-x-0' 
+                    : 'left-[50%] right-2 translate-x-0'
+                }`}
+              />
+              <div className="relative z-10 flex w-full">
+                <button
+                  onClick={() => setIsSimpleMode(true)}
+                  className={`flex-1 px-12 py-4 text-base font-medium transition-all duration-300 rounded-xl relative z-20 ${
                     isSimpleMode 
-                      ? 'left-1.5 right-[50%] translate-x-0' 
-                      : 'left-[50%] right-1.5 translate-x-0'
+                      ? 'text-primary-foreground' 
+                      : 'text-premium-muted hover:text-premium'
                   }`}
-                />
-                <div className="relative z-10 flex w-full">
-                  <button
-                    onClick={() => setIsSimpleMode(true)}
-                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg relative z-20 ${
-                      isSimpleMode 
-                        ? 'text-primary-foreground shadow-sm' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Simple
-                  </button>
-                  <button
-                    onClick={() => setIsSimpleMode(false)}
-                    className={`flex-1 px-8 py-3 text-sm font-medium transition-all duration-300 rounded-lg relative z-20 ${
-                      !isSimpleMode 
-                        ? 'text-primary-foreground shadow-sm' 
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Advanced
-                  </button>
-                </div>
-              </div>
-              <div className="text-center space-y-2">
-                <div className="text-sm text-muted-foreground">
-                  <strong>Simple:</strong> Get 1 key video and concise analysis highlights.
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  <strong>Advanced:</strong> Access 2-3 videos with detailed technical breakdown and comprehensive recommendations.
-                </div>
+                >
+                  Simple
+                </button>
+                <button
+                  onClick={() => setIsSimpleMode(false)}
+                  className={`flex-1 px-12 py-4 text-base font-medium transition-all duration-300 rounded-xl relative z-20 ${
+                    !isSimpleMode 
+                      ? 'text-primary-foreground' 
+                      : 'text-premium-muted hover:text-premium'
+                  }`}
+                >
+                  Advanced
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="text-center space-y-3 max-w-2xl">
+              <div className="text-base text-premium-muted">
+                <strong className="text-premium">Simple:</strong> Get 1 key video and concise analysis highlights.
+              </div>
+              <div className="text-base text-premium-muted">
+                <strong className="text-premium">Advanced:</strong> Access 2-3 videos with detailed technical breakdown and comprehensive recommendations.
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Video Recommendations */}
-        <Card className="mb-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-3 text-2xl">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Play className="h-6 w-6 text-primary" />
-              </div>
-              Your {isSimpleMode ? 'Simple' : 'Advanced'} Lesson Plan
-              <span className="text-sm font-normal text-muted-foreground">
-                ({isSimpleMode ? '1' : displayedVideos.length} video{displayedVideos.length !== 1 ? 's' : ''})
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {displayedVideos.map((video, index) => (
-                <div key={index} className="space-y-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">Why we're recommending this video:</h4>
-                    <p className="text-blue-700 dark:text-blue-300 text-sm">
-                      {video.reason || `Based on your ${needsWork[0]?.name || 'swing data'}, this video will help you improve your technique and consistency.`}
-                    </p>
-                  </div>
-                  <VideoCard 
-                    video={video} 
-                    index={index}
-                  />
-                </div>
-              ))}
+        <div className="premium-card p-10 mb-16">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <Play className="h-6 w-6 text-primary" />
             </div>
-            {displayedVideos.length === 0 && (
-              <div className="text-center py-8 text-muted-foreground">
-                <Play className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No specific video recommendations available for your current data.</p>
+            <div>
+              <h2 className="text-2xl font-medium text-premium">
+                Your {isSimpleMode ? 'Simple' : 'Advanced'} Lesson Plan
+              </h2>
+              <p className="text-premium-muted">
+                {isSimpleMode ? '1' : displayedVideos.length} video{displayedVideos.length !== 1 ? 's' : ''} tailored to your swing data
+              </p>
+            </div>
+          </div>
+          
+          <div className="space-y-8">
+            {displayedVideos.map((video, index) => (
+              <div key={index} className="space-y-6">
+                <div className="p-6 bg-gradient-to-r from-blue-50/80 to-blue-100/40 dark:from-blue-950/40 dark:to-blue-900/20 rounded-2xl border border-blue-200/60 dark:border-blue-800/60">
+                  <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3 text-lg">Why we're recommending this video:</h4>
+                  <p className="text-blue-700 dark:text-blue-300 leading-relaxed">
+                    {video.reason || `Based on your ${needsWork[0]?.name || 'swing data'}, this video will help you improve your technique and consistency.`}
+                  </p>
+                </div>
+                <VideoCard 
+                  video={video} 
+                  index={index}
+                />
               </div>
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+          {displayedVideos.length === 0 && (
+            <div className="text-center py-16 text-premium-muted">
+              <Play className="h-16 w-16 mx-auto mb-6 opacity-40" />
+              <p className="text-lg">No specific video recommendations available for your current data.</p>
+            </div>
+          )}
+        </div>
 
         {/* Redesigned Swing Analysis */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">

@@ -49,101 +49,107 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-surface to-background">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,rgba(142,76,36,0.1),transparent_50%)]"></div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-surface to-surface-muted">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(158,155,135,0.05),transparent_50%)]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(158,155,135,0.03),transparent_50%)]"></div>
       
-      <div className="relative flex items-center justify-center min-h-screen p-6">
-        <div className="w-full max-w-4xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-16 animate-fade-up">
-            <div className="mb-8">
-              <img 
-                src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
-                alt="Scratch Golf Club Logo" 
-                className="h-24 w-auto mx-auto mb-8 transition-all duration-300 hover:scale-110 hover:-translate-y-2 drop-shadow-xl hover:drop-shadow-2xl cursor-pointer"
-              />
-            </div>
-            
-            <h1 className="text-7xl md:text-8xl font-display font-bold mb-6 tracking-tight">
-              <span className="gradient-text">Analyze</span>
-              <br />
-              <span className="text-foreground/80">My Swing</span>
-            </h1>
-            
-            <p className="text-xl md:text-2xl text-muted-foreground mb-4 font-light leading-relaxed max-w-2xl mx-auto">
+      <div className="relative container-premium min-h-screen flex flex-col justify-center">
+        {/* Hero Section */}
+        <div className="text-center mb-32 animate-fade-up">
+          <div className="mb-16">
+            <img 
+              src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
+              alt="Scratch Golf Club Logo" 
+              className="h-16 w-auto mx-auto mb-16 animate-premium opacity-90 hover:opacity-100 transition-opacity duration-700"
+            />
+          </div>
+          
+          <h1 className="mb-12 text-premium leading-none">
+            <span className="gradient-text-premium block">Analyze</span>
+            <span className="text-foreground/70 font-light block mt-2">My Swing</span>
+          </h1>
+          
+          <div className="max-w-2xl mx-auto space-y-8">
+            <p className="text-xl text-premium-muted leading-relaxed">
               Upload your TrackMan data and discover which lesson to watch next
             </p>
             
-            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground/70">
-              <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
+            <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground/60">
+              <div className="w-1 h-1 bg-primary/60 rounded-full"></div>
               <span>Powered by professional golf instruction</span>
-              <div className="w-1 h-1 bg-primary rounded-full animate-pulse"></div>
+              <div className="w-1 h-1 bg-primary/60 rounded-full"></div>
             </div>
           </div>
+        </div>
 
-          {/* Main Card */}
-          <div className="modern-card p-10 max-w-2xl mx-auto animate-scale-in">
-            <div className="space-y-12">
+        {/* Main Card */}
+        <div className="max-w-4xl mx-auto animate-scale-in">
+          <div className="premium-card p-16">
+            <div className="space-y-20">
               {/* Step 1: Club Selection */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-bold shadow-glow">
+              <div className="space-y-8">
+                <div className="flex items-start gap-6">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-medium shadow-button">
                     1
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-display font-semibold">Select Your Club</h3>
-                    <p className="text-muted-foreground">Choose the club you hit for this session</p>
+                  <div className="flex-1 pt-1">
+                    <h3 className="text-2xl font-medium text-premium mb-2">Select Your Club</h3>
+                    <p className="text-premium-muted">Choose the club you hit for this session</p>
                   </div>
                 </div>
                 
-                <ClubSelection 
-                  selectedClub={selectedClub}
-                  onClubSelect={setSelectedClub}
-                />
+                <div className="ml-20">
+                  <ClubSelection 
+                    selectedClub={selectedClub}
+                    onClubSelect={setSelectedClub}
+                  />
+                </div>
               </div>
               
               {/* Step 2: Photo Upload */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-bold transition-all duration-300 ${
+              <div className="space-y-8">
+                <div className="flex items-start gap-6">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-medium transition-all duration-500 ${
                     selectedClub 
-                      ? 'bg-gradient-to-br from-primary to-primary-600 text-primary-foreground shadow-glow' 
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-gradient-to-br from-primary to-primary-600 text-primary-foreground shadow-button' 
+                      : 'bg-muted text-muted-foreground/70'
                   }`}>
                     2
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-display font-semibold">Upload Your Data</h3>
-                    <p className="text-muted-foreground">Take or upload photos of your TrackMan screen</p>
+                  <div className="flex-1 pt-1">
+                    <h3 className="text-2xl font-medium text-premium mb-2">Upload Your Data</h3>
+                    <p className="text-premium-muted">Take or upload photos of your TrackMan screen</p>
                   </div>
                 </div>
                 
-                <PhotoUpload 
-                  selectedFiles={selectedFiles}
-                  onFilesSelect={handleFilesSelect}
-                  onFileRemove={handleFileRemove}
-                  canUpload={!!selectedClub}
-                />
+                <div className="ml-20">
+                  <PhotoUpload 
+                    selectedFiles={selectedFiles}
+                    onFilesSelect={handleFilesSelect}
+                    onFileRemove={handleFileRemove}
+                    canUpload={!!selectedClub}
+                  />
+                </div>
               </div>
               
               {/* Step 3: Submit */}
               {selectedFiles.length > 0 && selectedClub && (
-                <div className="space-y-6 animate-slide-up">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-bold shadow-glow">
+                <div className="space-y-8 animate-slide-up">
+                  <div className="flex items-start gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-primary-600 text-primary-foreground flex items-center justify-center text-lg font-medium shadow-button">
                       3
                     </div>
-                    <div>
-                      <h3 className="text-2xl font-display font-semibold">Get Your Analysis</h3>
-                      <p className="text-muted-foreground">AI will analyze your swing data</p>
+                    <div className="flex-1 pt-1">
+                      <h3 className="text-2xl font-medium text-premium mb-2">Get Your Analysis</h3>
+                      <p className="text-premium-muted">AI will analyze your swing data</p>
                     </div>
                   </div>
                   
-                  <div className="flex justify-center pt-4">
+                  <div className="flex justify-center pt-8 ml-20">
                     <Button 
                       onClick={handleSubmit} 
-                      className="modern-button bg-gradient-to-r from-primary to-primary-600 hover:from-primary-600 hover:to-primary-700 text-primary-foreground px-12 py-4 text-lg font-semibold rounded-2xl shadow-glow hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                      className="btn-premium px-12 py-4 text-lg font-medium rounded-2xl text-primary-foreground"
                     >
                       <span className="relative z-10">
                         Analyze My Swing{selectedFiles.length > 1 ? 's' : ''}
@@ -154,16 +160,16 @@ const Index = () => {
               )}
             </div>
           </div>
-          
-          {/* Footer */}
-          <div className="text-center mt-16 space-y-4 animate-fade-in">
-            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground/60">
-              <span>Professional Analysis</span>
-              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full"></div>
-              <span>Instant Results</span>
-              <div className="w-1 h-1 bg-muted-foreground/30 rounded-full"></div>
-              <span>Expert Recommendations</span>
-            </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="text-center mt-24 animate-fade-in">
+          <div className="flex items-center justify-center gap-8 text-sm text-muted-foreground/50">
+            <span>Professional Analysis</span>
+            <div className="w-1 h-1 bg-muted-foreground/20 rounded-full"></div>
+            <span>Instant Results</span>
+            <div className="w-1 h-1 bg-muted-foreground/20 rounded-full"></div>
+            <span>Expert Recommendations</span>
           </div>
         </div>
       </div>

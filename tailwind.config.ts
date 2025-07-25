@@ -21,6 +21,22 @@ export default {
 			fontFamily: {
 				sans: ["Inter", "system-ui", "sans-serif"],
 				display: ["Space Grotesk", "Inter", "system-ui", "sans-serif"],
+				mono: ["JetBrains Mono", "Fira Code", "monospace"],
+			},
+			fontSize: {
+				'xs': ['0.75rem', { lineHeight: '1.5', letterSpacing: '-0.005em' }],
+				'sm': ['0.875rem', { lineHeight: '1.6', letterSpacing: '-0.01em' }],
+				'base': ['1rem', { lineHeight: '1.7', letterSpacing: '-0.01em' }],
+				'lg': ['1.125rem', { lineHeight: '1.7', letterSpacing: '-0.015em' }],
+				'xl': ['1.25rem', { lineHeight: '1.6', letterSpacing: '-0.02em' }],
+				'2xl': ['1.5rem', { lineHeight: '1.5', letterSpacing: '-0.025em' }],
+				'3xl': ['1.875rem', { lineHeight: '1.4', letterSpacing: '-0.03em' }],
+				'4xl': ['2.25rem', { lineHeight: '1.3', letterSpacing: '-0.035em' }],
+				'5xl': ['3rem', { lineHeight: '1.2', letterSpacing: '-0.04em' }],
+				'6xl': ['3.75rem', { lineHeight: '1.1', letterSpacing: '-0.045em' }],
+				'7xl': ['4.5rem', { lineHeight: '1', letterSpacing: '-0.05em' }],
+				'8xl': ['6rem', { lineHeight: '1', letterSpacing: '-0.055em' }],
+				'9xl': ['8rem', { lineHeight: '1', letterSpacing: '-0.06em' }],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -80,6 +96,7 @@ export default {
 				warning: 'hsl(var(--warning))',
 				surface: 'hsl(var(--surface))',
 				'surface-elevated': 'hsl(var(--surface-elevated))',
+				'surface-muted': 'hsl(var(--surface-muted))',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -88,11 +105,14 @@ export default {
 				xl: '20px',
 				'2xl': '24px',
 				'3xl': '32px',
+				'4xl': '40px',
 			},
 			spacing: {
 				'18': '4.5rem',
 				'88': '22rem',
 				'128': '32rem',
+				'144': '36rem',
+				'160': '40rem',
 			},
 			keyframes: {
 				'accordion-down': {
@@ -140,8 +160,11 @@ export default {
 			},
 			boxShadow: {
 				'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-				'elegant': '0 10px 40px -10px rgba(0, 0, 0, 0.1)',
-				'glow': '0 0 40px rgba(22, 163, 74, 0.3)',
+				'elegant': '0 20px 40px -12px rgba(0, 0, 0, 0.08), 0 8px 24px -8px rgba(0, 0, 0, 0.05)',
+				'glow': '0 0 40px rgba(158, 155, 135, 0.3)',
+				'premium': '0 25px 50px -12px rgba(0, 0, 0, 0.08), 0 12px 24px -8px rgba(0, 0, 0, 0.04)',
+				'card': '0 4px 16px -2px rgba(0, 0, 0, 0.04), 0 2px 8px -2px rgba(0, 0, 0, 0.02)',
+				'button': '0 8px 24px -6px rgba(158, 155, 135, 0.4), 0 4px 12px -4px rgba(158, 155, 135, 0.2)',
 			},
 			backdropBlur: {
 				xs: '2px',
