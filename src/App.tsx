@@ -11,6 +11,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import SwingResults from "./pages/SwingResults";
 import Leaderboard from "./pages/Leaderboard";
+import Profile from "./pages/Profile";
+import SwingHistory from "./pages/SwingHistory";
 import NotFound from "./pages/NotFound";
 import Context from "./pages/Context";
 
@@ -79,6 +81,16 @@ const App = () => (
             <Route path="/leaderboard" element={
               <ProtectedRoute>
                 <Leaderboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            <Route path="/swing-history" element={
+              <ProtectedRoute>
+                <SwingHistory />
               </ProtectedRoute>
             } />
             <Route path="/context" element={<Context />} />

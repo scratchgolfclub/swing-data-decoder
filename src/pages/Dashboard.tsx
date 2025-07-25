@@ -3,23 +3,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Upload, 
   TrendingUp, 
   Target, 
-  LogOut, 
-  User, 
-  Trophy, 
   AlertTriangle, 
   BookOpen, 
   Brain, 
   Play,
   CheckCircle,
-  Eye,
-  Stethoscope
+  Stethoscope,
+  ArrowRight,
+  Trophy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProgressModal from '@/components/ProgressModal';
@@ -28,7 +25,7 @@ import { BadgeSection } from '@/components/BadgeSection';
 import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
-import LeaderboardPreview from '@/components/LeaderboardPreview';
+import Header from '@/components/Header';
 
 interface SwingData {
   id: string;
@@ -60,7 +57,7 @@ interface VideoView {
 }
 
 const Dashboard = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [swingData, setSwingData] = useState<SwingData[]>([]);
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
@@ -97,7 +94,7 @@ const Dashboard = () => {
       setLoading(true);
       
       // Load swing data
-      const { data: swings, error: swingError } = await (supabase as any)
+      const { data: swings, error: swingError } = await supabase
         .from('swing_data')
         .select('*')
         .eq('user_id', user.id)
@@ -111,7 +108,7 @@ const Dashboard = () => {
       }
 
       // Load progress data
-      const { data: progress, error: progressError } = await (supabase as any)
+      const { data: progress, error: progressError } = await supabase
         .from('progress_tracker')
         .select('*')
         .eq('user_id', user.id)
@@ -125,7 +122,7 @@ const Dashboard = () => {
       }
 
       // Load video views
-      const { data: views, error: viewsError } = await (supabase as any)
+      const { data: views, error: viewsError } = await supabase
         .from('user_video_views')
         .select('*')
         .eq('user_id', user.id);
@@ -148,15 +145,10 @@ const Dashboard = () => {
     navigate('/analyze');
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
   const handleVideoClick = async (videoUrl: string, videoTitle: string) => {
     // Track video view
     try {
-      await (supabase as any)
+      await supabase
         .from('user_video_views')
         .upsert({
           user_id: user?.id,
@@ -211,7 +203,6 @@ const Dashboard = () => {
     const filteredData = getFilteredSwingData();
     const latestSwing = filteredData[0];
     if (!latestSwing) {
-      console.log('No latest swing found for category:', selectedClubCategory);
       return null;
     }
     
@@ -219,35 +210,21 @@ const Dashboard = () => {
       ? latestSwing.initial_metrics 
       : latestSwing.swing_data_non_baseline;
     
-    console.log('Latest swing metrics:', {
-      clubCategory: selectedClubCategory,
-      clubType: latestSwing.club_type,
-      isBaseline: latestSwing.is_baseline,
-      metrics: metrics,
-      hasTrackManCombine: !!metrics?.TrackManCombine
-    });
-    
     return metrics;
   };
 
   const analyzeStrengthAndWeakness = (metrics: any) => {
-    console.log('Analyzing strength and weakness with metrics:', metrics);
-    
     if (!metrics) {
-      console.log('No metrics provided');
       return { strength: null, weakness: null };
     }
 
-    // Use the actual data structure from the database
     const data = metrics;
-    console.log('Using data:', data);
     
     if (!data || typeof data !== 'object') {
-      console.log('No valid data found');
       return { strength: null, weakness: null };
     }
 
-    // Define club-specific ideal ranges based on actual metric names from database
+    // Define club-specific ideal ranges
     const getIdealRanges = () => {
       const baseRanges = {
         'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
@@ -313,11 +290,10 @@ const Dashboard = () => {
       let distanceFromIdeal = 0;
       
       if (value >= range.min && value <= range.max) {
-        // In ideal range - calculate how close to center
         const center = (range.min + range.max) / 2;
         const rangeSize = range.max - range.min;
         distanceFromIdeal = Math.abs(value - center) / rangeSize;
-        score = 100 - (distanceFromIdeal * 20); // Small penalty for being away from center
+        score = 100 - (distanceFromIdeal * 20);
       } else if (value < range.min) {
         distanceFromIdeal = (range.min - value) / range.min;
         score = Math.max(0, 100 - (distanceFromIdeal * 100));
@@ -338,14 +314,13 @@ const Dashboard = () => {
 
     if (scores.length === 0) return { strength: null, weakness: null };
 
-    // Find best metric (highest score, preferably in ideal range)
+    // Find best and worst metrics
     const bestMetric = scores.reduce((best, current) => {
       if (current.inIdealRange && !best.inIdealRange) return current;
       if (!current.inIdealRange && best.inIdealRange) return best;
       return current.score > best.score ? current : best;
     });
 
-    // Find worst metric (lowest score, furthest from ideal)
     const worstMetric = scores.reduce((worst, current) => {
       if (!current.inIdealRange && worst.inIdealRange) return current;
       if (current.inIdealRange && !worst.inIdealRange) return worst;
@@ -353,7 +328,7 @@ const Dashboard = () => {
     });
 
     const getDescription = (metric: any, isStrength: boolean) => {
-      const { key, value, inIdealRange } = metric;
+      const { key, inIdealRange } = metric;
       
       if (isStrength) {
         if (inIdealRange) {
@@ -435,79 +410,21 @@ const Dashboard = () => {
     // Get text recommendations and parse drills/feels
     const textRecs = getTextRecommendations([combinedSwing], latestSwing.club_type);
     
-    // More robust parsing for drills and feels
-    const drillsSection = textRecs.match(/(?:Recommended drills|Practice Tips|Drills to Try):(.*?)(?=\n\n|\*\*|Swing feels|Remember|$)/is);
-    const feelsSection = textRecs.match(/(?:Swing feels|Feel thoughts|Key feels):(.*?)(?=\n\n|\*\*|Remember|Goal|$)/is);
-    
-    // Extract bullet points or numbered items with enhanced details
-    const extractDetailedItems = (text: string, type: 'drills' | 'feels') => {
-      if (!text) return getDefaultItems(type);
-      
-      const items = text
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => 
-          line.startsWith('•') || 
-          line.startsWith('-') || 
-          line.startsWith('*') ||
-          /^\d+\./.test(line)
-        )
-        .map(line => line.replace(/^[•\-*\d.]\s*/, '').trim())
-        .filter(line => line.length > 10)
-        .slice(0, 3);
-      
-      return items.length > 0 ? items.map(item => enhanceItem(item, type)) : getDefaultItems(type);
-    };
-
-    const enhanceItem = (item: string, type: 'drills' | 'feels') => {
-      if (type === 'drills') {
-        // Add more detailed drill instructions
-        if (item.toLowerCase().includes('alignment')) {
-          return `${item}. Place alignment sticks on the ground - one pointing at your target, another parallel to it for your feet. Practice hitting balls while staying aligned with these guides. This helps develop consistent setup and swing path.`;
-        }
-        if (item.toLowerCase().includes('tempo')) {
-          return `${item}. Count "1-2-3" during your swing: 1 for takeaway, 2 for top of backswing, 3 for impact. Practice this rhythm to develop consistent timing and avoid rushing your downswing.`;
-        }
-        if (item.toLowerCase().includes('setup')) {
-          return `${item}. Spend 2-3 minutes before each practice session going through your setup checklist: grip pressure, stance width, ball position, and posture. Consistency here leads to better swing consistency.`;
-        }
-        return `${item}. Focus on quality repetitions rather than quantity - 10 focused swings are better than 50 mindless ones.`;
-      } else {
-        // Add more detailed feel descriptions
-        if (item.toLowerCase().includes('tempo') || item.toLowerCase().includes('smooth')) {
-          return `${item}. Think of swinging at 80% effort while maintaining balance. The feeling should be smooth and controlled, like you're swinging underwater. Good tempo creates better sequencing and more consistent contact.`;
-        }
-        if (item.toLowerCase().includes('head') || item.toLowerCase().includes('behind')) {
-          return `${item}. Feel like your head stays in place while your body rotates around it. This helps maintain your spine angle and promotes better weight transfer through the swing.`;
-        }
-        if (item.toLowerCase().includes('face') || item.toLowerCase().includes('square')) {
-          return `${item}. Imagine the clubface is a clock face pointing at 6 o'clock at address and impact. This mental image helps maintain square contact for straighter shots.`;
-        }
-        return `${item}. Trust this feeling during practice and focus on recreating it consistently.`;
-      }
-    };
-
-    const getDefaultItems = (type: 'drills' | 'feels') => {
-      if (type === 'drills') {
-        return [
-          "Alignment Stick Drill. Place alignment sticks on the ground - one pointing at your target, another parallel to it for your feet. Practice hitting balls while staying aligned with these guides to develop consistent setup and swing path.",
-          "Tempo Training. Count '1-2-3' during your swing: 1 for takeaway, 2 for top of backswing, 3 for impact. Practice this rhythm to develop consistent timing and avoid rushing your downswing.",
-          "Setup Routine Practice. Spend 2-3 minutes before each session going through your setup checklist: grip pressure, stance width, ball position, and posture. Consistency here leads to better swing consistency."
-        ];
-      } else {
-        return [
-          "Smooth Tempo Feel. Think of swinging at 80% effort while maintaining balance. The feeling should be smooth and controlled, like you're swinging underwater for better sequencing and contact.",
-          "Stay Behind the Ball. Feel like your head stays in place while your body rotates around it. This helps maintain your spine angle and promotes better weight transfer through the swing.",
-          "Square Clubface Feel. Imagine the clubface is a clock face pointing at 6 o'clock at address and impact. This mental image helps maintain square contact for straighter shots."
-        ];
-      }
-    };
-
-    const drills = extractDetailedItems(drillsSection?.[1] || '', 'drills');
-    const feels = extractDetailedItems(feelsSection?.[1] || '', 'feels');
-
     // Get video recommendations
     const videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
+
+    // Extract detailed items with defaults
+    const drills = [
+      "Alignment Stick Drill: Place alignment sticks on the ground for consistent setup and swing path.",
+      "Tempo Training: Count '1-2-3' during your swing to develop consistent timing.",
+      "Setup Routine Practice: Focus on grip pressure, stance width, and ball position."
+    ];
+
+    const feels = [
+      "Smooth Tempo Feel: Swing at 80% effort while maintaining balance for better sequencing.",
+      "Stay Behind the Ball: Keep your head stable while your body rotates around it.",
+      "Square Clubface Feel: Visualize the clubface pointing at 6 o'clock at impact."
+    ];
 
     return { 
       drills,
@@ -525,52 +442,26 @@ const Dashboard = () => {
   const analysis = latestMetrics ? analyzeStrengthAndWeakness(latestMetrics) : null;
   const recommendations = getRecommendations();
 
-  // Debug logging
-  console.log('Dashboard Debug:', {
-    hasLatestSwing: !!latestSwing,
-    latestMetrics: latestMetrics,
-    analysis: analysis,
-    swingDataLength: swingData.length
-  });
+  // Limit swing history to last 5 swings
+  const limitedSwingData = filteredSwingData.slice(0, 5);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-          <p className="mt-4 text-muted-foreground">Loading your dashboard...</p>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Header */}
-      <header className="border-b border-white/10 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <img 
-              src="/lovable-uploads/f1f92667-329b-474f-a227-a3646c457a6b.png" 
-              alt="Scratch Golf Club" 
-              className="h-8 w-auto"
-            />
-            <Badge variant="secondary">Dashboard</Badge>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <User className="h-4 w-4" />
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
-            </div>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-background">
+      <Header />
+      
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section with New Analysis Button */}
         <div className="mb-8 flex items-center justify-between">
@@ -673,9 +564,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Top Stats Row - Compact */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card className="border-muted/40">
+        {/* Top Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Total Swings</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
@@ -688,7 +579,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-muted/40">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Latest Score</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -699,7 +590,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-muted/40">
+          <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-medium">Progress Tracker</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -721,9 +612,6 @@ const Dashboard = () => {
               )}
             </CardContent>
           </Card>
-
-          {/* Leaderboard Preview */}
-          <LeaderboardPreview />
         </div>
 
         {/* Strength & Weakness Analysis */}
@@ -771,6 +659,7 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Practice Recommendations */}
         {latestSwing && (
           <Card className="mb-8">
             <CardHeader>
@@ -784,8 +673,8 @@ const Dashboard = () => {
             </CardHeader>
             <CardContent>
               <Accordion type="single" defaultValue="drills" className="w-full">
-                <AccordionItem value="drills" className="border-b border-muted/40">
-                  <AccordionTrigger className="hover:no-underline">
+                <AccordionItem value="drills">
+                  <AccordionTrigger>
                     <div className="flex items-center">
                       <BookOpen className="h-4 w-4 mr-2 text-blue-500" />
                       <span className="font-medium">Your Drills</span>
@@ -807,8 +696,8 @@ const Dashboard = () => {
                   </AccordionContent>
                 </AccordionItem>
 
-                <AccordionItem value="feels" className="border-b border-muted/40">
-                  <AccordionTrigger className="hover:no-underline">
+                <AccordionItem value="feels">
+                  <AccordionTrigger>
                     <div className="flex items-center">
                       <Brain className="h-4 w-4 mr-2 text-purple-500" />
                       <span className="font-medium">Your Feels</span>
@@ -831,7 +720,7 @@ const Dashboard = () => {
                 </AccordionItem>
 
                 <AccordionItem value="videos">
-                  <AccordionTrigger className="hover:no-underline">
+                  <AccordionTrigger>
                     <div className="flex items-center">
                       <Play className="h-4 w-4 mr-2 text-green-500" />
                       <span className="font-medium">Your Videos</span>
@@ -887,8 +776,22 @@ const Dashboard = () => {
           onBadgeInteraction={dismissBadgeNotification}
         />
 
-        {/* Swing History */}
-        <SwingHistoryList swingData={filteredSwingData} onDataUpdate={loadUserData} />
+        {/* Swing History - Limited to 5 */}
+        <div className="space-y-4">
+          <SwingHistoryList swingData={limitedSwingData} onDataUpdate={loadUserData} />
+          {filteredSwingData.length > 5 && (
+            <div className="flex justify-center pt-4">
+              <Button 
+                variant="outline" 
+                onClick={() => navigate('/swing-history')}
+                className="flex items-center gap-2"
+              >
+                View All Swings ({filteredSwingData.length})
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Badge Notifications */}
