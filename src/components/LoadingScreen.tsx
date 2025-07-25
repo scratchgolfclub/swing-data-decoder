@@ -78,19 +78,6 @@ export const LoadingScreen = ({ onComplete }: { onComplete?: () => void }) => {
           />
         </div>
 
-        {/* Dynamic Icon with Smooth Transitions */}
-        <div className="mb-8 flex justify-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-md rounded-full animate-ping" />
-            <div className="relative p-4 bg-gradient-to-r from-primary to-emerald-500 rounded-full text-white shadow-2xl">
-              <IconComponent 
-                className="h-8 w-8 animate-bounce" 
-                style={{ animationDuration: '2s' }}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Progress Ring with Multiple Layers */}
         <div className="mb-8 relative">
           <div className="w-48 h-48 mx-auto relative">
