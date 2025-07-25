@@ -7,8 +7,12 @@ import { ResultsScreen } from "@/components/ResultsScreen";
 import { ClubSelection } from "@/components/ClubSelection";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { extractTrackmanData } from "@/utils/ocrService";
+import { useAuth } from '@/contexts/AuthContext';
+import { saveSwingAnalysis } from '@/utils/dataStorageService';
+import { toast } from 'sonner';
 
 const Index = () => {
+  const { user } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [selectedClub, setSelectedClub] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,9 +36,32 @@ const Index = () => {
     try {
       const { extractMultipleTrackmanData } = await import('@/utils/ocrService');
       const data = await extractMultipleTrackmanData(selectedFiles);
-      setResults({ swings: data, club: selectedClub });
+      
+      const analysisResults = { swings: data, club: selectedClub };
+      setResults(analysisResults);
+      
+      // Save data for authenticated users
+      if (user) {
+        try {
+          const saveResult = await saveSwingAnalysis({
+            swings: data,
+            club: selectedClub,
+            originalFiles: selectedFiles
+          }, user.id);
+          
+          if (saveResult.success) {
+            toast.success('Swing analysis saved to your dashboard!');
+          } else {
+            toast.error('Analysis completed but could not save to dashboard');
+          }
+        } catch (saveError) {
+          console.error('Error saving analysis:', saveError);
+          toast.error('Analysis completed but could not save to dashboard');
+        }
+      }
     } catch (error) {
       console.error('Error processing images:', error);
+      toast.error('Error processing images. Please try again.');
     } finally {
       setIsLoading(false);
     }

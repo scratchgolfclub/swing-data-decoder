@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import scratchLogo from "@/assets/scratch-golf-logo.png";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -12,8 +11,8 @@ const Home = () => {
           {/* Logo */}
           <div className="mb-8">
             <img 
-              src={scratchLogo} 
-              alt="Scratch Golf Logo" 
+              src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
+              alt="Scratch Golf Club Logo" 
               className="h-32 w-auto mx-auto"
             />
           </div>
@@ -33,14 +32,14 @@ const Home = () => {
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/auth?mode=signin')}
               className="w-full sm:w-auto"
               size="lg"
             >
               Sign In
             </Button>
             <Button 
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/auth?mode=signup')}
               variant="outline"
               className="w-full sm:w-auto"
               size="lg"

@@ -2,11 +2,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
+import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye, ExternalLink, CheckCircle, AlertCircle, Home } from "lucide-react";
 import { getVideoRecommendations, getTextRecommendations } from "@/utils/recommendationEngine";
 import { VideoCard } from "@/components/VideoCard";
-import scratchLogo from "@/assets/scratch-golf-logo.png";
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 // Component to format swing analysis text with proper styling
 const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimpleMode: boolean }) => {
@@ -135,6 +136,9 @@ interface ResultsScreenProps {
 }
 
 export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScreenProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
   // Pass all swing data AND selected club to recommendation functions for analysis
   const swings = data.swings || [];
   const selectedClub = data.club || '';
@@ -195,14 +199,26 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
         {/* Header */}
         <div className="mb-16">
           <div className="flex items-center justify-between mb-12">
-            <Button 
-              onClick={onReset} 
-              variant="outline" 
-              className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium cursor-pointer"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Analyze Another Photo
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button 
+                onClick={onReset} 
+                variant="outline" 
+                className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium cursor-pointer"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Analyze Another Photo
+              </Button>
+              {user && (
+                <Button 
+                  onClick={() => navigate('/dashboard')} 
+                  variant="outline" 
+                  className="relative z-10 flex items-center gap-2 px-6 py-3 rounded-xl border-border/60 hover:border-border text-premium-muted hover:text-premium cursor-pointer"
+                >
+                  <Home className="h-4 w-4" />
+                  Dashboard
+                </Button>
+              )}
+            </div>
             <img 
               src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
               alt="Scratch Golf Club Logo" 
