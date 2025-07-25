@@ -4,9 +4,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ArrowLeft, Play, ChevronDown, Target, Lightbulb, Trophy, Eye, ExternalLink, CheckCircle, AlertCircle } from "lucide-react";
 import { getVideoRecommendations, getTextRecommendations } from "@/utils/recommendationEngine";
-import { FirecrawlService } from "@/utils/FirecrawlService";
 import { VideoCard } from "@/components/VideoCard";
-import { ApiKeyDialog } from "@/components/ApiKeyDialog";
 import scratchLogo from "@/assets/scratch-golf-logo.png";
 import { useState, useEffect } from 'react';
 
@@ -593,8 +591,6 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
           </CardContent>
         </Card>
         
-        {/* API Key Dialog */}
-        <ApiKeyDialog />
       </div>
     </div>
   );
