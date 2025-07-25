@@ -450,7 +450,11 @@ const Dashboard = () => {
       <header className="border-b border-white/10 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold gradient-text-premium">Scratch Golf</h1>
+            <img 
+              src="/lovable-uploads/f1f92667-329b-474f-a227-a3646c457a6b.png" 
+              alt="Scratch Golf Club" 
+              className="h-8 w-auto"
+            />
             <Badge variant="secondary">Dashboard</Badge>
           </div>
           
