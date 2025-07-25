@@ -116,14 +116,6 @@ export const VideoCard = ({ video, index }: VideoCardProps) => {
             <Play className="h-4 w-4 mr-2" />
             Watch Video
           </Button>
-          <Button 
-            variant="outline"
-            size="icon"
-            onClick={() => window.open(video.url, '_blank')}
-            className="shrink-0"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>

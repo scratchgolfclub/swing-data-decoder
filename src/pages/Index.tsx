@@ -54,20 +54,20 @@ const Index = () => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_40%,rgba(158,155,135,0.05),transparent_50%)]"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(158,155,135,0.03),transparent_50%)]"></div>
       
-      <div className="relative container-premium min-h-screen flex flex-col justify-center">
+      <div className="relative container-premium min-h-screen flex flex-col justify-center py-16 px-8">
         {/* Hero Section */}
-        <div className="text-center mb-32 animate-fade-up">
-          <div className="mb-16">
+        <div className="text-center mb-32 animate-fade-up pt-8">
+          <div className="mb-20">
             <img 
               src="/lovable-uploads/5ee4c388-2e1d-4fb1-aa32-fa74da0d32e4.png" 
               alt="Scratch Golf Club Logo" 
-              className="h-16 w-auto mx-auto mb-16 animate-premium opacity-90 hover:opacity-100 transition-opacity duration-700"
+              className="h-16 w-auto mx-auto mb-20 animate-premium opacity-90 hover:opacity-100 transition-opacity duration-700"
             />
           </div>
           
-          <h1 className="mb-12 text-premium leading-none">
+          <h1 className="mb-12 text-premium leading-none overflow-visible">
             <span className="gradient-text-premium block">Analyze</span>
-            <span className="text-foreground/70 font-light block mt-2">My Swing</span>
+            <span className="text-foreground/70 font-light block mt-4">My Swing</span>
           </h1>
           
           <div className="max-w-2xl mx-auto space-y-8">
