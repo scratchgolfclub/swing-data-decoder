@@ -322,6 +322,121 @@ export const VIDEO_CONTEXTS: VideoContext[] = [
       'Player has similar path numbers but inconsistent curvature → indicates face control issue'
     ],
     contextSummary: 'Teaches face control fundamentals for consistent ball starting direction. Essential for players with erratic face angles or launch direction issues.'
+  },
+  // Additional Face Angle Control Videos
+  {
+    id: 'straight-edge-drill',
+    title: 'Straight Edge Drill (Face Angle – Lesson 2)',
+    link: 'https://scratchgc.wistia.com/medias/mpaxz6khcm',
+    category: 'Face Angle Control',
+    relatedDataPoints: ['Face Angle'],
+    recommendWhen: [
+      'Face angle is consistently more than ±2° offline',
+      'Start line variability is high despite consistent path'
+    ],
+    contextSummary: 'Drill focused on improving face angle control through consistent setup and awareness. Helps players develop better face control when path is consistent but face varies.'
+  },
+  {
+    id: 'start-line-punch-drill',
+    title: 'Start Line Punch Drill (Face Angle – Lesson 3)',
+    link: 'https://scratchgc.wistia.com/medias/hdgpd3m7bd',
+    category: 'Face Angle Control',
+    relatedDataPoints: ['Face Angle', 'Launch Direction'],
+    recommendWhen: [
+      'Face angle is greater than ±1°',
+      'Launch direction is outside ±2°',
+      'Smash factor is stable but ball starts offline'
+    ],
+    contextSummary: 'Punch drill specifically for improving start line control. Excellent when players have good contact (smash factor) but struggle with directional control.'
+  },
+  {
+    id: 'p2-p6-checkpoints',
+    title: 'P2/P6 Checkpoints (Face Angle – Lesson 4)',
+    link: 'https://scratchgc.wistia.com/medias/2ns1sljopx',
+    category: 'Face Angle Control',
+    relatedDataPoints: ['Face Angle'],
+    recommendWhen: [
+      'Face angle is more than ±2°',
+      'Video analysis shows face control issues through takeaway or downswing checkpoints'
+    ],
+    contextSummary: 'Advanced checkpoint system for face control through swing positions. Ideal for players who need positional awareness to improve face angle consistency.'
+  },
+  {
+    id: 'grip-matchups',
+    title: 'Grip Matchups (Face Angle – Lesson 5)',
+    link: 'https://scratchgc.wistia.com/medias/1bps8imexk',
+    category: 'Face Angle Control',
+    relatedDataPoints: ['Face Angle', 'Club Path'],
+    recommendWhen: [
+      'Face angle is closed or open >2° with inconsistent ball flight',
+      'Club path and face angle combination results in large curvatures'
+    ],
+    contextSummary: 'Teaches how to match grip to swing style for consistent face control. Essential when face and path combinations create unpredictable ball flights.'
+  },
+  {
+    id: 'forearm-rotation',
+    title: 'Forearm Rotation (Face Angle – Lesson 6)',
+    link: 'https://scratchgc.wistia.com/medias/tgz7pqgzhz',
+    category: 'Face Angle Control',
+    relatedDataPoints: ['Face Angle', 'Club Path', 'Spin Axis'],
+    recommendWhen: [
+      'Face-to-path is >2°',
+      'Spin axis is >5° left or right',
+      'Curve is greater than 15 feet'
+    ],
+    contextSummary: 'Advanced technique for controlling face through impact via forearm rotation. Perfect for players with large face-to-path mismatches and excessive curve.'
+  },
+  // Early Extension Series
+  {
+    id: 'early-extension-overview',
+    title: 'Early Extension (Overview)',
+    link: 'https://scratchgc.wistia.com/medias/29qy2keo66',
+    category: 'Swing Mechanics',
+    relatedDataPoints: ['Low Point Distance', 'Attack Angle', 'Face Angle', 'Club Path'],
+    recommendWhen: [
+      'Low point is too far behind the ball (>2.5 in A)',
+      'Face and path are inconsistent across swings',
+      'Angle of attack is steep (e.g., < -3°) with contact issues'
+    ],
+    contextSummary: 'Overview of early extension pattern and its effects on ball striking. Recommend when multiple metrics suggest inconsistent impact position.'
+  },
+  {
+    id: 'early-extension-causes',
+    title: 'Early Extension Causes',
+    link: 'https://scratchgc.wistia.com/medias/24p12cg53q',
+    category: 'Swing Mechanics',
+    relatedDataPoints: ['Attack Angle', 'Face Angle', 'Low Point', 'Dynamic Loft'],
+    recommendWhen: [
+      'Steep angle of attack (< -3°)',
+      'Low point behind ball (>2.5 in A)',
+      'Inconsistent dynamic loft or contact height'
+    ],
+    contextSummary: 'Explains root causes of early extension pattern. Essential for players showing steep attack angles and poor low point control.'
+  },
+  {
+    id: 'basic-anatomy',
+    title: 'Basic Anatomy',
+    link: 'https://scratchgc.wistia.com/medias/2go38s944w',
+    category: 'Swing Mechanics',
+    relatedDataPoints: ['Face Angle', 'Club Path', 'Attack Angle'],
+    recommendWhen: [
+      'Player has multiple erratic metrics and struggles with physical awareness',
+      'Face and path are erratic with no pattern'
+    ],
+    contextSummary: 'Fundamental body awareness and swing mechanics. Best for beginners or players with completely erratic swing data across all metrics.'
+  },
+  {
+    id: 'swing-direction-lesson-1',
+    title: 'Swing Direction on TrackMan (Swing Direction – Lesson 1)',
+    link: 'https://scratchgc.wistia.com/medias/67ainfstsh',
+    category: 'Swing Mechanics',
+    relatedDataPoints: ['Swing Direction', 'Club Path', 'Attack Angle'],
+    recommendWhen: [
+      'Swing direction is more than ±5°',
+      'Club path is significantly different than expected based on swing direction',
+      'Face-to-path doesn\'t match curvature'
+    ],
+    contextSummary: 'Explains swing direction metric and its relationship to club path. Important for understanding why club path and intended direction don\'t match.'
   }
 ];
 

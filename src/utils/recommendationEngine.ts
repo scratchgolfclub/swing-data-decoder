@@ -344,6 +344,103 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
     });
   }
   
+  // Straight Edge Drill - Face angle control
+  if (Math.abs(faceAngle) > 2 || (consistency.variances.faceAngle || 0) > 2) {
+    videoRecommendations.push({
+      title: "Straight Edge Drill (Face Angle – Lesson 2)",
+      description: "Drill focused on improving face angle control through consistent setup and awareness",
+      url: "https://scratchgc.wistia.com/medias/mpaxz6khcm",
+      reason: `Your face angle is ${faceAngle.toFixed(1)}° (should be within ±2°)`,
+      priority: 5
+    });
+  }
+  
+  // Start Line Punch Drill - Launch direction control
+  if (Math.abs(faceAngle) > 1 || Math.abs(launchDirection) > 2 || (smashFactor > 1.3 && Math.abs(launchDirection) > 1)) {
+    videoRecommendations.push({
+      title: "Start Line Punch Drill (Face Angle – Lesson 3)",
+      description: "Punch drill specifically for improving start line control",
+      url: "https://scratchgc.wistia.com/medias/hdgpd3m7bd",
+      reason: `Your launch direction is ${launchDirection.toFixed(1)}° off target`,
+      priority: 5
+    });
+  }
+  
+  // P2/P6 Checkpoints - Advanced face control
+  if (Math.abs(faceAngle) > 2 || (consistency.variances.faceAngle || 0) > 3) {
+    videoRecommendations.push({
+      title: "P2/P6 Checkpoints (Face Angle – Lesson 4)",
+      description: "Advanced checkpoint system for face control through swing positions",
+      url: "https://scratchgc.wistia.com/medias/2ns1sljopx",
+      priority: 4
+    });
+  }
+  
+  // Grip Matchups - Face and path combinations
+  if ((Math.abs(faceAngle) > 2 && Math.abs(curve) > 15) || (Math.abs(clubPath) > 2 && Math.abs(faceAngle) > 2)) {
+    videoRecommendations.push({
+      title: "Grip Matchups (Face Angle – Lesson 5)",
+      description: "Teaches how to match grip to swing style for consistent face control",
+      url: "https://scratchgc.wistia.com/medias/1bps8imexk",
+      priority: 4
+    });
+  }
+  
+  // Forearm Rotation - Advanced face control
+  if (Math.abs(faceToPath) > 2 || Math.abs(spinAxis) > 5 || Math.abs(curve) > 15) {
+    videoRecommendations.push({
+      title: "Forearm Rotation (Face Angle – Lesson 6)",
+      description: "Advanced technique for controlling face through impact via forearm rotation",
+      url: "https://scratchgc.wistia.com/medias/tgz7pqgzhz",
+      reason: `Your face-to-path is ${faceToPath.toFixed(1)}° with ${curve.toFixed(0)}ft curve`,
+      priority: 5
+    });
+  }
+  
+  // SWING MECHANICS SECTION
+  
+  // Early Extension Overview - Multiple impact issues
+  if (lowPointDistance > 2.5 || (Math.abs(clubPath) > 3 && Math.abs(faceAngle) > 2) || (attackAngle < -3 && dynamicLoft < 18)) {
+    videoRecommendations.push({
+      title: "Early Extension (Overview)",
+      description: "Overview of early extension pattern and its effects on ball striking",
+      url: "https://scratchgc.wistia.com/medias/29qy2keo66",
+      reason: `Multiple impact issues suggest early extension pattern`,
+      priority: 6
+    });
+  }
+  
+  // Early Extension Causes - Specific early extension patterns
+  if (attackAngle < -3 || lowPointDistance > 2.5 || (consistency.variances.dynamicLoft || 0) > 4) {
+    videoRecommendations.push({
+      title: "Early Extension Causes",
+      description: "Explains root causes of early extension pattern",
+      url: "https://scratchgc.wistia.com/medias/24p12cg53q",
+      priority: 6
+    });
+  }
+  
+  // Basic Anatomy - Fundamental understanding needed
+  if (!consistency.isConsistent && (consistency.variances.faceAngle || 0) > 3 && (consistency.variances.clubPath || 0) > 3) {
+    videoRecommendations.push({
+      title: "Basic Anatomy",
+      description: "Fundamental body awareness and swing mechanics",
+      url: "https://scratchgc.wistia.com/medias/2go38s944w",
+      priority: 3
+    });
+  }
+  
+  // Swing Direction - Path vs direction mismatch
+  if (Math.abs(swingDirection) > 5 || Math.abs(swingDirection - clubPath) > 4) {
+    videoRecommendations.push({
+      title: "Swing Direction on TrackMan (Swing Direction – Lesson 1)",
+      description: "Explains swing direction metric and its relationship to club path",
+      url: "https://scratchgc.wistia.com/medias/67ainfstsh",
+      reason: `Your swing direction (${swingDirection.toFixed(1)}°) doesn't match your club path`,
+      priority: 5
+    });
+  }
+
   // Sort by priority (highest first) and remove duplicates
   const uniqueVideos = videoRecommendations
     .sort((a, b) => b.priority - a.priority)
