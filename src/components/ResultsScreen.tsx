@@ -150,7 +150,7 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
   const { goodPoints, needsWork } = getSwingSummary(swingData);
   
   // Filter videos based on mode
-  const displayedVideos = isSimpleMode ? videoRecommendations.slice(0, 1) : videoRecommendations;
+  const displayedVideos = isSimpleMode ? videoRecommendations.slice(0, 1) : videoRecommendations.slice(0, 3);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 to-stone-100 dark:from-stone-950 dark:to-stone-900 p-4">
@@ -330,18 +330,48 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-                <p>Based on your TrackMan data, we've identified key areas for improvement.</p>
-                {goodPoints.length > 0 && (
-                  <p className="text-green-700 dark:text-green-300">
-                    ✓ Your <strong>{goodPoints[0].name}</strong> is excellent at {goodPoints[0].value}
-                  </p>
+                {isSimpleMode ? (
+                  <>
+                    <p>Based on your TrackMan data, we've identified key areas for improvement.</p>
+                    {goodPoints.length > 0 && (
+                      <p className="text-green-700 dark:text-green-300">
+                        ✓ Your <strong>{goodPoints[0].name}</strong> is excellent at {goodPoints[0].value}
+                      </p>
+                    )}
+                    {needsWork.length > 0 && (
+                      <p className="text-amber-700 dark:text-amber-300">
+                        → Focus on improving your <strong>{needsWork[0].name}</strong> from {needsWork[0].value}
+                      </p>
+                    )}
+                    <p>Our lesson plan targets these specific metrics to help you shoot lower scores.</p>
+                  </>
+                ) : (
+                  <>
+                    <p>Your TrackMan data reveals important insights about your current swing patterns and ball flight characteristics. Our analysis examines critical metrics including club path, face angle, attack angle, and impact dynamics to create a comprehensive improvement strategy.</p>
+                    {goodPoints.length > 0 && (
+                      <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border-l-4 border-green-500">
+                        <p className="text-green-700 dark:text-green-300 font-medium">
+                          ✓ Strength: <strong>{goodPoints[0].name}</strong> at {goodPoints[0].value}
+                        </p>
+                        <p className="text-green-600 dark:text-green-400 text-xs mt-1">
+                          This metric falls within the optimal range for your club type, indicating solid fundamentals in this area. Maintaining this consistency will support your overall improvement.
+                        </p>
+                      </div>
+                    )}
+                    {needsWork.length > 0 && (
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg border-l-4 border-amber-500">
+                        <p className="text-amber-700 dark:text-amber-300 font-medium">
+                          → Priority Area: <strong>{needsWork[0].name}</strong> at {needsWork[0].value}
+                        </p>
+                        <p className="text-amber-600 dark:text-amber-400 text-xs mt-1">
+                          This measurement indicates room for improvement. Addressing this metric will likely have the greatest impact on your ball flight consistency and overall performance.
+                        </p>
+                      </div>
+                    )}
+                    <p>Our systematic approach addresses root causes rather than just symptoms. Each recommended drill and feel is designed to create lasting changes in your swing mechanics, leading to more predictable ball flights and lower scores.</p>
+                    <p className="text-xs text-muted-foreground/80 italic">The lesson plan prioritizes the most impactful changes first, ensuring efficient use of your practice time.</p>
+                  </>
                 )}
-                {needsWork.length > 0 && (
-                  <p className="text-amber-700 dark:text-amber-300">
-                    → Focus on improving your <strong>{needsWork[0].name}</strong> from {needsWork[0].value}
-                  </p>
-                )}
-                <p>Our lesson plan targets these specific metrics to help you shoot lower scores.</p>
               </div>
             </CardContent>
           </Card>
@@ -356,12 +386,34 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3 text-sm text-muted-foreground leading-relaxed">
-                <p><strong>Primary Focus:</strong> {needsWork[0]?.name || 'Overall swing consistency'}</p>
-                {needsWork[0] && (
-                  <p><strong>Target Range:</strong> {needsWork[0].ideal?.min}-{needsWork[0].ideal?.max}{needsWork[0].unit}</p>
+                {isSimpleMode ? (
+                  <>
+                    <p><strong>Primary Focus:</strong> {needsWork[0]?.name || 'Overall swing consistency'}</p>
+                    {needsWork[0] && (
+                      <p><strong>Target Range:</strong> {needsWork[0].ideal?.min}-{needsWork[0].ideal?.max}{needsWork[0].unit}</p>
+                    )}
+                    <p><strong>Expected Timeline:</strong> 2-4 weeks with consistent practice</p>
+                    <p><strong>Success Metric:</strong> More consistent ball striking and improved distance control</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border-l-4 border-blue-500 mb-4">
+                      <p><strong>Primary Focus:</strong> {needsWork[0]?.name || 'Overall swing consistency'}</p>
+                      {needsWork[0] && (
+                        <p className="text-xs mt-1"><strong>Target Range:</strong> {needsWork[0].ideal?.min}-{needsWork[0].ideal?.max}{needsWork[0].unit}</p>
+                      )}
+                    </div>
+                    <p><strong>Short-term Goal (2-4 weeks):</strong> Establish more consistent impact conditions and ball flight patterns. Focus on reducing variability in your primary metric while maintaining existing strengths.</p>
+                    <p><strong>Medium-term Goal (1-3 months):</strong> Integrate improved mechanics into full-speed swings. Develop muscle memory for new positions and feelings. Track progress with additional TrackMan sessions.</p>
+                    <p><strong>Long-term Goal (3-6 months):</strong> Lower handicap through more predictable ball flights and improved course management. Reduced penalty strokes from errant shots.</p>
+                    <div className="p-3 bg-stone-50 dark:bg-stone-800 rounded-lg mt-3">
+                      <p className="text-xs"><strong>Success Metrics:</strong></p>
+                      <p className="text-xs">• Tighter dispersion patterns (±10 yards laterally)</p>
+                      <p className="text-xs">• More consistent carry distances (±5 yards)</p>
+                      <p className="text-xs">• Improved scoring average within 4-6 weeks</p>
+                    </div>
+                  </>
                 )}
-                <p><strong>Expected Timeline:</strong> 2-4 weeks with consistent practice</p>
-                <p><strong>Success Metric:</strong> More consistent ball striking and improved distance control</p>
               </div>
             </CardContent>
           </Card>
@@ -375,42 +427,142 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-3 text-primary">Practice Drills</h4>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Alignment stick drill for better swing plane</span>
+              {isSimpleMode ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="font-semibold mb-3 text-primary">Practice Drills</h4>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Alignment stick drill for better swing plane</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Impact bag work for solid contact</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Tempo training with metronome</span>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Impact bag work for solid contact</span>
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Tempo training with metronome</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-3 text-primary">Swing Feels</h4>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Feel like you're hitting up on the ball</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Maintain steady head position through impact</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span className="text-primary mt-1">●</span>
+                        <span>Focus on smooth, controlled acceleration</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-3 text-primary">Swing Feels</h4>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Feel like you're hitting up on the ball</span>
+              ) : (
+                <div className="space-y-8">
+                  {/* Practice Drills - Advanced */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <h4 className="text-lg font-semibold text-primary">Practice Drills</h4>
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">Advanced</span>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Maintain steady head position through impact</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Alignment Stick Progression</h5>
+                        <p className="text-xs text-muted-foreground mb-2">Target: Consistent swing plane and path</p>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>• Place stick along target line for feet alignment</p>
+                          <p>• Add second stick along shaft at setup for plane reference</p>
+                          <p>• Practice swings staying parallel to plane stick</p>
+                          <p>• Graduate to hitting balls with visual feedback</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Impact Bag Sequence</h5>
+                        <p className="text-xs text-muted-foreground mb-2">Target: Solid contact and compression</p>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>• Start with slow motion impacts (no backswing)</p>
+                          <p>• Focus on shaft lean and body position at impact</p>
+                          <p>• Add quarter swings maintaining impact feel</p>
+                          <p>• Progress to half swings with same impact quality</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Tempo & Timing Work</h5>
+                        <p className="text-xs text-muted-foreground mb-2">Target: Consistent rhythm and sequence</p>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>• Use metronome for 3:1 backswing to downswing ratio</p>
+                          <p>• Practice with different club weights for feel</p>
+                          <p>• Focus on smooth transition, not speed</p>
+                          <p>• Build up from practice swings to ball striking</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Gate Drill Progression</h5>
+                        <p className="text-xs text-muted-foreground mb-2">Target: Path and face control</p>
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>• Set up alignment sticks 6 inches apart</p>
+                          <p>• Practice swinging through without contact</p>
+                          <p>• Add ball and work on clean path</p>
+                          <p>• Narrow gates as accuracy improves</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-start gap-2">
-                      <span className="text-primary mt-1">●</span>
-                      <span>Focus on smooth, controlled acceleration</span>
+                  </div>
+
+                  {/* Swing Feels - Advanced */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <h4 className="text-lg font-semibold text-primary">Swing Feels & Mental Keys</h4>
+                      <span className="text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">Advanced</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Setup & Transition Feels</h5>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Address:</strong> Feel balanced weight on balls of feet, shoulders slightly ahead of ball</p>
+                          <p><strong>Takeaway:</strong> Club and hands move together, maintaining spine angle</p>
+                          <p><strong>Transition:</strong> Feel lower body start down while upper body completes backswing</p>
+                          <p><strong>Key:</strong> Smooth acceleration, not sudden speed changes</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Impact & Follow-Through</h5>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Impact:</strong> Feel like you're hitting down and through (irons) or up and through (driver)</p>
+                          <p><strong>Release:</strong> Let the club release naturally, don't force rotation</p>
+                          <p><strong>Finish:</strong> Balanced finish with most weight on front foot</p>
+                          <p><strong>Key:</strong> Trust the swing, commit to the shot</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Course Application</h5>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Pre-shot:</strong> Visualize the shot shape and landing area</p>
+                          <p><strong>During swing:</strong> Focus on one key feel, not multiple thoughts</p>
+                          <p><strong>Commitment:</strong> Once you start the swing, commit fully</p>
+                          <p><strong>Recovery:</strong> Stay positive, focus on next shot execution</p>
+                        </div>
+                      </div>
+                      <div className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg">
+                        <h5 className="font-medium text-foreground mb-2">Practice Session Structure</h5>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Warm-up:</strong> 10 swings focusing on tempo and balance</p>
+                          <p><strong>Technical work:</strong> 20-30 swings on priority area</p>
+                          <p><strong>Integration:</strong> 10 swings combining all elements</p>
+                          <p><strong>Simulation:</strong> Practice course scenarios and pressure shots</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
