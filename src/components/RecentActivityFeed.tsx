@@ -29,6 +29,8 @@ interface RecentActivityFeedProps {
 export const RecentActivityFeed = ({ swingData, className }: RecentActivityFeedProps) => {
   const navigate = useNavigate();
 
+  console.log('RecentActivityFeed rendering with:', swingData.length, 'swings');
+  
   // Get recent sessions (last 5)
   const recentSessions = swingData.slice(0, 5);
   

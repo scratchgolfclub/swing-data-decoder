@@ -464,7 +464,14 @@ const Dashboard = () => {
   const baselineSwing = filteredSwingData.find(swing => swing.is_baseline);
   const latestProgress = progressData[0];
   const latestMetrics = getLatestSwingMetrics();
+  console.log('Dashboard Debug:', {
+    hasLatestSwing: !!latestSwing,
+    hasLatestMetrics: !!latestMetrics,
+    latestMetricsCount: latestMetrics?.length || 0,
+    hasBaselineSwing: !!baselineSwing
+  });
   const analysis = latestMetrics ? analyzeStrengthAndWeakness(latestMetrics) : null;
+  console.log('Analysis result:', analysis);
   const recommendations = getRecommendations();
 
   // Limit swing history to last 5 swings
