@@ -81,7 +81,7 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 };
 
 // Component to analyze swing data and provide summary
-const getSwingSummary = (swingData: any) => {
+const getSwingSummary = (swingData: any, selectedClub: string) => {
   const allMetrics = [];
   
   // Safety check for swingData
@@ -92,17 +92,59 @@ const getSwingSummary = (swingData: any) => {
   // Get structured metrics - only new format with safety checks
   const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || swingData.structured_metrics || []);
   
-  // Analyze all available metrics with ideal ranges
-  const metrics = [
-    { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 145, max: 180 }, unit: 'mph', goodAbove: true },
-    { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 }, unit: '', goodAbove: true },
-    { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 200, max: 280 }, unit: 'yds', goodAbove: true },
-    { key: 'Club Path', name: 'Club Path', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
-    { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
-    { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: -2, max: 3 }, unit: '°', goodAbove: false },
-    { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 12, max: 18 }, unit: '°', goodAbove: false },
-    { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 2000, max: 3500 }, unit: 'rpm', goodAbove: false }
-  ];
+  // Get club-specific ideal ranges
+  const getClubSpecificMetrics = (club: string) => {
+    const clubLower = club.toLowerCase();
+    
+    if (clubLower.includes('driver')) {
+      return [
+        { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 150, max: 180 }, unit: 'mph', goodAbove: true },
+        { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.45, max: 1.5 }, unit: '', goodAbove: true },
+        { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 240, max: 300 }, unit: 'yds', goodAbove: true },
+        { key: 'Club Path', name: 'Club Path', ideal: { min: -3, max: 3 }, unit: '°', goodAbove: false },
+        { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+        { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: 1, max: 5 }, unit: '°', goodAbove: false },
+        { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 12, max: 16 }, unit: '°', goodAbove: false },
+        { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 2000, max: 2800 }, unit: 'rpm', goodAbove: false }
+      ];
+    } else if (clubLower.includes('iron') || clubLower.includes('6') || clubLower.includes('7') || clubLower.includes('8')) {
+      return [
+        { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 120, max: 150 }, unit: 'mph', goodAbove: true },
+        { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.3, max: 1.4 }, unit: '', goodAbove: true },
+        { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 140, max: 180 }, unit: 'yds', goodAbove: true },
+        { key: 'Club Path', name: 'Club Path', ideal: { min: -3, max: 3 }, unit: '°', goodAbove: false },
+        { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+        { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: -6, max: -2 }, unit: '°', goodAbove: false },
+        { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 18, max: 25 }, unit: '°', goodAbove: false },
+        { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 5000, max: 7500 }, unit: 'rpm', goodAbove: false }
+      ];
+    } else if (clubLower.includes('wedge') || clubLower.includes('sand') || clubLower.includes('lob')) {
+      return [
+        { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 80, max: 110 }, unit: 'mph', goodAbove: true },
+        { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.0, max: 1.2 }, unit: '', goodAbove: true },
+        { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 80, max: 120 }, unit: 'yds', goodAbove: true },
+        { key: 'Club Path', name: 'Club Path', ideal: { min: -3, max: 3 }, unit: '°', goodAbove: false },
+        { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+        { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: -8, max: -3 }, unit: '°', goodAbove: false },
+        { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 25, max: 35 }, unit: '°', goodAbove: false },
+        { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 8000, max: 12000 }, unit: 'rpm', goodAbove: false }
+      ];
+    } else {
+      // Default/fairway wood ranges
+      return [
+        { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 135, max: 165 }, unit: 'mph', goodAbove: true },
+        { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.45 }, unit: '', goodAbove: true },
+        { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 200, max: 250 }, unit: 'yds', goodAbove: true },
+        { key: 'Club Path', name: 'Club Path', ideal: { min: -3, max: 3 }, unit: '°', goodAbove: false },
+        { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+        { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: -3, max: 1 }, unit: '°', goodAbove: false },
+        { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 14, max: 20 }, unit: '°', goodAbove: false },
+        { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 3000, max: 4500 }, unit: 'rpm', goodAbove: false }
+      ];
+    }
+  };
+
+  const metrics = getClubSpecificMetrics(selectedClub);
 
   metrics.forEach(metric => {
     const value = getMetricValue(structuredMetrics, metric.key);
@@ -115,24 +157,41 @@ const getSwingSummary = (swingData: any) => {
         Math.abs(value - metric.ideal.max)
       );
       
+      // Calculate relative quality score (0-1)
+      const range = metric.ideal.max - metric.ideal.min;
+      const distanceFromIdeal = Math.min(
+        Math.abs(value - metric.ideal.min),
+        Math.abs(value - metric.ideal.max),
+        Math.abs(value - (metric.ideal.min + metric.ideal.max) / 2)
+      );
+      const qualityScore = Math.max(0, 1 - (distanceFromIdeal / range));
+      
+      const clubType = selectedClub.toLowerCase().includes('iron') ? 'iron' : 
+                      selectedClub.toLowerCase().includes('driver') ? 'driver' : 'club';
+      
       allMetrics.push({
         ...metric,
         value: displayValue || `${value}${metric.unit}`,
         numValue: value,
         isGood: isInRange,
         deviation,
+        qualityScore,
         reason: isInRange 
-          ? `Excellent ${metric.name.toLowerCase()} within ideal range`
-          : `Work on ${metric.name.toLowerCase()} for better performance`
+          ? `Great ${metric.name.toLowerCase()} for a ${clubType} shot`
+          : `Focus on improving ${metric.name.toLowerCase()} with your ${clubType}`
       });
     }
   });
 
-  // Get one best metric (in good range)
+  // Get the best metric (either in range, or highest quality score)
   const goodMetrics = allMetrics.filter(m => m.isGood);
-  const goodPoints = goodMetrics.length > 0 ? [goodMetrics[0]] : [];
+  const goodPoints = goodMetrics.length > 0 
+    ? [goodMetrics.sort((a, b) => b.qualityScore - a.qualityScore)[0]]
+    : allMetrics.length > 0 
+      ? [allMetrics.sort((a, b) => b.qualityScore - a.qualityScore)[0]]
+      : [];
   
-  // Get one worst metric (furthest from ideal) or pick one for improvement even if all are good
+  // Get the metric that needs most work (furthest from ideal)
   const needsWork = allMetrics.length > 0 
     ? [allMetrics.sort((a, b) => b.deviation - a.deviation)[0]]
     : [];
@@ -179,7 +238,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   const structuredMetrics = getStructuredMetrics(swingData?.structuredMetrics || swingData?.structured_metrics || []);
   
   // Get swing summary with additional safety
-  const { goodPoints, needsWork } = swingData ? getSwingSummary(swingData) : { goodPoints: [], needsWork: [] };
+  const { goodPoints, needsWork } = swingData ? getSwingSummary(swingData, selectedClub) : { goodPoints: [], needsWork: [] };
   
   // Filter videos based on mode
   const displayedVideos = isSimpleMode ? videoRecommendations.slice(0, 1) : videoRecommendations.slice(0, 3);
@@ -305,12 +364,12 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
               <div className="space-y-4">
                 {needsWork.slice(0, 1).map((point, index) => (
                   <div key={index} className="p-4 bg-amber-100/60 dark:bg-amber-900/30 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-amber-800 dark:text-amber-200 mb-1">{point.name}</div>
-                        <div className="text-sm text-amber-700 dark:text-amber-300">{point.reason}</div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium text-amber-800 dark:text-amber-200">{point.name}</div>
+                        <div className="text-xl font-medium text-amber-800 dark:text-amber-200">{point.value}</div>
                       </div>
-                      <div className="text-xl font-medium text-amber-800 dark:text-amber-200">{point.value}</div>
+                      <div className="text-sm text-amber-700 dark:text-amber-300">{point.reason}</div>
                     </div>
                   </div>
                 ))}
