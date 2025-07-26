@@ -1,6 +1,6 @@
 export interface StructuredMetric {
   title: string;
-  value: string;
+  value: string | number;
   descriptor: string;
 }
 
@@ -14,15 +14,26 @@ export const getMetricValue = (metrics: StructuredMetric[], title: string): numb
   const metric = findMetricByTitle(metrics, title);
   if (!metric) return null;
   
-  // Extract numeric value from string
-  const numValue = parseFloat(metric.value.replace(/[^\d.-]/g, ''));
+  // Handle both string and number values
+  if (typeof metric.value === 'number') {
+    return metric.value;
+  }
+  
+  if (typeof metric.value === 'string') {
+    // Extract numeric value from string
+    const numValue = parseFloat(metric.value.replace(/[^\d.-]/g, ''));
+    return isNaN(numValue) ? null : numValue;
+  }
+  
+  // Try to convert to number if it's another type
+  const numValue = parseFloat(String(metric.value).replace(/[^\d.-]/g, ''));
   return isNaN(numValue) ? null : numValue;
 };
 
 // Get display value for a metric
 export const getMetricDisplay = (metrics: StructuredMetric[], title: string): string => {
   const metric = findMetricByTitle(metrics, title);
-  return metric?.value || '';
+  return metric?.value ? String(metric.value) : '';
 };
 
 // Convert old unstructured metrics to structured format for backward compatibility
