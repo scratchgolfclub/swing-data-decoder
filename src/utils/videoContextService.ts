@@ -1,3 +1,5 @@
+import { getStructuredMetrics, getMetricValue, type StructuredMetric } from './structuredMetricsHelper';
+
 interface VideoContext {
   id: string;
   title: string;
@@ -7,6 +9,32 @@ interface VideoContext {
   recommendWhen: string[];
   contextSummary: string;
 }
+
+// Mapping between old metric names and new structured metric titles
+const METRIC_NAME_MAPPING: Record<string, string> = {
+  'clubSpeed': 'Club Speed',
+  'ballSpeed': 'Ball Speed',
+  'smashFactor': 'Smash Factor',
+  'total': 'Total Distance',
+  'carry': 'Carry Distance',
+  'side': 'Side',
+  'attackAngle': 'Attack Angle',
+  'clubPath': 'Club Path',
+  'faceAngle': 'Face Angle',
+  'faceToPath': 'Face to Path',
+  'launchAngle': 'Launch Angle',
+  'launchDirection': 'Launch Direction',
+  'dynamicLoft': 'Dynamic Loft',
+  'spinLoft': 'Spin Loft',
+  'spinRate': 'Spin Rate',
+  'spinAxis': 'Spin Axis',
+  'curve': 'Curve',
+  'lowPoint': 'Low Point Distance',
+  'swingDirection': 'Swing Direction',
+  'dynamicLie': 'Dynamic Lie',
+  'impactHeight': 'Impact Height',
+  'impactOffset': 'Impact Offset'
+};
 
 // This contains all the video data from the Context page
 export const VIDEO_CONTEXTS: VideoContext[] = [
@@ -458,4 +486,81 @@ export const getVideosByUrls = (urls: string[]) => {
     }
     return null;
   }).filter(Boolean);
+};
+
+// Helper function to evaluate condition with structured metrics
+export const evaluateRecommendCondition = (condition: string, metrics: StructuredMetric[]): boolean => {
+  // Parse common condition patterns and check against structured metrics
+  // Examples: "Club Path is negative (< –2°)" or "Smash Factor < 1.4 with driver"
+  
+  const numericPatterns = [
+    /(\w+[\w\s]*)\s*([<>]=?|is)\s*(positive|negative|[+-]?\d*\.?\d+)([°%\s\w]*)/i,
+    /(\w+[\w\s]*)\s*>\s*[±]?(\d+\.?\d*)([°%\s\w]*)/i,
+    /(\w+[\w\s]*)\s*<\s*[±]?(\d+\.?\d*)([°%\s\w]*)/i,
+    /(\w+[\w\s]*)\s*varies.*>.*(\d+\.?\d*)([°%\s\w]*)/i
+  ];
+
+  for (const pattern of numericPatterns) {
+    const match = condition.match(pattern);
+    if (match) {
+      const metricName = match[1].trim();
+      const operator = match[2] || '';
+      const value = match[3];
+      
+      // Map metric name to structured format
+      const structuredName = METRIC_NAME_MAPPING[metricName] || metricName;
+      const metricValue = getMetricValue(metrics, structuredName);
+      
+      if (metricValue !== null) {
+        if (value === 'positive' && metricValue > 0) return true;
+        if (value === 'negative' && metricValue < 0) return true;
+        
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+          if (operator.includes('<') && metricValue < numValue) return true;
+          if (operator.includes('>') && metricValue > numValue) return true;
+        }
+      }
+    }
+  }
+  
+  return false;
+};
+
+// Function to get video recommendations based on swing data
+export const getVideoRecommendations = (swingData: any[]): VideoContext[] => {
+  const recommendations: VideoContext[] = [];
+  
+  if (!swingData || swingData.length === 0) return recommendations;
+  
+  // Get latest swing data or combine multiple swings for analysis
+  const latestSwing = swingData[0];
+  const metrics = getStructuredMetrics(latestSwing.structured_metrics || latestSwing.initial_metrics);
+  
+  // Check each video's recommendation conditions
+  for (const video of VIDEO_CONTEXTS) {
+    let recommendationScore = 0;
+    
+    for (const condition of video.recommendWhen) {
+      if (evaluateRecommendCondition(condition, metrics)) {
+        recommendationScore++;
+      }
+    }
+    
+    // If more than 50% of conditions match, recommend the video
+    if (recommendationScore > video.recommendWhen.length * 0.5) {
+      recommendations.push(video);
+    }
+  }
+  
+  // Sort by relevance (number of matching conditions)
+  return recommendations.sort((a, b) => {
+    const scoreA = a.recommendWhen.filter(condition => 
+      evaluateRecommendCondition(condition, metrics)
+    ).length;
+    const scoreB = b.recommendWhen.filter(condition => 
+      evaluateRecommendCondition(condition, metrics)
+    ).length;
+    return scoreB - scoreA;
+  });
 };
