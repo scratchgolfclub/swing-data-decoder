@@ -15,7 +15,7 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-export const extractTextFromImage = async (imageFile: File): Promise<string> => {
+export const extractTextFromImage = async (imageFile: File): Promise<{ text: string; metrics?: any[] }> => {
   try {
     console.log('🚀 Starting OCR extraction with OpenAI Vision...');
     
@@ -36,7 +36,10 @@ export const extractTextFromImage = async (imageFile: File): Promise<string> => 
       
       if (!error && data?.text) {
         console.log('✅ OpenAI OCR extraction completed:', data.text.length, 'characters');
-        return data.text;
+        return {
+          text: data.text,
+          metrics: data.metrics || []
+        };
       }
       
       console.warn('⚠️ OpenAI OCR failed, falling back to Tesseract:', error?.message);
@@ -73,12 +76,14 @@ export const extractTextFromImage = async (imageFile: File): Promise<string> => 
       }
       
       console.log('✅ Fallback OCR extraction completed:', text.length, 'characters');
-      return text;
+      return { text };
       
     } catch (fallbackError) {
       console.error('❌ Fallback OCR also failed:', fallbackError);
       // Return mock data to prevent app from breaking
-      return 'BALL SPEED 145.2 mph CLUB SPEED 98.5 mph SMASH FACTOR 1.47 LAUNCH ANGLE 12.8 deg SPIN RATE 2456 rpm CARRY 267 yds TOTAL 285 yds';
+      const mockText = 'BALL SPEED 145.2 mph CLUB SPEED 98.5 mph SMASH FACTOR 1.47 LAUNCH ANGLE 12.8 deg SPIN RATE 2456 rpm CARRY 267 yds TOTAL 285 yds';
+      
+      return { text: mockText };
     }
     
   } catch (error) {
@@ -92,10 +97,15 @@ export const extractTrackmanData = async (imageFile: File) => {
     console.log('🔍 Starting TrackMan data extraction...');
     
     // Extract text using our OCR service (with fallback)
-    const extractedText = await extractTextFromImage(imageFile);
+    const extractedResult = await extractTextFromImage(imageFile);
     
     // Parse the extracted text to get structured TrackMan data
-    const extractedData = parseTrackmanText(extractedText);
+    const extractedData = parseTrackmanText(extractedResult.text);
+    
+    // Add structured metrics if available
+    if (extractedResult.metrics && extractedResult.metrics.length > 0) {
+      extractedData.structuredMetrics = extractedResult.metrics;
+    }
     
     console.log(`✅ Successfully extracted ${Object.keys(extractedData).length} data points`);
     return extractedData;

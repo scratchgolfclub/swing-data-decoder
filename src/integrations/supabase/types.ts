@@ -133,6 +133,8 @@ export type Database = {
           initial_metrics: Json
           is_baseline: boolean | null
           session_name: string | null
+          structured_baseline_metrics: Json | null
+          structured_metrics: Json | null
           swing_data_non_baseline: Json | null
           swing_score: number | null
           trackman_image_url: string | null
@@ -147,6 +149,8 @@ export type Database = {
           initial_metrics?: Json
           is_baseline?: boolean | null
           session_name?: string | null
+          structured_baseline_metrics?: Json | null
+          structured_metrics?: Json | null
           swing_data_non_baseline?: Json | null
           swing_score?: number | null
           trackman_image_url?: string | null
@@ -161,6 +165,8 @@ export type Database = {
           initial_metrics?: Json
           is_baseline?: boolean | null
           session_name?: string | null
+          structured_baseline_metrics?: Json | null
+          structured_metrics?: Json | null
           swing_data_non_baseline?: Json | null
           swing_score?: number | null
           trackman_image_url?: string | null

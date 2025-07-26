@@ -60,6 +60,8 @@ export const saveSwingAnalysis = async (data: SwingAnalysisData, userId: string)
           club_type: data.club,
           initial_metrics: isFirstSwingEver ? swing : {},
           swing_data_non_baseline: isFirstSwingEver ? {} : swing,
+          structured_metrics: !isFirstSwingEver ? (swing.structuredMetrics || []) : [],
+          structured_baseline_metrics: isFirstSwingEver ? (swing.structuredMetrics || []) : [],
           trackman_image_url: imageUrl,
           session_name: `Session ${new Date().toLocaleDateString()}`,
           swing_score: calculateSwingScore(swing),
