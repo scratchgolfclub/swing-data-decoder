@@ -166,6 +166,73 @@ const getSwingSummary = (swingData: any, selectedClub: string) => {
       );
       const qualityScore = Math.max(0, 1 - (distanceFromIdeal / range));
       
+      // Create educational commentary based on metric and club
+      const getEducationalReason = (metricKey: string, isGood: boolean, clubType: string) => {
+        if (isGood) {
+          switch (metricKey) {
+            case 'Ball Speed':
+              return `Excellent ball speed generates more distance and shows efficient energy transfer from club to ball`;
+            case 'Smash Factor':
+              return `Great smash factor indicates you're hitting the sweet spot consistently for maximum distance`;
+            case 'Carry Distance':
+              return `Strong carry distance shows good technique and power generation for your ${clubType}`;
+            case 'Club Path':
+              return `Neutral club path promotes straight ball flight and consistent contact`;
+            case 'Face Angle':
+              return `Square face angle at impact helps eliminate hooks and slices for straighter shots`;
+            case 'Attack Angle':
+              return clubType === 'iron' ? 
+                `Good downward strike compresses the ball for solid contact and proper trajectory` :
+                `Optimal attack angle maximizes distance while maintaining control`;
+            case 'Launch Angle':
+              return `Ideal launch angle optimizes carry distance and overall ball flight for your ${clubType}`;
+            case 'Spin Rate':
+              return clubType === 'iron' ?
+                `Good spin rate provides the right trajectory and stopping power on greens` :
+                `Optimal spin rate maximizes distance while maintaining accuracy`;
+            default:
+              return `This metric is in the ideal range for consistent performance`;
+          }
+        } else {
+          switch (metricKey) {
+            case 'Ball Speed':
+              return `Increasing ball speed through better contact and swing speed will add significant distance`;
+            case 'Smash Factor':
+              return `Improving contact quality will increase efficiency and distance - focus on center strikes`;
+            case 'Carry Distance':
+              return `Work on swing mechanics and contact to maximize your distance potential`;
+            case 'Club Path':
+              return Math.abs(value) > 5 ?
+                `Extreme club path causes hooks/slices - work on swing plane for straighter shots` :
+                `Minor path adjustments can help eliminate shot dispersion and improve accuracy`;
+            case 'Face Angle':
+              return Math.abs(value) > 3 ?
+                `Open/closed face causes significant curve - focus on grip and release for square impact` :
+                `Small face angle adjustments will help straighten ball flight`;
+            case 'Attack Angle':
+              return clubType === 'iron' ?
+                (value > 0 ? `Too shallow - create more downward strike for better ball-first contact` :
+                 `Too steep - shallow out your approach for cleaner contact and better distance`) :
+                (value < -2 ? `Too steep - sweep more to optimize launch and distance` :
+                 `Too shallow - slight upward strike will maximize driver distance`);
+            case 'Launch Angle':
+              return value < metric.ideal.min ?
+                `Too low - higher launch will increase carry distance and optimize trajectory` :
+                `Too high - lower launch angle will improve distance and ball flight consistency`;
+            case 'Spin Rate':
+              return clubType === 'iron' ?
+                (value < metric.ideal.min ? 
+                  `Low spin may cause shots to run too far - work on ball-first contact` :
+                  `High spin reduces distance and causes shots to balloon - improve strike quality`) :
+                (value < metric.ideal.min ?
+                  `Low spin may cause shots to drop short - optimize launch conditions` :
+                  `High spin kills distance - focus on center strikes and proper attack angle`);
+            default:
+              return `This metric needs attention to improve overall performance`;
+          }
+        }
+      };
+      
       const clubType = selectedClub.toLowerCase().includes('iron') ? 'iron' : 
                       selectedClub.toLowerCase().includes('driver') ? 'driver' : 'club';
       
@@ -176,9 +243,7 @@ const getSwingSummary = (swingData: any, selectedClub: string) => {
         isGood: isInRange,
         deviation,
         qualityScore,
-        reason: isInRange 
-          ? `Great ${metric.name.toLowerCase()} for a ${clubType} shot`
-          : `Focus on improving ${metric.name.toLowerCase()} with your ${clubType}`
+        reason: getEducationalReason(metric.key, isInRange, clubType)
       });
     }
   });
