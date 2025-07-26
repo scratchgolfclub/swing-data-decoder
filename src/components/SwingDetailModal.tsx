@@ -14,7 +14,8 @@ interface SwingDetailModalProps {
     id: string;
     session_name: string;
     club_type: string;
-    initial_metrics: any;
+    structured_metrics: any;
+    structured_baseline_metrics: any;
     swing_score: number;
     is_baseline: boolean;
     created_at: string;
@@ -34,7 +35,7 @@ const SwingDetailModal: React.FC<SwingDetailModalProps> = ({ isOpen, onClose, sw
     );
   };
 
-  const structuredMetrics = getStructuredMetrics(swingData.initial_metrics);
+  const structuredMetrics = getStructuredMetrics(swingData.is_baseline ? swingData.structured_baseline_metrics : swingData.structured_metrics);
   
   // Categorize metrics for better organization
   const clubMetrics = structuredMetrics.filter(m => 

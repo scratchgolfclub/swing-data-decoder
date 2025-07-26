@@ -17,10 +17,8 @@ interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
-  initial_metrics: any;
-  structured_metrics?: any;
-  structured_baseline_metrics?: any;
-  swing_data_non_baseline: any;
+  structured_metrics: any;
+  structured_baseline_metrics: any;
   coaching_notes: string;
   swing_score: number;
   is_baseline: boolean;
@@ -346,7 +344,7 @@ const SwingHistory = () => {
                       <TableCell>
                         <div className="grid grid-cols-2 gap-2 text-sm">
                           {(() => {
-                            const metrics = getStructuredMetrics(swing.structured_metrics || swing.initial_metrics);
+                            const metrics = getStructuredMetrics(swing.structured_metrics);
                             const clubSpeed = getMetricDisplay(metrics, 'Club Speed');
                             const carryDistance = getMetricDisplay(metrics, 'Carry Distance');
                             

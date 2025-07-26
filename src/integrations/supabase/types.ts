@@ -130,12 +130,10 @@ export type Database = {
           coaching_notes: string | null
           created_at: string | null
           id: string
-          initial_metrics: Json
           is_baseline: boolean | null
           session_name: string | null
           structured_baseline_metrics: Json | null
           structured_metrics: Json | null
-          swing_data_non_baseline: Json | null
           swing_score: number | null
           trackman_image_url: string | null
           updated_at: string | null
@@ -146,12 +144,10 @@ export type Database = {
           coaching_notes?: string | null
           created_at?: string | null
           id?: string
-          initial_metrics?: Json
           is_baseline?: boolean | null
           session_name?: string | null
           structured_baseline_metrics?: Json | null
           structured_metrics?: Json | null
-          swing_data_non_baseline?: Json | null
           swing_score?: number | null
           trackman_image_url?: string | null
           updated_at?: string | null
@@ -162,12 +158,10 @@ export type Database = {
           coaching_notes?: string | null
           created_at?: string | null
           id?: string
-          initial_metrics?: Json
           is_baseline?: boolean | null
           session_name?: string | null
           structured_baseline_metrics?: Json | null
           structured_metrics?: Json | null
-          swing_data_non_baseline?: Json | null
           swing_score?: number | null
           trackman_image_url?: string | null
           updated_at?: string | null

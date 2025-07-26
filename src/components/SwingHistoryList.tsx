@@ -12,7 +12,8 @@ interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
-  initial_metrics: any;
+  structured_metrics: any;
+  structured_baseline_metrics: any;
   swing_score: number;
   is_baseline: boolean;
   created_at: string;
@@ -105,10 +106,10 @@ const SwingHistoryList: React.FC<SwingHistoryListProps> = ({ swingData, onDataUp
                 </div>
 
                 {/* Key Metrics Preview */}
-                {swing.initial_metrics && (
+                {swing.structured_metrics && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     {(() => {
-                      const structuredMetrics = getStructuredMetrics(swing.initial_metrics);
+                      const structuredMetrics = getStructuredMetrics(swing.structured_metrics);
                       const keyMetrics = ['Club Speed', 'Ball Speed', 'Carry Distance', 'Smash Factor'];
                       
                       return keyMetrics.map(metricTitle => {

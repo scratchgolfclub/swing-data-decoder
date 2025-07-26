@@ -229,11 +229,11 @@ export const badgeService = {
     const baseline = swingData.find(s => s.is_baseline);
     if (!baseline) return 0;
     
-    const baselineStructured = getStructuredMetrics(baseline.initial_metrics);
+    const baselineStructured = getStructuredMetrics(baseline.structured_baseline_metrics);
     let maxImprovement = 0;
     
     swingData.forEach(swing => {
-      const swingStructured = getStructuredMetrics(swing.initial_metrics);
+      const swingStructured = getStructuredMetrics(swing.structured_metrics);
       
       baselineStructured.forEach(baseMetric => {
         const baseValue = getMetricValue([baseMetric], baseMetric.title);
@@ -259,11 +259,11 @@ export const badgeService = {
     const baseline = swingData.find(s => s.is_baseline);
     if (!baseline) return 0;
     
-    const baselineStructured = getStructuredMetrics(baseline.initial_metrics);
+    const baselineStructured = getStructuredMetrics(baseline.structured_baseline_metrics);
     const improvedMetrics = new Set<string>();
     
     swingData.forEach(swing => {
-      const swingStructured = getStructuredMetrics(swing.initial_metrics);
+      const swingStructured = getStructuredMetrics(swing.structured_metrics);
       
       baselineStructured.forEach(baseMetric => {
         const baseValue = getMetricValue([baseMetric], baseMetric.title);

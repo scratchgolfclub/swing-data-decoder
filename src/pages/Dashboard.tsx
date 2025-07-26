@@ -32,8 +32,8 @@ interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
-  initial_metrics: any;
-  swing_data_non_baseline: any;
+  structured_metrics: any;
+  structured_baseline_metrics: any;
   coaching_notes: string;
   swing_score: number;
   is_baseline: boolean;
@@ -208,8 +208,8 @@ const Dashboard = () => {
     }
     
     const metrics = latestSwing.is_baseline 
-      ? latestSwing.initial_metrics 
-      : latestSwing.swing_data_non_baseline;
+      ? latestSwing.structured_baseline_metrics 
+      : latestSwing.structured_metrics;
     
     return getStructuredMetrics(metrics);
   };
