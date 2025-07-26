@@ -4,12 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { getStructuredMetrics, getMetricValue, type StructuredMetric } from '@/utils/structuredMetricsHelper';
 
 interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
   initial_metrics: any;
+  structured_metrics?: StructuredMetric[];
+  structured_baseline_metrics?: StructuredMetric[];
+  swing_data_non_baseline?: any;
   swing_score: number;
   created_at: string;
   coaching_notes: string;
@@ -50,9 +54,16 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
     };
   };
 
-  // Extract key metrics for comparison
-  const getMetricValue = (metrics: any, key: string): number => {
-    const value = metrics?.[key];
+  // Extract key metrics for comparison using structured format
+  const getMetricValueFromSwing = (swing: SwingData, metricTitle: string): number => {
+    // Try structured format first
+    const structuredMetrics = getStructuredMetrics(swing.structured_metrics || swing.structured_baseline_metrics);
+    const structuredValue = getMetricValue(structuredMetrics, metricTitle);
+    if (structuredValue !== null) return structuredValue;
+    
+    // Fall back to old format
+    const fallbackMetrics = swing.initial_metrics || swing.swing_data_non_baseline || {};
+    const value = fallbackMetrics[metricTitle.toLowerCase().replace(' ', '')];
     if (typeof value === 'string') {
       return parseFloat(value.replace(/[^\d.-]/g, '')) || 0;
     }
@@ -60,11 +71,11 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
   };
 
   const metrics = [
-    { key: 'clubSpeed', label: 'Club Speed', unit: 'mph' },
-    { key: 'ballSpeed', label: 'Ball Speed', unit: 'mph' },
-    { key: 'launchAngle', label: 'Launch Angle', unit: '°' },
-    { key: 'carryDistance', label: 'Carry Distance', unit: 'yds' },
-    { key: 'smashFactor', label: 'Smash Factor', unit: '' }
+    { key: 'Club Speed', label: 'Club Speed', unit: 'mph' },
+    { key: 'Ball Speed', label: 'Ball Speed', unit: 'mph' },
+    { key: 'Launch Angle', label: 'Launch Angle', unit: '°' },
+    { key: 'Carry Distance', label: 'Carry Distance', unit: 'yds' },
+    { key: 'Smash Factor', label: 'Smash Factor', unit: '' }
   ];
 
   const renderTrendIcon = (trend: string) => {
@@ -159,8 +170,8 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
           <CardContent>
             <div className="space-y-4">
               {metrics.map(({ key, label, unit }) => {
-                const baselineValue = getMetricValue(baselineSwing.initial_metrics, key);
-                const latestValue = getMetricValue(latestSwing.initial_metrics, key);
+                const baselineValue = getMetricValueFromSwing(baselineSwing, key);
+                const latestValue = getMetricValueFromSwing(latestSwing, key);
                 const comparison = compareMetric(latestValue, baselineValue);
 
                 return (

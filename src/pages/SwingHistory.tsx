@@ -11,12 +11,15 @@ import { Calendar, Search, Filter, Eye, Target, TrendingUp, SortAsc, SortDesc } 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
+import { getStructuredMetrics, getMetricDisplay, type StructuredMetric } from '@/utils/structuredMetricsHelper';
 
 interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
   initial_metrics: any;
+  structured_metrics?: StructuredMetric[];
+  structured_baseline_metrics?: StructuredMetric[];
   swing_data_non_baseline: any;
   coaching_notes: string;
   swing_score: number;
@@ -342,18 +345,28 @@ const SwingHistory = () => {
                       </TableCell>
                       <TableCell>
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                          {swing.initial_metrics?.clubSpeed && (
-                            <div>
-                              <p className="text-muted-foreground">Club Speed</p>
-                              <p className="font-medium">{swing.initial_metrics.clubSpeed}</p>
-                            </div>
-                          )}
-                          {swing.initial_metrics?.carryDistance && (
-                            <div>
-                              <p className="text-muted-foreground">Carry</p>
-                              <p className="font-medium">{swing.initial_metrics.carryDistance}</p>
-                            </div>
-                          )}
+                          {(() => {
+                            const metrics = getStructuredMetrics(swing.structured_metrics || swing.initial_metrics);
+                            const clubSpeed = getMetricDisplay(metrics, 'Club Speed');
+                            const carryDistance = getMetricDisplay(metrics, 'Carry Distance');
+                            
+                            return (
+                              <>
+                                {clubSpeed && (
+                                  <div>
+                                    <p className="text-muted-foreground">Club Speed</p>
+                                    <p className="font-medium">{clubSpeed}</p>
+                                  </div>
+                                )}
+                                {carryDistance && (
+                                  <div>
+                                    <p className="text-muted-foreground">Carry</p>
+                                    <p className="font-medium">{carryDistance}</p>
+                                  </div>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </TableCell>
                       <TableCell>
