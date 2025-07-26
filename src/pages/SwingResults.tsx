@@ -35,14 +35,20 @@ const SwingResults = () => {
           return;
         }
 
-        // Determine which field contains the swing metrics
-        const swingMetrics = swingData.is_baseline 
-          ? swingData.initial_metrics 
-          : swingData.swing_data_non_baseline;
+        // Use the current database structure with structured_metrics
+        const structuredMetrics = swingData.is_baseline 
+          ? swingData.structured_baseline_metrics 
+          : swingData.structured_metrics;
+
+        // Create a complete swing data object for ResultsScreen
+        const swingDataObject = {
+          ...swingData,
+          structuredMetrics: structuredMetrics
+        };
 
         // Format the data to match the expected structure for ResultsScreen
         const formattedResults = {
-          swings: [swingMetrics],
+          swings: [swingDataObject],
           club: swingData.club_type
         };
 

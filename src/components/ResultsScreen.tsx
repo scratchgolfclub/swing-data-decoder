@@ -82,13 +82,10 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 
 // Component to analyze swing data and provide summary
 const getSwingSummary = (swingData: any) => {
-  console.log('getSwingSummary called with:', swingData);
-  
   const allMetrics = [];
   
   // Safety check for swingData
   if (!swingData || typeof swingData !== 'object') {
-    console.error('getSwingSummary: Invalid swingData:', swingData);
     return { goodPoints: [], needsWork: [] };
   }
   
@@ -153,24 +150,11 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  console.log('ResultsScreen received data:', data);
-  
-  // Handle both old and new data structure formats
-  let swings = [];
-  let selectedClub = '';
-  
-  if (Array.isArray(data)) {
-    // New format: data is directly an array of swings
-    swings = data.filter(swing => swing && typeof swing === 'object');
-    selectedClub = swings[0]?.club || 'driver';
-  } else if (data && data.swings) {
-    // Old format: data has a swings property
-    swings = Array.isArray(data.swings) ? data.swings.filter(swing => swing && typeof swing === 'object') : [];
-    selectedClub = data.club || 'driver';
-  }
+  // All data sources now provide consistent format: { swings: [SwingDataObject], club: string }
+  const swings = data.swings || [];
+  const selectedClub = data.club || 'driver';
   
   if (swings.length === 0) {
-    console.error('ResultsScreen: No valid swings found in data:', data);
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
         <div className="max-w-6xl mx-auto text-center py-20">
