@@ -18,8 +18,8 @@ interface SwingData {
   session_name: string;
   club_type: string;
   initial_metrics: any;
-  structured_metrics?: StructuredMetric[];
-  structured_baseline_metrics?: StructuredMetric[];
+  structured_metrics?: any;
+  structured_baseline_metrics?: any;
   swing_data_non_baseline: any;
   coaching_notes: string;
   swing_score: number;
