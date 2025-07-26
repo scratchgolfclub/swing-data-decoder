@@ -24,6 +24,7 @@ import SwingHistoryList from '@/components/SwingHistoryList';
 import { BadgeSection } from '@/components/BadgeSection';
 import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
+import { GoalTimeline } from '@/components/GoalTimeline';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
 import Header from '@/components/Header';
 import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
@@ -64,6 +65,7 @@ const Dashboard = () => {
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
   const [videoViews, setVideoViews] = useState<VideoView[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentHandicap, setCurrentHandicap] = useState<number>();
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [selectedClubCategory, setSelectedClubCategory] = useState<string>('all');
   
@@ -75,9 +77,27 @@ const Dashboard = () => {
     dismissBadgeNotification 
   } = useBadges();
 
+  const fetchUserProfile = async () => {
+    if (!user?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('current_handicap')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      setCurrentHandicap(data?.current_handicap);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       loadUserData();
+      fetchUserProfile();
     }
   }, [user]);
 
@@ -459,6 +479,11 @@ const Dashboard = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
+        <div className="space-y-8">
+          {/* Goal Timeline */}
+          <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
+        </div>
+
         {/* Welcome Section with New Analysis Button */}
         <div className="mb-8 flex items-center justify-between">
           <div>

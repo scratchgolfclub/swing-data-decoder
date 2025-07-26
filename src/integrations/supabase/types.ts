@@ -44,9 +44,34 @@ export type Database = {
         }
         Relationships: []
       }
+      handicap_history: {
+        Row: {
+          created_at: string
+          handicap_value: number
+          id: string
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          handicap_value: number
+          id?: string
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          handicap_value?: number
+          id?: string
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
+          current_handicap: number | null
           email: string
           first_name: string | null
           id: string
@@ -57,6 +82,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          current_handicap?: number | null
           email: string
           first_name?: string | null
           id?: string
@@ -67,6 +93,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          current_handicap?: number | null
           email?: string
           first_name?: string | null
           id?: string
@@ -206,6 +233,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_goals: {
+        Row: {
+          assignment_type: string
+          completed_at: string | null
+          created_at: string
+          current_handicap: number | null
+          current_value: number | null
+          goal_type: string
+          id: string
+          is_completed: boolean | null
+          metric_name: string | null
+          progress_percentage: number | null
+          target_date: string
+          target_handicap: number | null
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_type: string
+          completed_at?: string | null
+          created_at?: string
+          current_handicap?: number | null
+          current_value?: number | null
+          goal_type: string
+          id?: string
+          is_completed?: boolean | null
+          metric_name?: string | null
+          progress_percentage?: number | null
+          target_date: string
+          target_handicap?: number | null
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_type?: string
+          completed_at?: string | null
+          created_at?: string
+          current_handicap?: number | null
+          current_value?: number | null
+          goal_type?: string
+          id?: string
+          is_completed?: boolean | null
+          metric_name?: string | null
+          progress_percentage?: number | null
+          target_date?: string
+          target_handicap?: number | null
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_stats: {
         Row: {
