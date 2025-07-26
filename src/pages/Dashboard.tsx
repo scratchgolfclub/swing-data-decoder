@@ -26,6 +26,7 @@ import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
 import Header from '@/components/Header';
+import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
 
 interface SwingData {
   id: string;
@@ -210,31 +211,24 @@ const Dashboard = () => {
       ? latestSwing.initial_metrics 
       : latestSwing.swing_data_non_baseline;
     
-    return metrics;
+    return getStructuredMetrics(metrics);
   };
 
-  const analyzeStrengthAndWeakness = (metrics: any) => {
-    if (!metrics) {
+  const analyzeStrengthAndWeakness = (structuredMetrics: StructuredMetric[]) => {
+    if (!structuredMetrics || structuredMetrics.length === 0) {
       return { strength: null, weakness: null };
     }
-
-    const data = metrics;
-    
-    if (!data || typeof data !== 'object') {
-      return { strength: null, weakness: null };
-    }
-
     // Define club-specific ideal ranges
     const getIdealRanges = () => {
       const baseRanges = {
-        'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
-        'ballSpeed': { min: 120, max: 150, unit: ' mph', label: 'Ball Speed' },
-        'smashFactor': { min: 1.40, max: 1.50, unit: '', label: 'Smash Factor' },
-        'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
-        'faceAngle': { min: -2, max: 2, unit: '°', label: 'Face Angle' },
-        'clubPath': { min: -2, max: 2, unit: '°', label: 'Club Path' },
-        'faceToPath': { min: -2, max: 2, unit: '°', label: 'Face to Path' },
-        'spinRate': { min: 5000, max: 7000, unit: ' rpm', label: 'Spin Rate' }
+        'Club Speed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
+        'Ball Speed': { min: 120, max: 150, unit: ' mph', label: 'Ball Speed' },
+        'Smash Factor': { min: 1.40, max: 1.50, unit: '', label: 'Smash Factor' },
+        'Launch Angle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
+        'Face Angle': { min: -2, max: 2, unit: '°', label: 'Face Angle' },
+        'Club Path': { min: -2, max: 2, unit: '°', label: 'Club Path' },
+        'Face to Path': { min: -2, max: 2, unit: '°', label: 'Face to Path' },
+        'Spin Rate': { min: 5000, max: 7000, unit: ' rpm', label: 'Spin Rate' }
       };
 
       // Adjust ranges based on club category
@@ -242,34 +236,34 @@ const Dashboard = () => {
         case 'driver':
           return {
             ...baseRanges,
-            'clubSpeed': { min: 95, max: 115, unit: ' mph', label: 'Club Speed' },
-            'ballSpeed': { min: 140, max: 170, unit: ' mph', label: 'Ball Speed' },
-            'launchAngle': { min: 10, max: 15, unit: '°', label: 'Launch Angle' },
-            'spinRate': { min: 2000, max: 3000, unit: ' rpm', label: 'Spin Rate' }
+            'Club Speed': { min: 95, max: 115, unit: ' mph', label: 'Club Speed' },
+            'Ball Speed': { min: 140, max: 170, unit: ' mph', label: 'Ball Speed' },
+            'Launch Angle': { min: 10, max: 15, unit: '°', label: 'Launch Angle' },
+            'Spin Rate': { min: 2000, max: 3000, unit: ' rpm', label: 'Spin Rate' }
           };
         case 'woods':
           return {
             ...baseRanges,
-            'clubSpeed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
-            'ballSpeed': { min: 130, max: 160, unit: ' mph', label: 'Ball Speed' },
-            'launchAngle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
-            'spinRate': { min: 3000, max: 4500, unit: ' rpm', label: 'Spin Rate' }
+            'Club Speed': { min: 85, max: 105, unit: ' mph', label: 'Club Speed' },
+            'Ball Speed': { min: 130, max: 160, unit: ' mph', label: 'Ball Speed' },
+            'Launch Angle': { min: 12, max: 18, unit: '°', label: 'Launch Angle' },
+            'Spin Rate': { min: 3000, max: 4500, unit: ' rpm', label: 'Spin Rate' }
           };
         case 'irons':
           return {
             ...baseRanges,
-            'clubSpeed': { min: 75, max: 95, unit: ' mph', label: 'Club Speed' },
-            'ballSpeed': { min: 110, max: 140, unit: ' mph', label: 'Ball Speed' },
-            'launchAngle': { min: 15, max: 25, unit: '°', label: 'Launch Angle' },
-            'spinRate': { min: 6000, max: 8000, unit: ' rpm', label: 'Spin Rate' }
+            'Club Speed': { min: 75, max: 95, unit: ' mph', label: 'Club Speed' },
+            'Ball Speed': { min: 110, max: 140, unit: ' mph', label: 'Ball Speed' },
+            'Launch Angle': { min: 15, max: 25, unit: '°', label: 'Launch Angle' },
+            'Spin Rate': { min: 6000, max: 8000, unit: ' rpm', label: 'Spin Rate' }
           };
         case 'wedges':
           return {
             ...baseRanges,
-            'clubSpeed': { min: 65, max: 85, unit: ' mph', label: 'Club Speed' },
-            'ballSpeed': { min: 90, max: 120, unit: ' mph', label: 'Ball Speed' },
-            'launchAngle': { min: 20, max: 35, unit: '°', label: 'Launch Angle' },
-            'spinRate': { min: 8000, max: 12000, unit: ' rpm', label: 'Spin Rate' }
+            'Club Speed': { min: 65, max: 85, unit: ' mph', label: 'Club Speed' },
+            'Ball Speed': { min: 90, max: 120, unit: ' mph', label: 'Ball Speed' },
+            'Launch Angle': { min: 20, max: 35, unit: '°', label: 'Launch Angle' },
+            'Spin Rate': { min: 8000, max: 12000, unit: ' rpm', label: 'Spin Rate' }
           };
         default:
           return baseRanges;
@@ -279,12 +273,8 @@ const Dashboard = () => {
     const idealRanges = getIdealRanges();
 
     const scores = Object.entries(idealRanges).map(([key, range]) => {
-      const rawValue = data[key];
-      if (!rawValue) return null;
-      
-      // Parse numeric value from string (remove units)
-      const value = parseFloat(rawValue.toString().replace(/[^\d.-]/g, ''));
-      if (isNaN(value)) return null;
+      const value = getMetricValue(structuredMetrics, key);
+      if (value === null || isNaN(value)) return null;
       
       let score = 0;
       let distanceFromIdeal = 0;

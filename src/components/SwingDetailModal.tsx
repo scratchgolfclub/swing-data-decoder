@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Target, TrendingUp, X } from 'lucide-react';
+import { getStructuredMetrics, StructuredMetric } from '@/utils/structuredMetricsHelper';
 
 interface SwingDetailModalProps {
   isOpen: boolean;
@@ -23,20 +24,36 @@ interface SwingDetailModalProps {
 }
 
 const SwingDetailModal: React.FC<SwingDetailModalProps> = ({ isOpen, onClose, swingData }) => {
-  const renderMetricCard = (label: string, value: string | number, unit?: string) => {
-    if (!value) return null;
-    
-    const displayValue = typeof value === 'string' ? value : `${value}${unit || ''}`;
-    
+  const renderMetricCard = (metric: StructuredMetric) => {
     return (
       <div className="bg-muted/50 p-4 rounded-lg">
-        <p className="text-sm text-muted-foreground mb-1">{label}</p>
-        <p className="text-lg font-semibold">{displayValue}</p>
+        <p className="text-sm text-muted-foreground mb-1">{metric.title}</p>
+        <p className="text-lg font-semibold">{metric.value}</p>
+        <p className="text-xs text-muted-foreground mt-1">{metric.descriptor}</p>
       </div>
     );
   };
 
-  const metrics = swingData.initial_metrics || {};
+  const structuredMetrics = getStructuredMetrics(swingData.initial_metrics);
+  
+  // Categorize metrics for better organization
+  const clubMetrics = structuredMetrics.filter(m => 
+    ['Club Speed', 'Attack Angle', 'Club Path', 'Dynamic Loft', 'Face Angle', 'Face to Path', 'Swing Plane', 'Swing Direction'].some(title => 
+      m.title.toLowerCase().includes(title.toLowerCase())
+    )
+  );
+  
+  const ballMetrics = structuredMetrics.filter(m => 
+    ['Ball Speed', 'Smash Factor', 'Launch Angle', 'Launch Direction', 'Spin Rate', 'Spin Axis'].some(title => 
+      m.title.toLowerCase().includes(title.toLowerCase())
+    )
+  );
+  
+  const flightMetrics = structuredMetrics.filter(m => 
+    ['Carry Distance', 'Total Distance', 'Height', 'Curve', 'Hang Time', 'Landing Angle', 'Side'].some(title => 
+      m.title.toLowerCase().includes(title.toLowerCase())
+    )
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -88,15 +105,15 @@ const SwingDetailModal: React.FC<SwingDetailModalProps> = ({ isOpen, onClose, sw
               <CardDescription>Measurements from your club during impact</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {renderMetricCard('Club Speed', metrics.clubSpeed)}
-                {renderMetricCard('Attack Angle', metrics.attackAngle)}
-                {renderMetricCard('Club Path', metrics.clubPath)}
-                {renderMetricCard('Dynamic Loft', metrics.dynLoft)}
-                {renderMetricCard('Face Angle', metrics.faceAngle)}
-                {renderMetricCard('Face to Path', metrics.faceToPath)}
-                {renderMetricCard('Swing Plane', metrics.swingPlane)}
-                {renderMetricCard('Swing Direction', metrics.swingDirection)}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {clubMetrics.map((metric, index) => (
+                  <div key={index}>
+                    {renderMetricCard(metric)}
+                  </div>
+                ))}
+                {clubMetrics.length === 0 && (
+                  <p className="text-muted-foreground col-span-full text-center py-4">No club data available</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -108,13 +125,15 @@ const SwingDetailModal: React.FC<SwingDetailModalProps> = ({ isOpen, onClose, sw
               <CardDescription>Ball flight characteristics</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {renderMetricCard('Ball Speed', metrics.ballSpeed)}
-                {renderMetricCard('Smash Factor', metrics.smashFactor)}
-                {renderMetricCard('Launch Angle', metrics.launchAngle)}
-                {renderMetricCard('Launch Direction', metrics.launchDirection)}
-                {renderMetricCard('Spin Rate', metrics.spinRate)}
-                {renderMetricCard('Spin Axis', metrics.spinAxis)}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {ballMetrics.map((metric, index) => (
+                  <div key={index}>
+                    {renderMetricCard(metric)}
+                  </div>
+                ))}
+                {ballMetrics.length === 0 && (
+                  <p className="text-muted-foreground col-span-full text-center py-4">No ball data available</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -126,13 +145,15 @@ const SwingDetailModal: React.FC<SwingDetailModalProps> = ({ isOpen, onClose, sw
               <CardDescription>Ball flight results</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {renderMetricCard('Carry Distance', metrics.carry)}
-                {renderMetricCard('Total Distance', metrics.total)}
-                {renderMetricCard('Height', metrics.height)}
-                {renderMetricCard('Curve', metrics.curve)}
-                {renderMetricCard('Hang Time', metrics.hangTime)}
-                {renderMetricCard('Landing Angle', metrics.landingAngle)}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                {flightMetrics.map((metric, index) => (
+                  <div key={index}>
+                    {renderMetricCard(metric)}
+                  </div>
+                ))}
+                {flightMetrics.length === 0 && (
+                  <p className="text-muted-foreground col-span-full text-center py-4">No flight data available</p>
+                )}
               </div>
             </CardContent>
           </Card>

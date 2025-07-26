@@ -8,6 +8,7 @@ import { VideoCard } from "@/components/VideoCard";
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getStructuredMetrics, getMetricValue, getMetricDisplay } from '@/utils/structuredMetricsHelper';
 
 // Component to format swing analysis text with proper styling
 const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimpleMode: boolean }) => {
@@ -82,32 +83,36 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 const getSwingSummary = (swingData: any) => {
   const allMetrics = [];
   
+  // Get structured metrics (handles both old and new formats)
+  const structuredMetrics = getStructuredMetrics(swingData);
+  
   // Analyze all available metrics with ideal ranges
   const metrics = [
-    { key: 'ballSpeed', name: 'Ball Speed', ideal: { min: 145, max: 180 }, unit: 'mph', goodAbove: true },
-    { key: 'smashFactor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 }, unit: '', goodAbove: true },
-    { key: 'carryDistance', name: 'Carry Distance', ideal: { min: 200, max: 280 }, unit: 'yds', goodAbove: true },
-    { key: 'clubPath', name: 'Club Path', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
-    { key: 'faceAngle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
-    { key: 'attackAngle', name: 'Attack Angle', ideal: { min: -2, max: 3 }, unit: '°', goodAbove: false },
-    { key: 'launchAngle', name: 'Launch Angle', ideal: { min: 12, max: 18 }, unit: '°', goodAbove: false },
-    { key: 'spinRate', name: 'Spin Rate', ideal: { min: 2000, max: 3500 }, unit: 'rpm', goodAbove: false }
+    { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 145, max: 180 }, unit: 'mph', goodAbove: true },
+    { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 }, unit: '', goodAbove: true },
+    { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 200, max: 280 }, unit: 'yds', goodAbove: true },
+    { key: 'Club Path', name: 'Club Path', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+    { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 }, unit: '°', goodAbove: false },
+    { key: 'Attack Angle', name: 'Attack Angle', ideal: { min: -2, max: 3 }, unit: '°', goodAbove: false },
+    { key: 'Launch Angle', name: 'Launch Angle', ideal: { min: 12, max: 18 }, unit: '°', goodAbove: false },
+    { key: 'Spin Rate', name: 'Spin Rate', ideal: { min: 2000, max: 3500 }, unit: 'rpm', goodAbove: false }
   ];
 
   metrics.forEach(metric => {
-    const value = swingData[metric.key];
-    if (value && !isNaN(parseFloat(value))) {
-      const numValue = parseFloat(value);
-      const isInRange = numValue >= metric.ideal.min && numValue <= metric.ideal.max;
+    const value = getMetricValue(structuredMetrics, metric.key);
+    const displayValue = getMetricDisplay(structuredMetrics, metric.key);
+    
+    if (value !== null && !isNaN(value)) {
+      const isInRange = value >= metric.ideal.min && value <= metric.ideal.max;
       const deviation = isInRange ? 0 : Math.min(
-        Math.abs(numValue - metric.ideal.min),
-        Math.abs(numValue - metric.ideal.max)
+        Math.abs(value - metric.ideal.min),
+        Math.abs(value - metric.ideal.max)
       );
       
       allMetrics.push({
         ...metric,
-        value: metric.unit && !value.toString().includes(metric.unit) ? `${value}${metric.unit}` : value,
-        numValue,
+        value: displayValue || `${value}${metric.unit}`,
+        numValue: value,
         isGood: isInRange,
         deviation,
         reason: isInRange 

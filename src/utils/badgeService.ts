@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getStructuredMetrics, getMetricValue } from './structuredMetricsHelper';
 
 export interface Badge {
   id: string;
@@ -228,16 +229,17 @@ export const badgeService = {
     const baseline = swingData.find(s => s.is_baseline);
     if (!baseline) return 0;
     
-    const baselineMetrics = baseline.initial_metrics;
+    const baselineStructured = getStructuredMetrics(baseline.initial_metrics);
     let maxImprovement = 0;
     
     swingData.forEach(swing => {
-      const metrics = swing.initial_metrics;
-      Object.keys(baselineMetrics).forEach(key => {
-        const baseValue = parseFloat(baselineMetrics[key]);
-        const currentValue = parseFloat(metrics[key]);
+      const swingStructured = getStructuredMetrics(swing.initial_metrics);
+      
+      baselineStructured.forEach(baseMetric => {
+        const baseValue = getMetricValue([baseMetric], baseMetric.title);
+        const currentValue = getMetricValue(swingStructured, baseMetric.title);
         
-        if (!isNaN(baseValue) && !isNaN(currentValue) && baseValue !== 0) {
+        if (baseValue !== null && currentValue !== null && baseValue !== 0) {
           const improvement = Math.abs((currentValue - baseValue) / baseValue) * 100;
           maxImprovement = Math.max(maxImprovement, improvement);
         }
@@ -257,19 +259,20 @@ export const badgeService = {
     const baseline = swingData.find(s => s.is_baseline);
     if (!baseline) return 0;
     
-    const baselineMetrics = baseline.initial_metrics;
+    const baselineStructured = getStructuredMetrics(baseline.initial_metrics);
     const improvedMetrics = new Set<string>();
     
     swingData.forEach(swing => {
-      const metrics = swing.initial_metrics;
-      Object.keys(baselineMetrics).forEach(key => {
-        const baseValue = parseFloat(baselineMetrics[key]);
-        const currentValue = parseFloat(metrics[key]);
+      const swingStructured = getStructuredMetrics(swing.initial_metrics);
+      
+      baselineStructured.forEach(baseMetric => {
+        const baseValue = getMetricValue([baseMetric], baseMetric.title);
+        const currentValue = getMetricValue(swingStructured, baseMetric.title);
         
-        if (!isNaN(baseValue) && !isNaN(currentValue) && baseValue !== 0) {
+        if (baseValue !== null && currentValue !== null && baseValue !== 0) {
           const improvement = Math.abs((currentValue - baseValue) / baseValue) * 100;
           if (improvement >= 10) { // 10% improvement threshold
-            improvedMetrics.add(key);
+            improvedMetrics.add(baseMetric.title);
           }
         }
       });

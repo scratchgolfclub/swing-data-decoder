@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CalendarDays, Target, TrendingUp, Eye } from 'lucide-react';
 import SwingDetailModal from './SwingDetailModal';
+import { getStructuredMetrics, findMetricByTitle } from '@/utils/structuredMetricsHelper';
 
 interface SwingData {
   id: string;
@@ -106,30 +107,22 @@ const SwingHistoryList: React.FC<SwingHistoryListProps> = ({ swingData, onDataUp
                 {/* Key Metrics Preview */}
                 {swing.initial_metrics && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    {swing.initial_metrics.clubSpeed && (
-                      <div>
-                        <p className="text-muted-foreground">Club Speed</p>
-                        <p className="font-medium">{swing.initial_metrics.clubSpeed}</p>
-                      </div>
-                    )}
-                    {swing.initial_metrics.ballSpeed && (
-                      <div>
-                        <p className="text-muted-foreground">Ball Speed</p>
-                        <p className="font-medium">{swing.initial_metrics.ballSpeed}</p>
-                      </div>
-                    )}
-                    {swing.initial_metrics.carryDistance && (
-                      <div>
-                        <p className="text-muted-foreground">Carry</p>
-                        <p className="font-medium">{swing.initial_metrics.carryDistance}</p>
-                      </div>
-                    )}
-                    {swing.initial_metrics.smashFactor && (
-                      <div>
-                        <p className="text-muted-foreground">Smash Factor</p>
-                        <p className="font-medium">{swing.initial_metrics.smashFactor}</p>
-                      </div>
-                    )}
+                    {(() => {
+                      const structuredMetrics = getStructuredMetrics(swing.initial_metrics);
+                      const keyMetrics = ['Club Speed', 'Ball Speed', 'Carry Distance', 'Smash Factor'];
+                      
+                      return keyMetrics.map(metricTitle => {
+                        const metric = findMetricByTitle(structuredMetrics, metricTitle);
+                        if (!metric) return null;
+                        
+                        return (
+                          <div key={metricTitle}>
+                            <p className="text-muted-foreground">{metric.title}</p>
+                            <p className="font-medium">{metric.value}</p>
+                          </div>
+                        );
+                      }).filter(Boolean);
+                    })()}
                   </div>
                 )}
 

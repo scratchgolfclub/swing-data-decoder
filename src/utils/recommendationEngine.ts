@@ -1,3 +1,5 @@
+import { getStructuredMetrics, getMetricValue } from './structuredMetricsHelper';
+
 // Helper function to parse numeric values from TrackMan data strings
 const parseNumericValue = (value: string | undefined): number => {
   if (!value) return 0;
@@ -19,12 +21,16 @@ const analyzeSwingConsistency = (swings: any[]) => {
     return { isConsistent: true, variances, swingCount: swings.length };
   }
   
-  const metrics = ['clubPath', 'faceAngle', 'attackAngle', 'clubSpeed', 'faceToPath', 'spinRate'];
+  const metricTitles = ['Club Path', 'Face Angle', 'Attack Angle', 'Club Speed', 'Face to Path', 'Spin Rate'];
   
-  metrics.forEach(metric => {
-    const values = swings.map(swing => parseNumericValue(swing[metric])).filter(val => !isNaN(val));
+  metricTitles.forEach(metricTitle => {
+    const values = swings.map(swing => {
+      const structuredMetrics = getStructuredMetrics(swing);
+      return getMetricValue(structuredMetrics, metricTitle);
+    }).filter(val => val !== null && !isNaN(val)) as number[];
+    
     if (values.length > 1) {
-      variances[metric] = calculateVariance(values);
+      variances[metricTitle] = calculateVariance(values);
     }
   });
   
@@ -58,25 +64,28 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   const primarySwing = swings[0]; // Use first swing as primary for analysis
   const clubCategory = getClubCategory(selectedClub);
   
-  // Parse all metrics
-  const clubPath = parseNumericValue(primarySwing.clubPath);
-  const attackAngle = parseNumericValue(primarySwing.attackAngle);
-  const faceAngle = parseNumericValue(primarySwing.faceAngle);
-  const faceToPath = parseNumericValue(primarySwing.faceToPath);
-  const spinAxis = parseNumericValue(primarySwing.spinAxis);
-  const dynamicLie = parseNumericValue(primarySwing.dynLie);
-  const impactOffset = parseNumericValue(primarySwing.impactOffset);
-  const dynamicLoft = parseNumericValue(primarySwing.dynLoft);
-  const lowPointDistance = parseNumericValue(primarySwing.lowPointDistance);
-  const spinRate = parseNumericValue(primarySwing.spinRate);
-  const launchAngle = parseNumericValue(primarySwing.launchAngle);
-  const ballSpeed = parseNumericValue(primarySwing.ballSpeed);
-  const clubSpeed = parseNumericValue(primarySwing.clubSpeed);
-  const smashFactor = parseNumericValue(primarySwing.smashFactor);
-  const carry = parseNumericValue(primarySwing.carry);
-  const curve = parseNumericValue(primarySwing.curve);
-  const launchDirection = parseNumericValue(primarySwing.launchDirection);
-  const swingDirection = parseNumericValue(primarySwing.swingDirection);
+  // Get structured metrics for the primary swing
+  const structuredMetrics = getStructuredMetrics(primarySwing);
+  
+  // Parse all metrics using structured format
+  const clubPath = getMetricValue(structuredMetrics, 'Club Path') || 0;
+  const attackAngle = getMetricValue(structuredMetrics, 'Attack Angle') || 0;
+  const faceAngle = getMetricValue(structuredMetrics, 'Face Angle') || 0;
+  const faceToPath = getMetricValue(structuredMetrics, 'Face to Path') || 0;
+  const spinAxis = getMetricValue(structuredMetrics, 'Spin Axis') || 0;
+  const dynamicLie = getMetricValue(structuredMetrics, 'Dynamic Lie') || 0;
+  const impactOffset = getMetricValue(structuredMetrics, 'Impact Offset') || 0;
+  const dynamicLoft = getMetricValue(structuredMetrics, 'Dynamic Loft') || 0;
+  const lowPointDistance = getMetricValue(structuredMetrics, 'Low Point Distance') || 0;
+  const spinRate = getMetricValue(structuredMetrics, 'Spin Rate') || 0;
+  const launchAngle = getMetricValue(structuredMetrics, 'Launch Angle') || 0;
+  const ballSpeed = getMetricValue(structuredMetrics, 'Ball Speed') || 0;
+  const clubSpeed = getMetricValue(structuredMetrics, 'Club Speed') || 0;
+  const smashFactor = getMetricValue(structuredMetrics, 'Smash Factor') || 0;
+  const carry = getMetricValue(structuredMetrics, 'Carry Distance') || 0;
+  const curve = getMetricValue(structuredMetrics, 'Curve') || 0;
+  const launchDirection = getMetricValue(structuredMetrics, 'Launch Direction') || 0;
+  const swingDirection = getMetricValue(structuredMetrics, 'Swing Direction') || 0;
   
   // Priority scoring system for video recommendations
   const videoRecommendations = [];
