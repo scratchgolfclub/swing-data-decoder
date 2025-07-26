@@ -54,14 +54,37 @@ const getClubCategory = (club: string): string => {
 };
 
 export const getVideoRecommendations = (swings: any[], selectedClub: string = '') => {
+  console.log('getVideoRecommendations called with:', { swings, selectedClub });
+  
   const videos = [];
   
   // If no swings data, return empty
-  if (!swings || swings.length === 0) return videos;
-  
+  if (!swings || swings.length === 0) {
+    console.log('No swings provided to getVideoRecommendations');
+    return videos;
+  }
+
+  // Filter out undefined/null swings and ensure they have structured metrics
+  const validSwings = swings.filter(swing => {
+    if (!swing) {
+      console.log('Found null/undefined swing');
+      return false;
+    }
+    if (!swing.structuredMetrics) {
+      console.log('Swing missing structuredMetrics:', swing);
+      return false;
+    }
+    return true;
+  });
+
+  if (validSwings.length === 0) {
+    console.log('No valid swings with structured metrics found');
+    return [];
+  }
+
   // Analyze consistency across multiple swings
-  const consistency = analyzeSwingConsistency(swings);
-  const primarySwing = swings[0]; // Use first swing as primary for analysis
+  const consistency = analyzeSwingConsistency(validSwings);
+  const primarySwing = validSwings[0]; // Use first valid swing as primary for analysis
   const clubCategory = getClubCategory(selectedClub);
   
   // Get structured metrics for the primary swing
@@ -463,17 +486,28 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
 };
 
 export const getTextRecommendations = (swings: any[], selectedClub: string = '') => {
+  console.log('getTextRecommendations called with:', { swings, selectedClub });
+  
   // If no swings data, return default
   if (!swings || swings.length === 0) {
     return `📊 No swing data available. Please upload your TrackMan data photos for analysis.`;
   }
-  
+
+  // Filter out undefined/null swings and ensure they have structured metrics
+  const validSwings = swings.filter(swing => {
+    return swing && swing.structuredMetrics;
+  });
+
+  if (validSwings.length === 0) {
+    return "No valid swing data found. Please upload a TrackMan image for analysis.";
+  }
+
   // Get club category for context
   const clubCategory = getClubCategory(selectedClub);
   
   // Analyze consistency across multiple swings
-  const consistency = analyzeSwingConsistency(swings);
-  const primarySwing = swings[0]; // Use first swing as primary for analysis
+  const consistency = analyzeSwingConsistency(validSwings);
+  const primarySwing = validSwings[0]; // Use first valid swing as primary for analysis
   
   // Get structured metrics for the primary swing
   const structuredMetrics = getStructuredMetrics(primarySwing.structuredMetrics || primarySwing.structured_metrics || []);
@@ -489,16 +523,16 @@ export const getTextRecommendations = (swings: any[], selectedClub: string = '')
   
   // Build consistency context if multiple swings
   let consistencyNote = '';
-  if (swings.length > 1) {
+  if (validSwings.length > 1) {
     const inconsistentMetrics = Object.entries(consistency.variances)
       .filter(([_, variance]) => variance > 2)
       .map(([metric, variance]) => `${metric} (±${variance.toFixed(1)}°)`)
       .join(', ');
     
     if (inconsistentMetrics) {
-      consistencyNote = `\n\n📊 Consistency Check (${swings.length} swings):\nYour swing shows some inconsistency in: ${inconsistentMetrics}. This suggests working on your setup and developing a more repeatable swing.\n\n`;
+      consistencyNote = `\n\n📊 Consistency Check (${validSwings.length} swings):\nYour swing shows some inconsistency in: ${inconsistentMetrics}. This suggests working on your setup and developing a more repeatable swing.\n\n`;
     } else {
-      consistencyNote = `\n\n📊 Consistency Check (${swings.length} swings):\nGood news! Your swing is quite consistent across multiple shots. This shows you have solid fundamentals.\n\n`;
+      consistencyNote = `\n\n📊 Consistency Check (${validSwings.length} swings):\nGood news! Your swing is quite consistent across multiple shots. This shows you have solid fundamentals.\n\n`;
     }
   }
   
@@ -618,7 +652,7 @@ This creates too much right-to-left curve. Here's what to focus on:
   }
   
   // Inconsistency focus
-  if (swings.length > 1 && !consistency.isConsistent) {
+  if (validSwings.length > 1 && !consistency.isConsistent) {
     const mostInconsistent = Object.entries(consistency.variances)
       .sort(([,a], [,b]) => b - a)[0];
     
