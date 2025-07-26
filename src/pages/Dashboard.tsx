@@ -72,6 +72,7 @@ const Dashboard = () => {
   const [videoViews, setVideoViews] = useState<VideoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentHandicap, setCurrentHandicap] = useState<number>();
+  const [userFirstName, setUserFirstName] = useState<string>('');
   const [showProgressModal, setShowProgressModal] = useState(false);
   const [selectedClubCategory, setSelectedClubCategory] = useState<string>('all');
   
@@ -89,12 +90,13 @@ const Dashboard = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('current_handicap')
+        .select('current_handicap, first_name')
         .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
       setCurrentHandicap(data?.current_handicap);
+      setUserFirstName(data?.first_name || '');
     } catch (error) {
       console.error('Error fetching profile:', error);
     }
@@ -489,7 +491,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-16">
           <div className="space-y-4">
             <h1 className="text-5xl font-light text-foreground tracking-tight">
-              Welcome back
+              Welcome back{userFirstName ? `, ${userFirstName}` : ''}!
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
               Track your golf swing improvement and discover insights to take your game to the next level.
