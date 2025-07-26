@@ -33,8 +33,8 @@ import { getVideoRecommendations, getTextRecommendations } from '@/utils/recomme
 import Header from '@/components/Header';
 import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
 import { MetricCard } from '@/components/MetricCard';
-import { InsightCard } from '@/components/InsightCard';
-import { PracticeSessionCard } from '@/components/PracticeSessionCard';
+import { CompactInsightCard } from '@/components/CompactInsightCard';
+import { RecentActivityFeed } from '@/components/RecentActivityFeed';
 
 interface SwingData {
   id: string;
@@ -573,11 +573,11 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Insight Cards - Strength & Weakness Analysis */}
-        {latestSwing && analysis && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+        {/* Compact Insight Cards - Strength & Weakness Analysis */}
+        {latestSwing && analysis && (analysis.strength || analysis.weakness) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-16">
             {analysis.strength && (
-              <InsightCard
+              <CompactInsightCard
                 type="strength"
                 title={analysis.strength.metric}
                 value={analysis.strength.value}
@@ -587,7 +587,7 @@ const Dashboard = () => {
             )}
 
             {analysis.weakness && (
-              <InsightCard
+              <CompactInsightCard
                 type="weakness"
                 title={analysis.weakness.metric}
                 value={analysis.weakness.value}
@@ -716,11 +716,9 @@ const Dashboard = () => {
         {/* Goal Timeline */}
         <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
 
-        {/* Practice Progress Section */}
-        <PracticeSessionCard 
-          progressData={progressData}
+        {/* Recent Activity Feed */}
+        <RecentActivityFeed 
           swingData={filteredSwingData}
-          onViewProgress={() => setShowProgressModal(true)}
           className="mb-16"
         />
 
@@ -729,36 +727,6 @@ const Dashboard = () => {
           className="mb-16" 
           onBadgeInteraction={dismissBadgeNotification}
         />
-
-        {/* Recent Activity */}
-        <Card className="bg-gradient-to-br from-surface to-surface-elevated border-border/60 shadow-card">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-primary-100 dark:bg-primary-900/30">
-                <Activity className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-              </div>
-              <div>
-                <CardTitle className="text-xl font-semibold">Recent Activity</CardTitle>
-                <CardDescription className="text-sm">Your latest swing sessions</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SwingHistoryList swingData={limitedSwingData} onDataUpdate={loadUserData} />
-            {filteredSwingData.length > 5 && (
-              <div className="flex justify-center pt-6">
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/swing-history')}
-                  className="flex items-center gap-2 rounded-xl"
-                >
-                  View All Swings ({filteredSwingData.length})
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Badge Notifications */}
