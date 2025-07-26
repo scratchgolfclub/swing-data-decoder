@@ -25,7 +25,7 @@ const analyzeSwingConsistency = (swings: any[]) => {
   
   metricTitles.forEach(metricTitle => {
     const values = swings.map(swing => {
-      const structuredMetrics = getStructuredMetrics(swing);
+      const structuredMetrics = getStructuredMetrics(swing.structuredMetrics || swing.structured_metrics || []);
       return getMetricValue(structuredMetrics, metricTitle);
     }).filter(val => val !== null && !isNaN(val)) as number[];
     
@@ -65,7 +65,7 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   const clubCategory = getClubCategory(selectedClub);
   
   // Get structured metrics for the primary swing
-  const structuredMetrics = getStructuredMetrics(primarySwing);
+  const structuredMetrics = getStructuredMetrics(primarySwing.structuredMetrics || primarySwing.structured_metrics || []);
   
   // Parse all metrics using structured format
   const clubPath = getMetricValue(structuredMetrics, 'Club Path') || 0;
@@ -476,7 +476,7 @@ export const getTextRecommendations = (swings: any[], selectedClub: string = '')
   const primarySwing = swings[0]; // Use first swing as primary for analysis
   
   // Get structured metrics for the primary swing
-  const structuredMetrics = getStructuredMetrics(primarySwing);
+  const structuredMetrics = getStructuredMetrics(primarySwing.structuredMetrics || primarySwing.structured_metrics || []);
   
   // Extract metrics using structured format
   const clubPath = getMetricValue(structuredMetrics, 'Club Path') || 0;

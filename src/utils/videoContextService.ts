@@ -534,7 +534,7 @@ export const getVideoRecommendations = (swingData: any[]): VideoContext[] => {
   
   // Get latest swing data or combine multiple swings for analysis
   const latestSwing = swingData[0];
-  const metrics = getStructuredMetrics(latestSwing.structured_metrics || latestSwing.initial_metrics);
+  const metrics = getStructuredMetrics(latestSwing.structuredMetrics || latestSwing.structured_metrics || []);
   
   // Check each video's recommendation conditions
   for (const video of VIDEO_CONTEXTS) {

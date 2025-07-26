@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { getStructuredMetrics, getMetricValue, getMetricDisplay } from '@/utils/structuredMetricsHelper';
+import { MetricTile } from '@/components/MetricTile';
 
 // Component to format swing analysis text with proper styling
 const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimpleMode: boolean }) => {
@@ -84,7 +85,7 @@ const getSwingSummary = (swingData: any) => {
   const allMetrics = [];
   
   // Get structured metrics - only new format
-  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || []);
+  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || swingData.structured_metrics || []);
   
   // Analyze all available metrics with ideal ranges
   const metrics = [
@@ -153,6 +154,9 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   // Use the first swing data for display purposes
   const swingData = swings.length > 0 ? swings[0] : {};
   const [isSimpleMode, setIsSimpleMode] = useState(true);
+  
+  // Get structured metrics for the display
+  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || swingData.structured_metrics || []);
   
   // Get swing summary
   const { goodPoints, needsWork } = getSwingSummary(swingData);
@@ -632,29 +636,27 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
           </Card>
         </div>
 
-        {/* Extracted Data Preview */}
+        {/* Individual Metric Tiles */}
         <Card className="mt-8 shadow-lg border-0 bg-white/90 dark:bg-stone-900/90 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-xl">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Target className="h-5 w-5 text-primary" />
               </div>
-              Extracted TrackMan Data
+              Swing Metrics
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {Object.entries(swingData).map(([key, value]) => (
-                <div key={key} className="p-4 bg-stone-50 dark:bg-stone-800 rounded-lg border border-stone-200 dark:border-stone-700">
-                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">
-                    {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                  </div>
-                  <div className="text-lg font-bold text-primary">
-                    {typeof value === 'object' ? JSON.stringify(value) : String(value || 'N/A')}
-                  </div>
-                </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {structuredMetrics.map((metric, index) => (
+                <MetricTile key={index} metric={metric} />
               ))}
             </div>
+            {structuredMetrics.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No structured metrics available for this swing.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
         
