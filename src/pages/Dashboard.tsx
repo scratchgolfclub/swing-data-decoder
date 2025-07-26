@@ -16,18 +16,24 @@ import {
   CheckCircle,
   Stethoscope,
   ArrowRight,
-  Trophy
+  Trophy,
+  BarChart3,
+  Timer,
+  Activity,
+  Zap
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import ProgressModal from '@/components/ProgressModal';
 import SwingHistoryList from '@/components/SwingHistoryList';
-import { BadgeSection } from '@/components/BadgeSection';
+import { ModernBadgeSection } from '@/components/ModernBadgeSection';
 import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
 import { GoalTimeline } from '@/components/GoalTimeline';
 import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
 import Header from '@/components/Header';
 import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
+import { MetricCard } from '@/components/MetricCard';
+import { InsightCard } from '@/components/InsightCard';
 
 interface SwingData {
   id: string;
@@ -478,214 +484,132 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Section with New Analysis Button */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
-            <p className="text-muted-foreground">Track your golf swing improvement over time.</p>
+      <div className="container-premium py-12 space-y-12">
+        {/* Hero Section */}
+        <div className="flex items-center justify-between mb-16">
+          <div className="space-y-4">
+            <h1 className="text-5xl font-light text-foreground tracking-tight">
+              Welcome back
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-2xl leading-relaxed">
+              Track your golf swing improvement and discover insights to take your game to the next level.
+            </p>
           </div>
           <Button 
             onClick={handleNewAnalysis}
-            className="h-12 px-6"
+            className="btn-premium h-14 px-8 text-base font-medium rounded-2xl"
             size="lg"
           >
-            <Upload className="h-5 w-5 mr-2" />
-            New Swing Analysis
+            <Upload className="h-5 w-5 mr-3" />
+            New Analysis
           </Button>
         </div>
 
         {/* Club Category Selection */}
-        <div className="mb-8">
+        <div className="mb-16">
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <button
-              onClick={() => setSelectedClubCategory('all')}
-              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
-                selectedClubCategory === 'all' 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'bg-muted/30 hover:bg-muted/50'
-              }`}
-            >
-              <img 
-                src="/lovable-uploads/8a0a0e9f-0b6f-4cf8-821e-369fa9e4f703.png" 
-                alt="All Clubs" 
-                className="h-8 w-8"
-              />
-              <span className="text-sm font-medium">All Clubs</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedClubCategory('wedges')}
-              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
-                selectedClubCategory === 'wedges' 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'bg-muted/30 hover:bg-muted/50'
-              }`}
-            >
-              <img 
-                src="/lovable-uploads/97faaec3-4379-4d26-bbf2-27f2530baac8.png" 
-                alt="Wedges" 
-                className="h-8 w-8"
-              />
-              <span className="text-sm font-medium">Wedges</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedClubCategory('irons')}
-              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
-                selectedClubCategory === 'irons' 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'bg-muted/30 hover:bg-muted/50'
-              }`}
-            >
-              <img 
-                src="/lovable-uploads/c57a3149-6ebc-4ae7-9d9b-68fc874185c5.png" 
-                alt="Irons" 
-                className="h-8 w-8"
-              />
-              <span className="text-sm font-medium">Irons</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedClubCategory('woods')}
-              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
-                selectedClubCategory === 'woods' 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'bg-muted/30 hover:bg-muted/50'
-              }`}
-            >
-              <img 
-                src="/lovable-uploads/15f0eff5-f556-4cb0-81bd-7b4e714d4c75.png" 
-                alt="Woods/Hybrids" 
-                className="h-8 w-8"
-              />
-              <span className="text-sm font-medium">Woods/Hybrids</span>
-            </button>
-            
-            <button
-              onClick={() => setSelectedClubCategory('driver')}
-              className={`flex flex-col items-center space-y-2 p-4 rounded-lg transition-all ${
-                selectedClubCategory === 'driver' 
-                  ? 'bg-primary text-primary-foreground shadow-lg' 
-                  : 'bg-muted/30 hover:bg-muted/50'
-              }`}
-            >
-              <img 
-                src="/lovable-uploads/827c70c1-d6d2-49aa-8382-bccca369dea4.png" 
-                alt="Driver" 
-                className="h-8 w-8"
-              />
-              <span className="text-sm font-medium">Driver</span>
-            </button>
+            {[
+              { key: 'all', label: 'All Clubs', icon: '/lovable-uploads/8a0a0e9f-0b6f-4cf8-821e-369fa9e4f703.png' },
+              { key: 'wedges', label: 'Wedges', icon: '/lovable-uploads/97faaec3-4379-4d26-bbf2-27f2530baac8.png' },
+              { key: 'irons', label: 'Irons', icon: '/lovable-uploads/c57a3149-6ebc-4ae7-9d9b-68fc874185c5.png' },
+              { key: 'woods', label: 'Woods', icon: '/lovable-uploads/15f0eff5-f556-4cb0-81bd-7b4e714d4c75.png' },
+              { key: 'driver', label: 'Driver', icon: '/lovable-uploads/827c70c1-d6d2-49aa-8382-bccca369dea4.png' }
+            ].map((category) => (
+              <button
+                key={category.key}
+                onClick={() => setSelectedClubCategory(category.key)}
+                className={`group relative flex flex-col items-center gap-3 p-5 rounded-2xl transition-all duration-300 hover:scale-105 ${
+                  selectedClubCategory === category.key 
+                    ? 'bg-gradient-to-br from-primary to-primary-600 text-primary-foreground shadow-button' 
+                    : 'bg-card border border-border/60 hover:border-primary/40 hover:shadow-card'
+                }`}
+              >
+                <div className={`p-3 rounded-xl transition-colors ${
+                  selectedClubCategory === category.key
+                    ? 'bg-white/20'
+                    : 'bg-surface group-hover:bg-primary-50'
+                }`}>
+                  <img 
+                    src={category.icon} 
+                    alt={category.label} 
+                    className="h-8 w-8"
+                  />
+                </div>
+                <span className="text-sm font-medium">{category.label}</span>
+                
+                {selectedClubCategory === category.key && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-primary-500/20 to-transparent rounded-2xl" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Top Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium">Total Swings</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-2xl font-bold">{filteredSwingData.length}</div>
-              <p className="text-xs text-muted-foreground">
-                {selectedClubCategory === 'all' ? 'Analyzed swings' : `${selectedClubCategory} swings`}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium">Latest Score</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="pb-3">
-              <div className="text-2xl font-bold">{latestSwing?.swing_score || 'N/A'}</div>
-              <p className="text-xs text-muted-foreground">Out of 100</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-              <CardTitle className="text-sm font-medium">Progress Tracker</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="pb-3">
-              {latestSwing && baselineSwing ? (
-                <Button 
-                  onClick={() => setShowProgressModal(true)}
-                  size="sm"
-                  variant="secondary"
-                  className="w-full h-8"
-                >
-                  View Report
-                </Button>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {swingData.length === 0 ? "Upload first swing" : "Need 2+ swings"}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+        {/* Key Metrics Dashboard */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          <MetricCard
+            title="Total Swings"
+            value={filteredSwingData.length}
+            change={`${selectedClubCategory} category`}
+            icon={Target}
+            variant="gradient"
+          />
+          <MetricCard
+            title="Latest Score"
+            value={latestSwing?.swing_score ? `${latestSwing.swing_score}/100` : 'No data'}
+            change="Last session"
+            icon={BarChart3}
+            variant="accent"
+          />
+          <MetricCard
+            title="Practice Sessions"
+            value={new Set(filteredSwingData.map(s => s.session_name)).size}
+            change="Unique sessions"
+            icon={Timer}
+            variant="default"
+          />
         </div>
 
-        {/* Strength & Weakness Analysis */}
+        {/* Insight Cards - Strength & Weakness Analysis */}
         {latestSwing && analysis && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Biggest Strength */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
             {analysis.strength && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-lg">
-                    <Trophy className="h-5 w-5 mr-2 text-yellow-500" />
-                    Biggest Strength
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold mb-3 text-green-600">
-                    {analysis.strength.metric}: {analysis.strength.value}
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {analysis.strength.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <InsightCard
+                type="strength"
+                title={analysis.strength.metric}
+                value={analysis.strength.value}
+                description={analysis.strength.description}
+                icon={Trophy}
+              />
             )}
 
-            {/* Biggest Weakness */}
             {analysis.weakness && (
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center text-lg">
-                    <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
-                    Biggest Weakness
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-xl font-bold mb-3 text-orange-600">
-                    {analysis.weakness.metric}: {analysis.weakness.value}
-                  </div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {analysis.weakness.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <InsightCard
+                type="weakness"
+                title={analysis.weakness.metric}
+                value={analysis.weakness.value}
+                description={analysis.weakness.description}
+                icon={AlertTriangle}
+              />
             )}
           </div>
         )}
 
-        {/* Practice Recommendations */}
+        {/* Practice Prescription */}
         {latestSwing && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Stethoscope className="h-5 w-5 mr-2 text-green-600" />
-                Your Practice Prescription
-              </CardTitle>
-              <CardDescription>
-                Personalized recommendations based on your latest swing analysis
-              </CardDescription>
+          <Card className="mb-16 bg-gradient-to-br from-surface-elevated to-surface border-border/60 shadow-elegant">
+            <CardHeader className="pb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-3 rounded-xl bg-primary-100 dark:bg-primary-900/30">
+                  <Stethoscope className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                </div>
+                <div>
+                  <CardTitle className="text-2xl font-semibold">Your Practice Prescription</CardTitle>
+                  <CardDescription className="text-base mt-1">
+                    Personalized recommendations based on your latest swing analysis
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Accordion type="single" defaultValue="drills" className="w-full">
@@ -789,28 +713,41 @@ const Dashboard = () => {
         {/* Goal Timeline */}
         <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
 
-        {/* Badge Section */}
-        <BadgeSection 
-          className="mb-8" 
+        {/* Achievements Section */}
+        <ModernBadgeSection 
+          className="mb-16" 
           onBadgeInteraction={dismissBadgeNotification}
         />
 
-        {/* Swing History - Limited to 5 */}
-        <div className="space-y-4">
-          <SwingHistoryList swingData={limitedSwingData} onDataUpdate={loadUserData} />
-          {filteredSwingData.length > 5 && (
-            <div className="flex justify-center pt-4">
-              <Button 
-                variant="outline" 
-                onClick={() => navigate('/swing-history')}
-                className="flex items-center gap-2"
-              >
-                View All Swings ({filteredSwingData.length})
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+        {/* Recent Activity */}
+        <Card className="bg-gradient-to-br from-surface to-surface-elevated border-border/60 shadow-card">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-primary-100 dark:bg-primary-900/30">
+                <Activity className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-semibold">Recent Activity</CardTitle>
+                <CardDescription className="text-sm">Your latest swing sessions</CardDescription>
+              </div>
             </div>
-          )}
-        </div>
+          </CardHeader>
+          <CardContent>
+            <SwingHistoryList swingData={limitedSwingData} onDataUpdate={loadUserData} />
+            {filteredSwingData.length > 5 && (
+              <div className="flex justify-center pt-6">
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/swing-history')}
+                  className="flex items-center gap-2 rounded-xl"
+                >
+                  View All Swings ({filteredSwingData.length})
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Badge Notifications */}
