@@ -475,13 +475,17 @@ export const getTextRecommendations = (swings: any[], selectedClub: string = '')
   const consistency = analyzeSwingConsistency(swings);
   const primarySwing = swings[0]; // Use first swing as primary for analysis
   
-  const clubPath = parseNumericValue(primarySwing.clubPath);
-  const faceAngle = parseNumericValue(primarySwing.faceAngle);
-  const faceToPath = parseNumericValue(primarySwing.faceToPath);
-  const attackAngle = parseNumericValue(primarySwing.attackAngle);
-  const spinRate = parseNumericValue(primarySwing.spinRate);
-  const launchAngle = parseNumericValue(primarySwing.launchAngle);
-  const dynamicLoft = parseNumericValue(primarySwing.dynLoft);
+  // Get structured metrics for the primary swing
+  const structuredMetrics = getStructuredMetrics(primarySwing);
+  
+  // Extract metrics using structured format
+  const clubPath = getMetricValue(structuredMetrics, 'Club Path') || 0;
+  const faceAngle = getMetricValue(structuredMetrics, 'Face Angle') || 0;
+  const faceToPath = getMetricValue(structuredMetrics, 'Face to Path') || 0;
+  const attackAngle = getMetricValue(structuredMetrics, 'Attack Angle') || 0;
+  const spinRate = getMetricValue(structuredMetrics, 'Spin Rate') || 0;
+  const launchAngle = getMetricValue(structuredMetrics, 'Launch Angle') || 0;
+  const dynamicLoft = getMetricValue(structuredMetrics, 'Dynamic Loft') || 0;
   
   // Build consistency context if multiple swings
   let consistencyNote = '';

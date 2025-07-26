@@ -10,7 +10,6 @@ interface VideoContext {
   contextSummary: string;
 }
 
-// Mapping between old metric names and new structured metric titles
 const METRIC_NAME_MAPPING: Record<string, string> = {
   'clubSpeed': 'Club Speed',
   'ballSpeed': 'Ball Speed',
