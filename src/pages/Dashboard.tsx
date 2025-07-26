@@ -34,6 +34,7 @@ import Header from '@/components/Header';
 import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
 import { MetricCard } from '@/components/MetricCard';
 import { InsightCard } from '@/components/InsightCard';
+import { PracticeSessionCard } from '@/components/PracticeSessionCard';
 
 interface SwingData {
   id: string;
@@ -714,6 +715,14 @@ const Dashboard = () => {
 
         {/* Goal Timeline */}
         <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
+
+        {/* Practice Progress Section */}
+        <PracticeSessionCard 
+          progressData={progressData}
+          swingData={filteredSwingData}
+          onViewProgress={() => setShowProgressModal(true)}
+          className="mb-16"
+        />
 
         {/* Achievements Section */}
         <ModernBadgeSection 
