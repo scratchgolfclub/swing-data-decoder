@@ -82,9 +82,17 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 
 // Component to analyze swing data and provide summary
 const getSwingSummary = (swingData: any) => {
+  console.log('getSwingSummary called with:', swingData);
+  
   const allMetrics = [];
   
-  // Get structured metrics - only new format
+  // Safety check for swingData
+  if (!swingData || typeof swingData !== 'object') {
+    console.error('getSwingSummary: Invalid swingData:', swingData);
+    return { goodPoints: [], needsWork: [] };
+  }
+  
+  // Get structured metrics - only new format with safety checks
   const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || swingData.structured_metrics || []);
   
   // Analyze all available metrics with ideal ranges
@@ -145,21 +153,49 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  // Pass all swing data AND selected club to recommendation functions for analysis
-  const swings = data.swings || [];
-  const selectedClub = data.club || '';
+  console.log('ResultsScreen received data:', data);
+  
+  // Handle both old and new data structure formats
+  let swings = [];
+  let selectedClub = '';
+  
+  if (Array.isArray(data)) {
+    // New format: data is directly an array of swings
+    swings = data.filter(swing => swing && typeof swing === 'object');
+    selectedClub = swings[0]?.club || 'driver';
+  } else if (data && data.swings) {
+    // Old format: data has a swings property
+    swings = Array.isArray(data.swings) ? data.swings.filter(swing => swing && typeof swing === 'object') : [];
+    selectedClub = data.club || 'driver';
+  }
+  
+  if (swings.length === 0) {
+    console.error('ResultsScreen: No valid swings found in data:', data);
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 p-4">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <p>No valid swing data found. Please try uploading your analysis again.</p>
+          <Button onClick={onReset} className="mt-4">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   const videoRecommendations = getVideoRecommendations(swings, selectedClub);
   const textRecommendations = getTextRecommendations(swings, selectedClub);
   
-  // Use the first swing data for display purposes
+  // Use the first swing data for display purposes with safety check
   const swingData = swings.length > 0 ? swings[0] : {};
   const [isSimpleMode, setIsSimpleMode] = useState(true);
   
-  // Get structured metrics for the display
-  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || swingData.structured_metrics || []);
+  // Get structured metrics for the display with safety checks
+  const structuredMetrics = getStructuredMetrics(swingData?.structuredMetrics || swingData?.structured_metrics || []);
   
-  // Get swing summary
-  const { goodPoints, needsWork } = getSwingSummary(swingData);
+  // Get swing summary with additional safety
+  const { goodPoints, needsWork } = swingData ? getSwingSummary(swingData) : { goodPoints: [], needsWork: [] };
   
   // Filter videos based on mode
   const displayedVideos = isSimpleMode ? videoRecommendations.slice(0, 1) : videoRecommendations.slice(0, 3);
