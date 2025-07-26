@@ -70,8 +70,11 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
       console.log('Found null/undefined swing');
       return false;
     }
-    if (!swing.structuredMetrics) {
-      console.log('Swing missing structuredMetrics:', swing);
+    // Check for structured metrics in multiple possible locations
+    const hasMetrics = swing.structuredMetrics || swing.structured_metrics || 
+                      swing.structured_baseline_metrics;
+    if (!hasMetrics) {
+      console.log('Swing missing structured metrics:', swing);
       return false;
     }
     return true;
@@ -87,8 +90,25 @@ export const getVideoRecommendations = (swings: any[], selectedClub: string = ''
   const primarySwing = validSwings[0]; // Use first valid swing as primary for analysis
   const clubCategory = getClubCategory(selectedClub);
   
-  // Get structured metrics for the primary swing
-  const structuredMetrics = getStructuredMetrics(primarySwing.structuredMetrics || primarySwing.structured_metrics || []);
+  // Get structured metrics for the primary swing - handle circular references
+  let structuredMetrics = [];
+  try {
+    const rawMetrics = primarySwing.structuredMetrics || 
+                     primarySwing.structured_metrics || 
+                     primarySwing.structured_baseline_metrics || 
+                     [];
+    
+    // If rawMetrics is already an array of structured metrics, use it directly
+    if (Array.isArray(rawMetrics) && rawMetrics.length > 0 && rawMetrics[0].title) {
+      structuredMetrics = rawMetrics;
+    } else {
+      // Otherwise, parse it through getStructuredMetrics
+      structuredMetrics = getStructuredMetrics(rawMetrics);
+    }
+  } catch (error) {
+    console.warn('Error parsing structured metrics, using empty array:', error);
+    structuredMetrics = [];
+  }
   
   // Parse all metrics using structured format
   const clubPath = getMetricValue(structuredMetrics, 'Club Path') || 0;

@@ -391,17 +391,23 @@ const Dashboard = () => {
     const metrics = getLatestSwingMetrics();
     if (!metrics) return { drills: [], feels: [], videos: [] };
 
-    // Create a combined swing object for the recommendation engine
+    // Create a properly structured swing object for the recommendation engine
     const combinedSwing = {
       ...latestSwing,
-      ...metrics
+      structuredMetrics: metrics  // Use the correct property name expected by the engine
     };
 
-    // Get text recommendations and parse drills/feels
+    // Get text recommendations and parse drills/feels  
     const textRecs = getTextRecommendations([combinedSwing], latestSwing.club_type);
     
-    // Get video recommendations
-    const videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
+    // Get video recommendations with proper error handling
+    let videoRecs = [];
+    try {
+      videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
+    } catch (error) {
+      console.error('Error getting video recommendations:', error);
+      videoRecs = [];
+    }
 
     // Extract detailed items with defaults
     const drills = [

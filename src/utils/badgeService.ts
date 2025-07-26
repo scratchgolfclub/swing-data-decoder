@@ -39,7 +39,7 @@ export const badgeService = {
     return data || [];
   },
 
-  // Get user's earned badges
+  // Get user's earned badges with deduplication
   async getUserBadges(userId: string): Promise<UserBadge[]> {
     const { data, error } = await supabase
       .from('user_badges')
@@ -51,7 +51,17 @@ export const badgeService = {
       .order('earned_at', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    
+    // Deduplicate badges by badge_id, keeping the most recent
+    const uniqueBadges = new Map();
+    (data || []).forEach(badge => {
+      if (!uniqueBadges.has(badge.badge_id) || 
+          new Date(badge.earned_at) > new Date(uniqueBadges.get(badge.badge_id).earned_at)) {
+        uniqueBadges.set(badge.badge_id, badge);
+      }
+    });
+
+    return Array.from(uniqueBadges.values());
   },
 
   // Check and award new badges for a user
@@ -110,18 +120,19 @@ export const badgeService = {
     if (error) console.error('Error marking badges as viewed:', error);
   },
 
-  // Get badge progress for all badges
+  // Get badge progress for all badges with deduplication
   async getBadgeProgress(userId: string): Promise<BadgeProgress[]> {
     const [allBadges, userBadges, swingData] = await Promise.all([
       this.getAllBadges(),
-      this.getUserBadges(userId),
+      this.getUserBadges(userId), // Already deduplicates
       this.getUserSwingData(userId)
     ]);
 
+    // Create deduplicated maps
     const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
     const newBadgeIds = new Set(userBadges.filter(ub => ub.is_new).map(ub => ub.badge_id));
 
-    return allBadges.map(badge => {
+    const badgeProgressList = allBadges.map(badge => {
       const earned = earnedBadgeIds.has(badge.id);
       const progress = earned ? 1 : this.calculateProgress(badge, swingData);
       
@@ -133,6 +144,11 @@ export const badgeService = {
         is_new: newBadgeIds.has(badge.id)
       };
     });
+
+    // Additional deduplication at the progress level
+    return badgeProgressList.filter((badgeProgress, index, self) => 
+      index === self.findIndex(bp => bp.badge.id === badgeProgress.badge.id)
+    );
   },
 
   // Helper: Get user's swing data for badge calculations
