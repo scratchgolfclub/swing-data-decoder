@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { 
   TrendingUp, 
-  TrendingDown, 
+  TrendingDown,
+  Minus, 
   BarChart3, 
   Calendar, 
   Target,
   ArrowRight,
-  Timer
+  Timer,
+  ChevronDown
 } from 'lucide-react';
+import { getStructuredMetrics, getMetricValue, type StructuredMetric } from '@/utils/structuredMetricsHelper';
 
 interface ProgressData {
   id: string;
@@ -30,6 +34,8 @@ interface SwingData {
   swing_score: number;
   is_baseline: boolean;
   created_at: string;
+  structured_metrics?: any;
+  structured_baseline_metrics?: any;
 }
 
 interface PracticeSessionCardProps {
@@ -45,9 +51,94 @@ export const PracticeSessionCard = ({
   onViewProgress, 
   className 
 }: PracticeSessionCardProps) => {
+  const [showOtherCategories, setShowOtherCategories] = useState(false);
+  
   const latestProgress = progressData[0];
   const recentSessions = swingData.slice(0, 3);
   
+  // Get latest swing and baseline for comparison
+  const latestSwing = swingData[0];
+  const baselineSwing = swingData.find(swing => swing.is_baseline);
+  
+  // Helper function to compare metrics
+  const compareMetric = (latest: number, baseline: number) => {
+    const difference = latest - baseline;
+    const percentChange = baseline !== 0 ? (difference / baseline) * 100 : 0;
+    
+    return {
+      difference,
+      percentChange,
+      trend: difference > 0 ? 'up' : difference < 0 ? 'down' : 'same'
+    };
+  };
+
+  // Extract key metrics for comparison
+  const getMetricValueFromSwing = (swing: SwingData, metricTitle: string): number => {
+    const structuredMetrics = getStructuredMetrics(swing.structured_metrics || swing.structured_baseline_metrics);
+    const structuredValue = getMetricValue(structuredMetrics, metricTitle);
+    return structuredValue !== null ? structuredValue : 0;
+  };
+
+  // Get all available metrics categorized
+  const getAllAvailableMetrics = () => {
+    if (!latestSwing || !baselineSwing) return { speed: [], trajectory: [], direction: [], distance: [], impact: [] };
+    
+    const latestStructured = getStructuredMetrics(latestSwing.structured_metrics || latestSwing.structured_baseline_metrics);
+    const baselineStructured = getStructuredMetrics(baselineSwing.structured_metrics || baselineSwing.structured_baseline_metrics);
+    
+    const metricTitles = new Set<string>();
+    latestStructured.forEach(metric => metricTitles.add(metric.title));
+    baselineStructured.forEach(metric => metricTitles.add(metric.title));
+    
+    const unitMap: Record<string, string> = {
+      'Club Speed': 'mph', 'Ball Speed': 'mph', 'Smash Factor': '',
+      'Launch Angle': '°', 'Attack Angle': '°', 'Face Angle': '°',
+      'Club Path': '°', 'Face to Path': '°', 'Carry Distance': 'yds',
+      'Total Distance': 'yds', 'Spin Rate': 'rpm', 'Launch Direction': '°',
+      'Spin Axis': '°', 'Dynamic Loft': '°', 'Dynamic Lie': '°',
+      'Impact Offset': 'mm', 'Low Point Distance': 'in', 'Curve': 'yds',
+      'Height': 'ft', 'Landing Angle': '°', 'Hang Time': 's',
+      'Side': 'yds', 'Side Total': 'yds'
+    };
+
+    const categories = {
+      speed: ['Club Speed', 'Ball Speed', 'Smash Factor'],
+      trajectory: ['Launch Angle', 'Attack Angle', 'Spin Rate', 'Height', 'Landing Angle', 'Hang Time'],
+      direction: ['Face Angle', 'Club Path', 'Face to Path', 'Launch Direction', 'Spin Axis'],
+      distance: ['Carry Distance', 'Total Distance', 'Curve', 'Side', 'Side Total'],
+      impact: ['Dynamic Loft', 'Dynamic Lie', 'Impact Offset', 'Low Point Distance']
+    };
+
+    const result: Record<string, Array<{ key: string; label: string; unit: string }>> = {
+      speed: [], trajectory: [], direction: [], distance: [], impact: []
+    };
+    
+    Object.entries(categories).forEach(([category, metricNames]) => {
+      metricNames.forEach(metricName => {
+        if (metricTitles.has(metricName)) {
+          result[category].push({
+            key: metricName,
+            label: metricName,
+            unit: unitMap[metricName] || ''
+          });
+        }
+      });
+    });
+
+    return result;
+  };
+
+  const renderTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return <TrendingUp className="h-3 w-3 text-green-500" />;
+      case 'down':
+        return <TrendingDown className="h-3 w-3 text-red-500" />;
+      default:
+        return <Minus className="h-3 w-3 text-muted-foreground" />;
+    }
+  };
+
   // Calculate improvement trend
   const getImprovementTrend = () => {
     if (progressData.length < 2) return null;
@@ -72,6 +163,7 @@ export const PracticeSessionCard = ({
 
   const trend = getImprovementTrend();
   const averageScore = getAverageScore();
+  const metrics = getAllAvailableMetrics();
 
   if (!latestProgress && recentSessions.length === 0) {
     return (
@@ -169,91 +261,215 @@ export const PracticeSessionCard = ({
           </div>
         )}
 
-        {/* Recent Sessions Summary */}
-        {recentSessions.length > 0 && (
+        {/* Metric Comparison - Primary Element */}
+        {latestSwing && baselineSwing && metrics.speed.length > 0 && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-foreground">Recent Sessions</h4>
-              <div className="flex items-center gap-2">
-                <Timer className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">
-                  Avg: {averageScore}/100
-                </span>
-              </div>
+              <h4 className="text-sm font-medium text-foreground">Metric Comparison</h4>
+              <span className="text-xs text-muted-foreground">vs. Baseline</span>
             </div>
             
-            <div className="grid gap-3">
-              {recentSessions.map((session) => (
-                <div 
-                  key={session.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
-                >
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-foreground">
-                      {session.session_name}
+            {/* Speed & Efficiency - Always Visible */}
+            <div className="space-y-3">
+              <h5 className="text-xs font-medium text-primary uppercase tracking-wide">
+                Speed & Efficiency
+              </h5>
+              <div className="space-y-2">
+                {metrics.speed.map(({ key, label, unit }) => {
+                  const baselineValue = getMetricValueFromSwing(baselineSwing, key);
+                  const latestValue = getMetricValueFromSwing(latestSwing, key);
+                  
+                  if (baselineValue === 0 && latestValue === 0) return null;
+                  
+                  const comparison = compareMetric(latestValue, baselineValue);
+
+                  return (
+                    <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/40">
+                      <div className="flex items-center space-x-2">
+                        {renderTrendIcon(comparison.trend)}
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{label}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {baselineValue.toFixed(1)}{unit} → {latestValue.toFixed(1)}{unit}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-xs font-medium ${
+                          comparison.trend === 'up' ? 'text-green-500' : 
+                          comparison.trend === 'down' ? 'text-red-500' : 
+                          'text-muted-foreground'
+                        }`}>
+                          {comparison.difference > 0 ? '+' : ''}{comparison.difference.toFixed(1)}{unit}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {Math.abs(comparison.percentChange).toFixed(1)}%
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Target className="h-3 w-3" />
-                      {session.club_type}
-                      <span>•</span>
-                      <Calendar className="h-3 w-3" />
-                      {new Date(session.created_at).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-foreground">
-                      {session.swing_score || 0}
-                    </div>
-                    <div className="text-xs text-muted-foreground">score</div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Other Categories Dropdown */}
+            {(metrics.trajectory.length > 0 || metrics.direction.length > 0 || metrics.distance.length > 0 || metrics.impact.length > 0) && (
+              <div className="border-t pt-4">
+                <button
+                  onClick={() => setShowOtherCategories(!showOtherCategories)}
+                  className="flex items-center justify-between w-full p-2 rounded-lg bg-muted/20 hover:bg-muted/40 transition-colors"
+                >
+                  <span className="text-xs font-medium text-foreground">
+                    Other Metrics ({Object.values(metrics).flat().length - metrics.speed.length})
+                  </span>
+                  <ChevronDown 
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      showOtherCategories ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                
+                {showOtherCategories && (
+                  <div className="mt-3 space-y-4 bg-background/50 border border-border/40 rounded-lg p-3">
+                    {/* Trajectory & Spin */}
+                    {metrics.trajectory.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wide">
+                          Trajectory & Spin
+                        </h5>
+                        <div className="space-y-1">
+                          {metrics.trajectory.map(({ key, label, unit }) => {
+                            const baselineValue = getMetricValueFromSwing(baselineSwing, key);
+                            const latestValue = getMetricValueFromSwing(latestSwing, key);
+                            
+                            if (baselineValue === 0 && latestValue === 0) return null;
+                            
+                            const comparison = compareMetric(latestValue, baselineValue);
+
+                            return (
+                              <div key={key} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                                <div className="flex items-center space-x-2">
+                                  {renderTrendIcon(comparison.trend)}
+                                  <div>
+                                    <p className="text-xs font-medium text-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {baselineValue.toFixed(1)}{unit} → {latestValue.toFixed(1)}{unit}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`text-xs font-medium ${
+                                    comparison.trend === 'up' ? 'text-green-500' : 
+                                    comparison.trend === 'down' ? 'text-red-500' : 
+                                    'text-muted-foreground'
+                                  }`}>
+                                    {comparison.difference > 0 ? '+' : ''}{comparison.difference.toFixed(1)}{unit}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Direction & Face Control */}
+                    {metrics.direction.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wide">
+                          Direction & Face Control
+                        </h5>
+                        <div className="space-y-1">
+                          {metrics.direction.map(({ key, label, unit }) => {
+                            const baselineValue = getMetricValueFromSwing(baselineSwing, key);
+                            const latestValue = getMetricValueFromSwing(latestSwing, key);
+                            
+                            if (baselineValue === 0 && latestValue === 0) return null;
+                            
+                            const comparison = compareMetric(latestValue, baselineValue);
+
+                            return (
+                              <div key={key} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                                <div className="flex items-center space-x-2">
+                                  {renderTrendIcon(comparison.trend)}
+                                  <div>
+                                    <p className="text-xs font-medium text-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {baselineValue.toFixed(1)}{unit} → {latestValue.toFixed(1)}{unit}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`text-xs font-medium ${
+                                    comparison.trend === 'up' ? 'text-green-500' : 
+                                    comparison.trend === 'down' ? 'text-red-500' : 
+                                    'text-muted-foreground'
+                                  }`}>
+                                    {comparison.difference > 0 ? '+' : ''}{comparison.difference.toFixed(1)}{unit}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Distance & Accuracy */}
+                    {metrics.distance.length > 0 && (
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
+                          Distance & Accuracy
+                        </h5>
+                        <div className="space-y-1">
+                          {metrics.distance.map(({ key, label, unit }) => {
+                            const baselineValue = getMetricValueFromSwing(baselineSwing, key);
+                            const latestValue = getMetricValueFromSwing(latestSwing, key);
+                            
+                            if (baselineValue === 0 && latestValue === 0) return null;
+                            
+                            const comparison = compareMetric(latestValue, baselineValue);
+
+                            return (
+                              <div key={key} className="flex items-center justify-between p-2 rounded bg-muted/20">
+                                <div className="flex items-center space-x-2">
+                                  {renderTrendIcon(comparison.trend)}
+                                  <div>
+                                    <p className="text-xs font-medium text-foreground">{label}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {baselineValue.toFixed(1)}{unit} → {latestValue.toFixed(1)}{unit}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="text-right">
+                                  <p className={`text-xs font-medium ${
+                                    comparison.trend === 'up' ? 'text-green-500' : 
+                                    comparison.trend === 'down' ? 'text-red-500' : 
+                                    'text-muted-foreground'
+                                  }`}>
+                                    {comparison.difference > 0 ? '+' : ''}{comparison.difference.toFixed(1)}{unit}
+                                  </p>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Progress Summary */}
-        {latestProgress && latestProgress.progress_summary && (
+        {/* Progress Summary - Fallback */}
+        {(!latestSwing || !baselineSwing) && latestProgress && latestProgress.progress_summary && (
           <div className="space-y-2">
             <h4 className="text-sm font-medium text-foreground">Latest Insights</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {latestProgress.progress_summary}
             </p>
-          </div>
-        )}
-
-        {/* Key Areas */}
-        {latestProgress && (latestProgress.strengths?.length > 0 || latestProgress.improvement_areas?.length > 0) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {latestProgress.strengths?.length > 0 && (
-              <div className="space-y-2">
-                <h5 className="text-xs font-medium text-green-600 dark:text-green-400 uppercase tracking-wide">
-                  Strengths
-                </h5>
-                <div className="space-y-1">
-                  {latestProgress.strengths.slice(0, 2).map((strength, index) => (
-                    <div key={index} className="text-xs text-muted-foreground">
-                      • {strength}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            {latestProgress.improvement_areas?.length > 0 && (
-              <div className="space-y-2">
-                <h5 className="text-xs font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wide">
-                  Focus Areas
-                </h5>
-                <div className="space-y-1">
-                  {latestProgress.improvement_areas.slice(0, 2).map((area, index) => (
-                    <div key={index} className="text-xs text-muted-foreground">
-                      • {area}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </CardContent>
