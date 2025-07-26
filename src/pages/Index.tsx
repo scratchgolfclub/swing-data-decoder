@@ -8,7 +8,7 @@ import { ClubSelection } from "@/components/ClubSelection";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { extractTrackmanData } from "@/utils/ocrService";
 import { useAuth } from '@/contexts/AuthContext';
-import { saveSwingAnalysis } from '@/utils/dataStorageService';
+import { saveSwingAnalysis } from '@/utils/swingDataService';
 import { toast } from 'sonner';
 
 const Index = () => {

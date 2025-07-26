@@ -154,7 +154,7 @@ export const badgeService = {
   // Helper: Get user's swing data for badge calculations
   async getUserSwingData(userId: string) {
     const { data, error } = await supabase
-      .from('swing_data')
+      .from('swings')
       .select('*')
       .eq('user_id', userId)
       .order('created_at');

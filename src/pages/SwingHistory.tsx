@@ -17,13 +17,19 @@ interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
-  structured_metrics: any;
-  structured_baseline_metrics: any;
-  coaching_notes: string;
-  swing_score: number;
-  is_baseline: boolean;
   created_at: string;
   trackman_image_url: string;
+  // Individual metric columns
+  club_speed?: number;
+  ball_speed?: number;
+  carry?: number;
+  total?: number;
+  side?: string;
+  face_angle?: number;
+  club_path?: number;
+  smash_factor?: number;
+  spin_rate?: number;
+  launch_angle?: number;
 }
 
 type SortField = 'created_at' | 'swing_score' | 'session_name' | 'club_type';
@@ -59,7 +65,7 @@ const SwingHistory = () => {
       setLoading(true);
       
       const { data, error } = await supabase
-        .from('swing_data')
+        .from('swings')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -86,8 +92,7 @@ const SwingHistory = () => {
     if (searchTerm) {
       filtered = filtered.filter(swing =>
         swing.session_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        swing.club_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (swing.coaching_notes && swing.coaching_notes.toLowerCase().includes(searchTerm.toLowerCase()))
+        swing.club_type.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -96,14 +101,8 @@ const SwingHistory = () => {
       filtered = filtered.filter(swing => swing.club_type === clubFilter);
     }
 
-    // Score filter
-    if (scoreFilter !== 'all') {
-      const [min, max] = scoreFilter.split('-').map(Number);
-      filtered = filtered.filter(swing => {
-        if (scoreFilter === '90+') return swing.swing_score >= 90;
-        return swing.swing_score >= min && swing.swing_score <= max;
-      });
-    }
+    // Score filter - remove since we don't have swing_score anymore
+    // Instead, we could filter by distance ranges or other metrics if needed
 
     // Sort
     filtered.sort((a, b) => {
@@ -115,8 +114,8 @@ const SwingHistory = () => {
           valueB = new Date(b.created_at).getTime();
           break;
         case 'swing_score':
-          valueA = a.swing_score;
-          valueB = b.swing_score;
+          valueA = a.total || 0;  // Use total distance as a score proxy
+          valueB = b.total || 0;
           break;
         case 'session_name':
           valueA = a.session_name.toLowerCase();
@@ -325,46 +324,32 @@ const SwingHistory = () => {
                       <TableCell>
                         <div>
                           <p className="font-medium">{swing.session_name}</p>
-                          {swing.is_baseline && (
-                            <Badge variant="secondary" className="mt-1 bg-primary/10 text-primary">
-                              Baseline
-                            </Badge>
-                          )}
+                          {/* Baseline badge removed since is_baseline column no longer exists */}
                         </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline">{swing.club_type}</Badge>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl font-bold">{swing.swing_score}</span>
-                          <span className="text-muted-foreground">/100</span>
+                          <span className="text-2xl font-bold">{swing.total || '--'}</span>
+                          <span className="text-muted-foreground">yds</span>
                         </div>
                       </TableCell>
-                      <TableCell>
+                       <TableCell>
                         <div className="grid grid-cols-2 gap-2 text-sm">
-                          {(() => {
-                            const metrics = getStructuredMetrics(swing.structured_metrics);
-                            const clubSpeed = getMetricDisplay(metrics, 'Club Speed');
-                            const carryDistance = getMetricDisplay(metrics, 'Carry Distance');
-                            
-                            return (
-                              <>
-                                {clubSpeed && (
-                                  <div>
-                                    <p className="text-muted-foreground">Club Speed</p>
-                                    <p className="font-medium">{clubSpeed}</p>
-                                  </div>
-                                )}
-                                {carryDistance && (
-                                  <div>
-                                    <p className="text-muted-foreground">Carry</p>
-                                    <p className="font-medium">{carryDistance}</p>
-                                  </div>
-                                )}
-                              </>
-                            );
-                          })()}
+                          {swing.club_speed && (
+                            <div>
+                              <p className="text-muted-foreground">Club Speed</p>
+                              <p className="font-medium">{swing.club_speed} mph</p>
+                            </div>
+                          )}
+                          {swing.carry && (
+                            <div>
+                              <p className="text-muted-foreground">Carry</p>
+                              <p className="font-medium">{swing.carry} yds</p>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>

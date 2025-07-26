@@ -68,6 +68,47 @@ export type Database = {
         }
         Relationships: []
       }
+      insights: {
+        Row: {
+          confidence_score: number | null
+          created_at: string | null
+          description: string
+          id: string
+          insight_type: string | null
+          swing_id: string
+          title: string
+          video_url: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string | null
+          description: string
+          id?: string
+          insight_type?: string | null
+          swing_id: string
+          title: string
+          video_url?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          insight_type?: string | null
+          swing_id?: string
+          title?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insights_swing_id_fkey"
+            columns: ["swing_id"]
+            isOneToOne: false
+            referencedRelation: "swings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -104,94 +145,125 @@ export type Database = {
         }
         Relationships: []
       }
-      progress_tracker: {
+      swings: {
         Row: {
-          created_at: string | null
-          id: string
-          improvement_areas: string[] | null
-          notes: string | null
-          overall_score: number | null
-          progress_summary: string | null
-          strengths: string[] | null
-          swing_data_id: string
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          improvement_areas?: string[] | null
-          notes?: string | null
-          overall_score?: number | null
-          progress_summary?: string | null
-          strengths?: string[] | null
-          swing_data_id: string
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          improvement_areas?: string[] | null
-          notes?: string | null
-          overall_score?: number | null
-          progress_summary?: string | null
-          strengths?: string[] | null
-          swing_data_id?: string
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "progress_tracker_swing_data_id_fkey"
-            columns: ["swing_data_id"]
-            isOneToOne: false
-            referencedRelation: "swing_data"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      swing_data: {
-        Row: {
+          attack_angle: number | null
+          ball_speed: number | null
+          carry: number | null
+          club_path: number | null
+          club_speed: number | null
           club_type: string
-          coaching_notes: string | null
           created_at: string | null
+          curve: number | null
+          d_plane_tilt: number | null
+          dynamic_lie: number | null
+          dynamic_loft: number | null
+          face_angle: number | null
+          face_to_path: number | null
+          hang_time: number | null
+          height: number | null
           id: string
-          is_baseline: boolean | null
+          impact_height: number | null
+          impact_offset: number | null
+          landing_angle: number | null
+          launch_angle: number | null
+          launch_direction: number | null
+          low_point: number | null
+          low_point_height: number | null
+          low_point_side: number | null
+          max_height_distance: number | null
           session_name: string | null
-          structured_baseline_metrics: Json | null
-          structured_metrics: Json | null
-          swing_score: number | null
+          side: string | null
+          side_total: string | null
+          smash_factor: number | null
+          spin_axis: number | null
+          spin_loft: number | null
+          spin_rate: number | null
+          swing_direction: number | null
+          swing_plane: number | null
+          swing_radius: number | null
+          total: number | null
           trackman_image_url: string | null
-          updated_at: string | null
           user_id: string
         }
         Insert: {
+          attack_angle?: number | null
+          ball_speed?: number | null
+          carry?: number | null
+          club_path?: number | null
+          club_speed?: number | null
           club_type: string
-          coaching_notes?: string | null
           created_at?: string | null
+          curve?: number | null
+          d_plane_tilt?: number | null
+          dynamic_lie?: number | null
+          dynamic_loft?: number | null
+          face_angle?: number | null
+          face_to_path?: number | null
+          hang_time?: number | null
+          height?: number | null
           id?: string
-          is_baseline?: boolean | null
+          impact_height?: number | null
+          impact_offset?: number | null
+          landing_angle?: number | null
+          launch_angle?: number | null
+          launch_direction?: number | null
+          low_point?: number | null
+          low_point_height?: number | null
+          low_point_side?: number | null
+          max_height_distance?: number | null
           session_name?: string | null
-          structured_baseline_metrics?: Json | null
-          structured_metrics?: Json | null
-          swing_score?: number | null
+          side?: string | null
+          side_total?: string | null
+          smash_factor?: number | null
+          spin_axis?: number | null
+          spin_loft?: number | null
+          spin_rate?: number | null
+          swing_direction?: number | null
+          swing_plane?: number | null
+          swing_radius?: number | null
+          total?: number | null
           trackman_image_url?: string | null
-          updated_at?: string | null
           user_id: string
         }
         Update: {
+          attack_angle?: number | null
+          ball_speed?: number | null
+          carry?: number | null
+          club_path?: number | null
+          club_speed?: number | null
           club_type?: string
-          coaching_notes?: string | null
           created_at?: string | null
+          curve?: number | null
+          d_plane_tilt?: number | null
+          dynamic_lie?: number | null
+          dynamic_loft?: number | null
+          face_angle?: number | null
+          face_to_path?: number | null
+          hang_time?: number | null
+          height?: number | null
           id?: string
-          is_baseline?: boolean | null
+          impact_height?: number | null
+          impact_offset?: number | null
+          landing_angle?: number | null
+          launch_angle?: number | null
+          launch_direction?: number | null
+          low_point?: number | null
+          low_point_height?: number | null
+          low_point_side?: number | null
+          max_height_distance?: number | null
           session_name?: string | null
-          structured_baseline_metrics?: Json | null
-          structured_metrics?: Json | null
-          swing_score?: number | null
+          side?: string | null
+          side_total?: string | null
+          smash_factor?: number | null
+          spin_axis?: number | null
+          spin_loft?: number | null
+          spin_rate?: number | null
+          swing_direction?: number | null
+          swing_plane?: number | null
+          swing_radius?: number | null
+          total?: number | null
           trackman_image_url?: string | null
-          updated_at?: string | null
           user_id?: string
         }
         Relationships: []

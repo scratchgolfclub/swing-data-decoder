@@ -137,10 +137,9 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
   const fetchCurrentMetricValue = async (metric: string) => {
     try {
       const { data, error } = await supabase
-        .from('swing_data')
-        .select('structured_metrics')
+        .from('swings')
+        .select('*')
         .eq('user_id', userId)
-        .not('structured_metrics', 'is', null)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -149,16 +148,45 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
         return;
       }
 
-      // Find the most recent value for this metric
+      // Find the most recent value for this metric using the new column structure
       for (const swing of data) {
-        if (swing.structured_metrics && Array.isArray(swing.structured_metrics)) {
-          for (const metricData of swing.structured_metrics) {
-            const typedMetric = metricData as { title?: string; value?: string | number };
-            if (typedMetric.title === metric && typedMetric.value !== undefined) {
-              setCurrentMetricValue(parseFloat(String(typedMetric.value)));
-              return;
+        let value = null;
+        
+        // Map metric names to column names
+        switch (metric) {
+          case 'Total Distance':
+            value = swing.total;
+            break;
+          case 'Carry Distance':
+            value = swing.carry;
+            break;
+          case 'Side':
+            // Extract numeric value from side text
+            if (swing.side) {
+              const numMatch = swing.side.toString().match(/^([0-9]+\.?[0-9]*)/);
+              value = numMatch ? parseFloat(numMatch[1]) : null;
             }
-          }
+            break;
+          case 'Club Head Speed':
+            value = swing.club_speed;
+            break;
+          case 'Ball Speed':
+            value = swing.ball_speed;
+            break;
+          case 'Smash Factor':
+            value = swing.smash_factor;
+            break;
+          case 'Launch Angle':
+            value = swing.launch_angle;
+            break;
+          case 'Spin Rate':
+            value = swing.spin_rate;
+            break;
+        }
+        
+        if (value !== null && value !== undefined) {
+          setCurrentMetricValue(value);
+          return;
         }
       }
       setCurrentMetricValue(null);

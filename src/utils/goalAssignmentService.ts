@@ -26,7 +26,7 @@ export const analyzeWorstMetric = async (userId: string): Promise<GoalSuggestion
   try {
     // Get user's latest swing data
     const { data: swingData, error } = await supabase
-      .from('swing_data')
+      .from('swings')
       .select('structured_metrics, club_type')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })

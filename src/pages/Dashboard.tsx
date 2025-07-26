@@ -29,7 +29,7 @@ import { ModernBadgeSection } from '@/components/ModernBadgeSection';
 import { BadgeNotificationManager } from '@/components/BadgeNotification';
 import { useBadges } from '@/hooks/useBadges';
 import { GoalTimeline } from '@/components/GoalTimeline';
-import { getVideoRecommendations, getTextRecommendations } from '@/utils/recommendationEngine';
+import { fetchSwingData } from '@/utils/swingDataService';
 import Header from '@/components/Header';
 import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/structuredMetricsHelper';
 import { MetricCard } from '@/components/MetricCard';
@@ -40,23 +40,29 @@ interface SwingData {
   id: string;
   session_name: string;
   club_type: string;
-  structured_metrics: any;
-  structured_baseline_metrics: any;
-  coaching_notes: string;
-  swing_score: number;
-  is_baseline: boolean;
   created_at: string;
   trackman_image_url: string;
+  // Individual metric columns
+  club_speed?: number;
+  ball_speed?: number;
+  carry?: number;
+  total?: number;
+  side?: string;
+  face_angle?: number;
+  club_path?: number;
+  smash_factor?: number;
+  spin_rate?: number;
+  launch_angle?: number;
+  insights?: InsightData[];
 }
 
-interface ProgressData {
+interface InsightData {
   id: string;
-  overall_score: number;
-  progress_summary: string;
-  strengths: string[];
-  improvement_areas: string[];
-  notes: string;
-  created_at: string;
+  title: string;
+  description: string;
+  video_url?: string;
+  insight_type: string;
+  confidence_score: number;
 }
 
 interface VideoView {
@@ -69,7 +75,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [swingData, setSwingData] = useState<SwingData[]>([]);
-  const [progressData, setProgressData] = useState<ProgressData[]>([]);
+  const [insights, setInsights] = useState<InsightData[]>([]);
   const [videoViews, setVideoViews] = useState<VideoView[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentHandicap, setCurrentHandicap] = useState<number>();
@@ -123,33 +129,16 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Load swing data
-      const { data: swings, error: swingError } = await supabase
-        .from('swing_data')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // Load swing data with insights using the new service
+      const swings = await fetchSwingData(user.id);
+      setSwingData(swings || []);
 
-      if (swingError) {
-        console.error('Error loading swing data:', swingError);
-        setSwingData([]);
-      } else {
-        setSwingData(swings as SwingData[] || []);
-      }
-
-      // Load progress data
-      const { data: progress, error: progressError } = await supabase
-        .from('progress_tracker')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (progressError) {
-        console.error('Error loading progress data:', progressError);
-        setProgressData([]);
-      } else {
-        setProgressData(progress as ProgressData[] || []);
-      }
+      // Extract all insights from swings
+      const allInsights = swings
+        .flatMap(swing => swing.insights || [])
+        .slice(0, 10); // Show latest 10 insights
+      
+      setInsights(allInsights);
 
       // Load video views
       const { data: views, error: viewsError } = await supabase
@@ -236,9 +225,13 @@ const Dashboard = () => {
       return null;
     }
     
-    const metrics = latestSwing.is_baseline 
-      ? latestSwing.structured_baseline_metrics 
-      : latestSwing.structured_metrics;
+    // For now, create a simple metrics structure from swing data
+    const metrics = [
+      { title: 'Club Speed', value: latestSwing.club_speed, descriptor: 'mph' },
+      { title: 'Ball Speed', value: latestSwing.ball_speed, descriptor: 'mph' },
+      { title: 'Total Distance', value: latestSwing.total, descriptor: 'yds' },
+      { title: 'Face Angle', value: latestSwing.face_angle, descriptor: '°' },
+    ].filter(m => m.value !== undefined && m.value !== null);
     
     return getStructuredMetrics(metrics);
   };
@@ -426,17 +419,16 @@ const Dashboard = () => {
       structuredMetrics: metrics  // Use the correct property name expected by the engine
     };
 
-    // Get text recommendations and parse drills/feels  
-    const textRecs = getTextRecommendations([combinedSwing], latestSwing.club_type);
-    
-    // Get video recommendations with proper error handling
-    let videoRecs = [];
-    try {
-      videoRecs = getVideoRecommendations([combinedSwing], latestSwing.club_type).slice(0, 3);
-    } catch (error) {
-      console.error('Error getting video recommendations:', error);
-      videoRecs = [];
-    }
+    // Use insights from the latest swing instead of frontend recommendation engine
+    const swingInsights = latestSwing.insights || [];
+    const videoRecs = swingInsights
+      .filter(insight => insight.video_url)
+      .slice(0, 3)
+      .map(insight => ({
+        title: insight.title,
+        reason: insight.description,
+        url: insight.video_url
+      }));
 
     // Extract detailed items with defaults
     const drills = [
@@ -461,8 +453,6 @@ const Dashboard = () => {
   // Get filtered data for current club category
   const filteredSwingData = getFilteredSwingData();
   const latestSwing = filteredSwingData[0];
-  const baselineSwing = filteredSwingData.find(swing => swing.is_baseline);
-  const latestProgress = progressData[0];
   const latestMetrics = getLatestSwingMetrics();
   const analysis = latestMetrics ? analyzeStrengthAndWeakness(latestMetrics) : null;
   const recommendations = getRecommendations();
@@ -558,8 +548,8 @@ const Dashboard = () => {
             variant="gradient"
           />
           <MetricCard
-            title="Latest Score"
-            value={latestSwing?.swing_score ? `${latestSwing.swing_score}/100` : 'No data'}
+            title="Total Distance"
+            value={latestSwing?.total ? `${latestSwing.total} yds` : 'No data'}
             change="Last session"
             icon={BarChart3}
             variant="accent"
@@ -716,13 +706,13 @@ const Dashboard = () => {
         {/* Goal Timeline */}
         <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
 
-        {/* Practice Progress Section */}
-        <PracticeSessionCard 
+        {/* Practice Progress Section - Temporarily disabled until we update PracticeSessionCard */}
+        {/* <PracticeSessionCard 
           progressData={progressData}
           swingData={filteredSwingData}
           onViewProgress={() => setShowProgressModal(true)}
           className="mb-16"
-        />
+        /> */}
 
         {/* Achievements Section */}
         <ModernBadgeSection 
@@ -767,8 +757,8 @@ const Dashboard = () => {
         onBadgeDismissed={dismissBadgeNotification}
       />
 
-      {/* Progress Modal */}
-      {showProgressModal && latestSwing && baselineSwing && (
+      {/* Progress Modal - Temporarily disabled until we update ProgressModal */}
+      {/* {showProgressModal && latestSwing && baselineSwing && (
         <ProgressModal
           isOpen={showProgressModal}
           onClose={() => setShowProgressModal(false)}
@@ -776,7 +766,7 @@ const Dashboard = () => {
           baselineSwing={baselineSwing}
           progressData={latestProgress}
         />
-      )}
+      )} */}
     </div>
   );
 };
