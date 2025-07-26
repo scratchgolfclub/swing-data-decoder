@@ -479,11 +479,6 @@ const Dashboard = () => {
       <Header />
       
       <div className="container mx-auto px-4 py-8">
-        <div className="space-y-8">
-          {/* Goal Timeline */}
-          <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
-        </div>
-
         {/* Welcome Section with New Analysis Button */}
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -790,6 +785,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Goal Timeline */}
+        <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
 
         {/* Badge Section */}
         <BadgeSection 

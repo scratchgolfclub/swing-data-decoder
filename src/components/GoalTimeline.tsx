@@ -211,13 +211,8 @@ export const GoalTimeline: React.FC<GoalTimelineProps> = ({ userId, currentHandi
             </div>
           )}
 
-          {/* Goals List */}
-          {goals.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-sm">No goals set yet. Create your first goal to start tracking progress!</p>
-            </div>
-          ) : (
+          {/* Goals List - Only show if there are goals */}
+          {goals.length > 0 && (
             <div className="space-y-3">
               {goals.map((goal) => {
                 const daysRemaining = getDaysRemaining(goal.target_date);
