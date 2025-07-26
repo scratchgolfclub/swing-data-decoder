@@ -97,6 +97,7 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
   const [handicapValue, setHandicapValue] = useState(currentHandicap?.toString() || '');
   const [targetHandicap, setTargetHandicap] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [currentMetricValue, setCurrentMetricValue] = useState<number | null>(null);
   
   const { toast } = useToast();
 
@@ -109,6 +110,7 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
     setTargetDate(undefined);
     setHandicapValue(currentHandicap?.toString() || '');
     setTargetHandicap('');
+    setCurrentMetricValue(null);
   };
 
   const handleClose = () => {
@@ -130,6 +132,40 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
 
   const handleBack = () => {
     setStep(step - 1);
+  };
+
+  const fetchCurrentMetricValue = async (metric: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('swing_data')
+        .select('structured_metrics')
+        .eq('user_id', userId)
+        .not('structured_metrics', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (error || !data?.length) {
+        setCurrentMetricValue(null);
+        return;
+      }
+
+      // Find the most recent value for this metric
+      for (const swing of data) {
+        if (swing.structured_metrics && Array.isArray(swing.structured_metrics)) {
+          for (const metricData of swing.structured_metrics) {
+            const typedMetric = metricData as { title?: string; value?: string | number };
+            if (typedMetric.title === metric && typedMetric.value !== undefined) {
+              setCurrentMetricValue(parseFloat(String(typedMetric.value)));
+              return;
+            }
+          }
+        }
+      }
+      setCurrentMetricValue(null);
+    } catch (error) {
+      console.error('Error fetching current metric value:', error);
+      setCurrentMetricValue(null);
+    }
   };
 
   const updateHandicap = async (handicap: number) => {
@@ -347,7 +383,10 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           selectedMetric === metric.value ? 'border-primary bg-primary/10' : 'border-muted hover:border-muted-foreground/50'
                         }`}
-                        onClick={() => setSelectedMetric(metric.value)}
+                        onClick={() => {
+                          setSelectedMetric(metric.value);
+                          fetchCurrentMetricValue(metric.value);
+                        }}
                       >
                         <div className="text-2xl mb-2">{metric.icon}</div>
                         <h4 className="font-medium text-sm">{metric.label}</h4>
@@ -360,14 +399,21 @@ export const GoalCreationModal: React.FC<GoalCreationModalProps> = ({
                       <h4 className="font-medium mb-3">🎯 Set Your Target</h4>
                       {(() => {
                         const range = getTargetRanges(selectedMetric, clubCategory);
+                        const unit = selectedMetric.includes('Speed') ? ' mph' : 
+                                    selectedMetric.includes('Distance') ? ' yards' :
+                                    selectedMetric.includes('Angle') ? '°' :
+                                    selectedMetric.includes('Spin') ? ' rpm' : '';
+                        
                         return (
                           <div className="space-y-3">
+                            {currentMetricValue !== null && (
+                              <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
+                                <span className="text-sm font-medium">Your Current {selectedMetric}:</span>
+                                <span className="text-lg font-bold">{currentMetricValue}{unit}</span>
+                              </div>
+                            )}
                             <p className="text-sm text-muted-foreground">
-                              Good {clubCategory} range: {range.min} - {range.max} 
-                              {selectedMetric.includes('Speed') && ' mph'}
-                              {selectedMetric.includes('Distance') && ' yards'}
-                              {selectedMetric.includes('Angle') && '°'}
-                              {selectedMetric.includes('Spin') && ' rpm'}
+                              Good {clubCategory} range: {range.min} - {range.max}{unit}
                             </p>
                             <Input
                               type="number"

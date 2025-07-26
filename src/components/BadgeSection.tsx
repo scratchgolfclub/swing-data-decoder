@@ -175,7 +175,7 @@ export function BadgeSection({ className, onBadgeInteraction }: BadgeSectionProp
               <div className="space-y-4">
                 {/* Always visible badges */}
                 <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                  {visibleBadges.map((badgeProgress) => (
+                  {(isExpanded ? filteredBadges : filteredBadges.slice(0, 8)).map((badgeProgress) => (
                     <BadgeDisplay
                       key={badgeProgress.badge.id}
                       badgeProgress={badgeProgress}
@@ -187,7 +187,7 @@ export function BadgeSection({ className, onBadgeInteraction }: BadgeSectionProp
                   ))}
                 </div>
                 
-                {/* Collapsible section for remaining badges */}
+                {/* Collapsible toggle for more badges */}
                 {hasMoreBadges && (
                   <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
                     <CollapsibleTrigger asChild>
@@ -209,21 +209,7 @@ export function BadgeSection({ className, onBadgeInteraction }: BadgeSectionProp
                         )}
                       </Button>
                     </CollapsibleTrigger>
-                    
-                    <CollapsibleContent className="mt-4">
-                      <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-3">
-                        {filteredBadges.slice(8).map((badgeProgress) => (
-                          <BadgeDisplay
-                            key={badgeProgress.badge.id}
-                            badgeProgress={badgeProgress}
-                            size="md"
-                            showProgress={!badgeProgress.earned}
-                            className="flex flex-col items-center"
-                            onInteraction={() => handleBadgeInteraction(badgeProgress.badge.id)}
-                          />
-                        ))}
-                      </div>
-                    </CollapsibleContent>
+                    <CollapsibleContent />
                   </Collapsible>
                 )}
               </div>
