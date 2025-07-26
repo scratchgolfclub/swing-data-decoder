@@ -13,9 +13,11 @@ import {
   Target,
   ArrowRight,
   Timer,
-  ChevronDown
+  ChevronDown,
+  History
 } from 'lucide-react';
 import { getStructuredMetrics, getMetricValue, type StructuredMetric } from '@/utils/structuredMetricsHelper';
+import { ProgressHistoryModal } from './ProgressHistoryModal';
 
 interface ProgressData {
   id: string;
@@ -42,16 +44,19 @@ interface PracticeSessionCardProps {
   progressData: ProgressData[];
   swingData: SwingData[];
   onViewProgress: () => void;
+  onViewSwing?: (swingId: string) => void;
   className?: string;
 }
 
 export const PracticeSessionCard = ({ 
   progressData, 
   swingData, 
-  onViewProgress, 
+  onViewProgress,
+  onViewSwing, 
   className 
 }: PracticeSessionCardProps) => {
   const [showOtherCategories, setShowOtherCategories] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
   
   const latestProgress = progressData[0];
   const recentSessions = swingData.slice(0, 3);
@@ -204,15 +209,15 @@ export const PracticeSessionCard = ({
               <CardDescription className="text-sm">Your improvement journey</CardDescription>
             </div>
           </div>
-          {latestProgress && (
+          {(latestProgress || swingData.length > 0) && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={onViewProgress}
+              onClick={() => setShowHistoryModal(true)}
               className="flex items-center gap-2 text-primary hover:text-primary-600"
             >
-              View Details
-              <ArrowRight className="h-4 w-4" />
+              <History className="h-4 w-4" />
+              View History
             </Button>
           )}
         </div>
@@ -473,6 +478,15 @@ export const PracticeSessionCard = ({
           </div>
         )}
       </CardContent>
+
+      {/* Progress History Modal */}
+      <ProgressHistoryModal
+        isOpen={showHistoryModal}
+        onClose={() => setShowHistoryModal(false)}
+        progressData={progressData}
+        swingData={swingData}
+        onViewSwing={onViewSwing}
+      />
     </Card>
   );
 };
