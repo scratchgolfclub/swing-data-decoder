@@ -54,20 +54,11 @@ const ProgressModal: React.FC<ProgressModalProps> = ({
     };
   };
 
-  // Extract key metrics for comparison using structured format
+  // Extract key metrics for comparison using structured format only
   const getMetricValueFromSwing = (swing: SwingData, metricTitle: string): number => {
-    // Try structured format first
     const structuredMetrics = getStructuredMetrics(swing.structured_metrics || swing.structured_baseline_metrics);
     const structuredValue = getMetricValue(structuredMetrics, metricTitle);
-    if (structuredValue !== null) return structuredValue;
-    
-    // Fall back to old format
-    const fallbackMetrics = swing.initial_metrics || swing.swing_data_non_baseline || {};
-    const value = fallbackMetrics[metricTitle.toLowerCase().replace(' ', '')];
-    if (typeof value === 'string') {
-      return parseFloat(value.replace(/[^\d.-]/g, '')) || 0;
-    }
-    return value || 0;
+    return structuredValue !== null ? structuredValue : 0;
   };
 
   const metrics = [

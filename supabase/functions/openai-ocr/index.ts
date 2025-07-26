@@ -34,7 +34,7 @@ serve(async (req) => {
             content: [
               {
                 type: 'text',
-                text: 'Read and extract all displayed golf swing metrics from this launch monitor screen. This is for personal swing analysis and improvement. Return a structured JSON array where each metric is an object with 3 keys: "title" (the label shown), "value" (numeric value, supports negatives), and "descriptor" (unit like "deg", "mph", "yds"). Return ONLY the JSON array, no additional text or formatting. Example: [{"title": "Club Speed", "value": 84.5, "descriptor": "mph"}, {"title": "Face Angle", "value": -2.1, "descriptor": "deg"}]'
+                text: 'Read and extract all displayed golf swing metrics from this launch monitor screen. This is for personal swing analysis and improvement. Return a structured JSON array where each metric is an object with 3 keys: "title" (the label shown), "value" (numeric value, supports negatives), and "descriptor" (unit like "deg", "mph", "yds"). Return ONLY the JSON array, no additional text or formatting.'
               },
               {
                 type: 'image_url',
@@ -54,34 +54,15 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const extractedText = data.choices[0].message.content;
+    const cleanedText = data.choices[0].message.content.replace(/```json\n?|\n?```/g, '').trim();
+    const parsedMetrics = JSON.parse(cleanedText);
 
-    // Try to parse structured JSON metrics
-    let metrics = [];
-    try {
-      // Remove any markdown formatting if present
-      const cleanedText = extractedText.replace(/```json\n?|\n?```/g, '').trim();
-      const parsedMetrics = JSON.parse(cleanedText);
-      
-      // Validate the structure
-      if (Array.isArray(parsedMetrics)) {
-        metrics = parsedMetrics.filter(metric => 
-          metric.title && 
-          typeof metric.value === 'number' && 
-          metric.descriptor
-        );
-      }
-      console.log('Parsed structured metrics:', metrics);
-    } catch (parseError) {
-      console.warn('Failed to parse structured metrics, falling back to text only:', parseError);
-    }
-
-    return new Response(JSON.stringify({ 
-      text: extractedText,
-      metrics: metrics 
+    return new Response(JSON.stringify({
+      metrics: parsedMetrics
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in openai-ocr function:', error);
     return new Response(JSON.stringify({ error: error.message }), {

@@ -83,8 +83,8 @@ const SwingAnalysisFormatter = ({ text, isSimpleMode }: { text: string; isSimple
 const getSwingSummary = (swingData: any) => {
   const allMetrics = [];
   
-  // Get structured metrics (handles both old and new formats)
-  const structuredMetrics = getStructuredMetrics(swingData);
+  // Get structured metrics - only new format
+  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || []);
   
   // Analyze all available metrics with ideal ranges
   const metrics = [

@@ -52,14 +52,12 @@ export const saveSwingAnalysis = async (data: SwingAnalysisData, userId: string)
       // Determine if this is baseline and where to store data
       const isFirstSwingEver = !hasBaseline && i === 0;
       
-      // Save swing data to database
+      // Save swing data to database - only structured metrics
       const { data: swingData, error: swingError } = await (supabase as any)
         .from('swing_data')
         .insert({
           user_id: userId,
           club_type: data.club,
-          initial_metrics: isFirstSwingEver ? swing : {},
-          swing_data_non_baseline: isFirstSwingEver ? {} : swing,
           structured_metrics: !isFirstSwingEver ? (swing.structuredMetrics || []) : [],
           structured_baseline_metrics: isFirstSwingEver ? (swing.structuredMetrics || []) : [],
           trackman_image_url: imageUrl,
@@ -110,23 +108,27 @@ export const saveSwingAnalysis = async (data: SwingAnalysisData, userId: string)
 };
 
 const calculateSwingScore = (swingData: any): number => {
-  // Simple scoring based on key metrics
+  const { getStructuredMetrics, getMetricValue } = require('./structuredMetricsHelper');
+  
+  // Simple scoring based on key metrics using structured format
   let score = 50; // Base score
   
+  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || []);
+  
   const metrics = [
-    { key: 'ballSpeed', ideal: { min: 145, max: 180 }, weight: 15 },
-    { key: 'smashFactor', ideal: { min: 1.4, max: 1.5 }, weight: 20 },
-    { key: 'carryDistance', ideal: { min: 200, max: 280 }, weight: 15 },
-    { key: 'clubPath', ideal: { min: -2, max: 2 }, weight: 10 },
-    { key: 'faceAngle', ideal: { min: -2, max: 2 }, weight: 10 },
-    { key: 'attackAngle', ideal: { min: -2, max: 3 }, weight: 10 },
-    { key: 'launchAngle', ideal: { min: 12, max: 18 }, weight: 10 },
-    { key: 'spinRate', ideal: { min: 2000, max: 3500 }, weight: 10 }
+    { key: 'Ball Speed', ideal: { min: 145, max: 180 }, weight: 15 },
+    { key: 'Smash Factor', ideal: { min: 1.4, max: 1.5 }, weight: 20 },
+    { key: 'Carry Distance', ideal: { min: 200, max: 280 }, weight: 15 },
+    { key: 'Club Path', ideal: { min: -2, max: 2 }, weight: 10 },
+    { key: 'Face Angle', ideal: { min: -2, max: 2 }, weight: 10 },
+    { key: 'Attack Angle', ideal: { min: -2, max: 3 }, weight: 10 },
+    { key: 'Launch Angle', ideal: { min: 12, max: 18 }, weight: 10 },
+    { key: 'Spin Rate', ideal: { min: 2000, max: 3500 }, weight: 10 }
   ];
   
   metrics.forEach(metric => {
-    const value = parseFloat(swingData[metric.key]);
-    if (!isNaN(value)) {
+    const value = getMetricValue(structuredMetrics, metric.key);
+    if (value !== null && !isNaN(value)) {
       const isInRange = value >= metric.ideal.min && value <= metric.ideal.max;
       if (isInRange) {
         score += metric.weight;
@@ -145,20 +147,24 @@ const calculateSwingScore = (swingData: any): number => {
 };
 
 const analyzeSwingForProgress = (swingData: any) => {
+  const { getStructuredMetrics, getMetricValue } = require('./structuredMetricsHelper');
+  
   const strengths = [];
   const improvements = [];
   
+  const structuredMetrics = getStructuredMetrics(swingData.structuredMetrics || []);
+  
   const metrics = [
-    { key: 'ballSpeed', name: 'Ball Speed', ideal: { min: 145, max: 180 } },
-    { key: 'smashFactor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 } },
-    { key: 'carryDistance', name: 'Carry Distance', ideal: { min: 200, max: 280 } },
-    { key: 'clubPath', name: 'Club Path', ideal: { min: -2, max: 2 } },
-    { key: 'faceAngle', name: 'Face Angle', ideal: { min: -2, max: 2 } }
+    { key: 'Ball Speed', name: 'Ball Speed', ideal: { min: 145, max: 180 } },
+    { key: 'Smash Factor', name: 'Smash Factor', ideal: { min: 1.4, max: 1.5 } },
+    { key: 'Carry Distance', name: 'Carry Distance', ideal: { min: 200, max: 280 } },
+    { key: 'Club Path', name: 'Club Path', ideal: { min: -2, max: 2 } },
+    { key: 'Face Angle', name: 'Face Angle', ideal: { min: -2, max: 2 } }
   ];
   
   metrics.forEach(metric => {
-    const value = parseFloat(swingData[metric.key]);
-    if (!isNaN(value)) {
+    const value = getMetricValue(structuredMetrics, metric.key);
+    if (value !== null && !isNaN(value)) {
       const isInRange = value >= metric.ideal.min && value <= metric.ideal.max;
       if (isInRange) {
         strengths.push(metric.name);

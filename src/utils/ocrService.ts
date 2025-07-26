@@ -15,76 +15,30 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-export const extractTextFromImage = async (imageFile: File): Promise<{ text: string; metrics?: any[] }> => {
+export const extractTextFromImage = async (imageFile: File): Promise<{ metrics: any[] }> => {
   try {
     console.log('🚀 Starting OCR extraction with OpenAI Vision...');
     
     // Convert image to base64
     const imageBase64 = await fileToBase64(imageFile);
     
-    // Try OpenAI first with timeout
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OpenAI timeout')), 30000)
-      );
-      
-      const ocrPromise = supabase.functions.invoke('openai-ocr', {
-        body: { imageBase64 }
-      });
-      
-      const { data, error } = await Promise.race([ocrPromise, timeoutPromise]) as any;
-      
-      if (!error && data?.text) {
-        console.log('✅ OpenAI OCR extraction completed:', data.text.length, 'characters');
-        return {
-          text: data.text,
-          metrics: data.metrics || []
-        };
-      }
-      
-      console.warn('⚠️ OpenAI OCR failed, falling back to Tesseract:', error?.message);
-    } catch (openaiError) {
-      console.warn('⚠️ OpenAI OCR failed, falling back to Tesseract:', openaiError);
+    // Use OpenAI structured metrics extraction
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('OpenAI timeout')), 30000)
+    );
+    
+    const ocrPromise = supabase.functions.invoke('openai-ocr', {
+      body: { imageBase64 }
+    });
+    
+    const { data, error } = await Promise.race([ocrPromise, timeoutPromise]) as any;
+    
+    if (error || !data?.metrics) {
+      throw new Error(error?.message || 'Failed to extract structured metrics');
     }
     
-    // Fallback to simple text extraction with timeout
-    console.log('🔄 Using simplified OCR fallback...');
-    
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OCR timeout')), 45000)
-      );
-      
-      const ocrPromise = (async () => {
-        const { extractTextWithMultiOCR, getBestOCRResult } = await import('./multiOcrService');
-        
-        const results = await extractTextWithMultiOCR(imageFile, {
-          enableTesseract: true,
-          enableCanvasOCR: false,
-          enablePaddleOCR: false,
-          enableAdvancedPreprocessing: false,
-          preferredEngine: 'tesseract'
-        });
-        
-        return getBestOCRResult(results);
-      })();
-      
-      const text = await Promise.race([ocrPromise, timeoutPromise]) as string;
-      
-      if (!text || text.trim().length === 0) {
-        throw new Error('No text could be extracted from the image');
-      }
-      
-      console.log('✅ Fallback OCR extraction completed:', text.length, 'characters');
-      return { text };
-      
-    } catch (fallbackError) {
-      console.error('❌ Fallback OCR also failed:', fallbackError);
-      // Return mock data to prevent app from breaking
-      const mockText = 'BALL SPEED 145.2 mph CLUB SPEED 98.5 mph SMASH FACTOR 1.47 LAUNCH ANGLE 12.8 deg SPIN RATE 2456 rpm CARRY 267 yds TOTAL 285 yds';
-      
-      return { text: mockText };
-    }
+    console.log('✅ OpenAI OCR extraction completed:', data.metrics.length, 'metrics');
+    return { metrics: data.metrics };
     
   } catch (error) {
     console.error('❌ OCR extraction failed:', error);
@@ -96,19 +50,11 @@ export const extractTrackmanData = async (imageFile: File) => {
   try {
     console.log('🔍 Starting TrackMan data extraction...');
     
-    // Extract text using our OCR service (with fallback)
+    // Extract structured metrics using our OCR service
     const extractedResult = await extractTextFromImage(imageFile);
     
-    // Parse the extracted text to get structured TrackMan data
-    const extractedData = parseTrackmanText(extractedResult.text);
-    
-    // Add structured metrics if available
-    if (extractedResult.metrics && extractedResult.metrics.length > 0) {
-      extractedData.structuredMetrics = extractedResult.metrics;
-    }
-    
-    console.log(`✅ Successfully extracted ${Object.keys(extractedData).length} data points`);
-    return extractedData;
+    console.log(`✅ Successfully extracted ${extractedResult.metrics.length} structured metrics`);
+    return { structuredMetrics: extractedResult.metrics };
     
   } catch (error) {
     console.error('❌ TrackMan data extraction failed:', error);
@@ -136,217 +82,4 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
   }
 };
 
-const parseTrackmanText = (text: string, swingNumber: number = 1) => {
-  console.log('🔍 Parsing TrackMan text for swing', swingNumber);
-  console.log('📝 Text length:', text.length, 'characters');
-  const data: any = {};
-  
-  // Clean and normalize text for better pattern matching
-  const cleanText = text.replace(/[^\w\s\-\.\'\"\|\:°]/g, ' ').replace(/\s+/g, ' ');
-  console.log('🧹 Cleaned text sample:', cleanText.substring(0, 200));
-  
-  // Enhanced patterns with OCR error handling and flexible matching
-  const patterns = {
-    // Club data patterns - handle OCR misreads (O vs 0, l vs 1, etc.)
-    clubSpeed: [
-      /(?:CLUB[_\s]*SPEED|CLUBSPEED)[:\s|]*([0O1l]?\d+\.?\d*)[_\s]*(?:mph|MPH|mp[hl])/i,
-      /CLUB[_\s]+(\d+\.?\d*)[_\s]*(?:mph|MPH)/i,
-      /(?:CL[UO]B|CLUB)[_\s]*(\d+\.?\d*)[_\s]*MPH/i
-    ],
-    attackAngle: [
-      /(?:ATTACK[_\s]*(?:ANG|ANGLE)|ATT[_\s]*ANG)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°|d[e3]g)/i,
-      /ATTACK[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    clubPath: [
-      /(?:CLUB[_\s]*PATH|CLUBPATH)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /PATH[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    dynLoft: [
-      /(?:DYN[_\.\s]*LOFT|DYNAMIC[_\s]*LOFT|DYN[_\s]*L[O0]FT)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /DYN[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    faceAngle: [
-      /(?:FACE[_\s]*(?:ANG\.?|ANGLE)|F[A4]CE[_\s]*ANG\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /FACE[_\s]+(-?\d+\.?\d*)[_\s]*(?:deg|DEG)/i,
-      /(?:ANG\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
-    ],
-    spinLoft: [
-      /(?:SPIN[_\s]*LOFT|SPINLOFT)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /SPIN[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    faceToPath: [
-      /(?:FACE[_\s]*TO[_\s]*PATH|FACETOPATH|F[A4]CE[_\s]*T[O0][_\s]*PATH)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /F[A4]CE[_\s]*T[O0][_\s]*PATH[_\s]+(-?\d+\.?\d*)/i
-    ],
-    swingPlane: [
-      /(?:SWING[_\s]*(?:PL|PLANE)|SW[I1]NG[_\s]*PL)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /SWING[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    swingDirection: [
-      /(?:SWING[_\s]*(?:DIR|DIRECTION)|SW[I1]NG[_\s]*D[I1]R)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /SWING[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i
-    ],
-    lowPointDistance: [
-      /(?:LOW[_\s]*PT[_\s]*(?:DIST|DISTANCE)|L[O0]W[_\s]*P[O0]INT)[:\s|]*(\d+\.?\d*A?)[_\s]*(?:in|IN|i[nl])/i,
-      /L[O0]W[_\s]*PT[_\s]+(\d+\.?\d*A?)/i
-    ],
-    impactOffset: [
-      /(?:IMP[_\.\s]*OFFSET|IMPACT[_\s]*OFFSET|[I1]MP[_\s]*[O0]FFSET)[:\s|]*(-?\d+)[_\s]*(?:mm|MM)/i,
-      /(?:IMP|IMPACT)[_\s]+(-?\d+)[_\s]*mm/i
-    ],
-    impactHeight: [
-      /(?:IMP[_\.\s]*HEIGHT|IMPACT[_\s]*HEIGHT|[I1]MP[_\s]*HE[I1]GHT)[:\s|]*(-?\d+)[_\s]*(?:mm|MM)/i,
-      /(?:IMP|IMPACT)[_\s]*HEIGHT[_\s]+(-?\d+)/i
-    ],
-    dynLie: [
-      /(?:DYN[_\.\s]*LIE|DYNAMIC[_\s]*LIE|DYN[_\s]*L[I1]E)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /DYN[_\s]*LIE[_\s]+(\d+\.?\d*)/i
-    ],
-    
-    // Ball data patterns with OCR error handling
-    ballSpeed: [
-      /(?:BALL[_\s]*SPEED|B[A4]LL[_\s]*SPEED|BALLSPEED)[:\s|]*([01l]?\d+\.?\d*)[_\s]*(?:mph|MPH|mp[hl])/i,
-      /BALL[_\s]+(\d+\.?\d*)[_\s]*(?:mph|MPH)/i
-    ],
-    smashFactor: [
-      /(?:SMASH[_\s]*(?:FAC\.?|FACTOR)|SM[A4]SH[_\s]*F[A4]C\.?)[:\s|]*([01l]\.?\d*)/i,
-      /SMASH[_\s]+([01l]\.?\d*)/i,
-      /(?:FAC\.?)[:\s|]*([01l]\.?\d*)/i
-    ],
-    launchAngle: [
-      /(?:LAUNCH[_\s]*(?:ANG\.?|ANGLE)|L[A4]UNCH[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /LAUNCH[_\s]+(\d+\.?\d*)[_\s]*(?:deg|DEG)/i
-    ],
-    launchDirection: [
-      /(?:LAUNCH[_\s]*(?:DIR\.?|DIRECTION)|L[A4]UNCH[_\s]*D[I1]R\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /LAUNCH[_\s]*DIR[_\s]+(-?\d+\.?\d*)/i,
-      /(?:DIR\.?)[:\s|]*(-?\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
-    ],
-    spinRate: [
-      /(?:SPIN[_\s]*RATE|SP[I1]N[_\s]*R[A4]TE|SPINRATE)[:\s|]*(\d+)[_\s]*(?:rpm|RPM|rp[ml])/i,
-      /SPIN[_\s]*RATE[_\s]+(\d+)/i,
-      /(\d{4,5})[_\s]*(?:rpm|RPM)/i
-    ],
-    spinAxis: [
-      /(?:SPIN[_\s]*AXIS|SP[I1]N[_\s]*[A4]X[I1]S|SPINAXIS)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /SPIN[_\s]*AXIS[_\s]+(\d+\.?\d*)/i
-    ],
-    
-    // Flight data patterns with OCR variations
-    curve: [
-      /(?:CURVE|CURV[E3])[:\s|]*(\d+)\s*(?:R|ft|FT|f[tl])/i,
-      /CURVE[_\s]+(\d+)/i,
-      /(\d+)\s*R(?:\s|$)/i
-    ],
-    height: [
-      /(?:HEIGHT|HE[I1]GHT)[:\s|]*(\d+)[_\s]*(?:ft|FT|f[tl])/i,
-      /HEIGHT[_\s]+(\d+)/i,
-      /\|[_\s]*(\d{2,3})[_\s]*\|/,  // Table format like |63|
-      /(?:^|\s)(\d{2,3})\s*(?:ft|FT)(?:\s|$)/i  // Standalone format like "63 ft"
-    ],
-    carry: [
-      /(?:CARRY|C[A4]RRY)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards|y[a4]rds)/i,
-      /CARRY[_\s]+(\d+\.?\d*)/i
-    ],
-    total: [
-      /(?:TOTAL|T[O0]T[A4]L|TOT\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
-      /TOTAL[_\s]+(\d+\.?\d*)/i,
-      /TOT\.?[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i
-    ],
-    side: [
-      /(?:SIDE)[:\s|]*(\d+'\s*\d+"?R?)/i,
-      /SIDE[_\s]+(\d+['\s]*\d+"?R?)/i
-    ],
-    sideTotal: [
-      /(?:SIDE[_\s]*(?:TOT|TOTAL)|S[I1]DE[_\s]*T[O0]T)[:\s|]*(\d+'\s*\d+"?R?)/i,
-      /SIDE[_\s]*TOTAL[_\s]+(\d+['\s]*\d+"?R?)/i
-    ],
-    landingAngle: [
-      /(?:LAND[_\.\s]*(?:ANG\.?|ANGLE)|LANDING[_\s]*(?:ANG\.?|ANGLE)|L[A4]ND[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i,
-      /LANDING[_\s]*ANGLE[_\s]+(\d+\.?\d*)/i,
-      /(?:LAND\.?[_\s]*ANG\.?)[:\s|]*(\d+\.?\d*)[_\s]*(?:deg|DEG|°)/i
-    ],
-    hangTime: [
-      /(?:HANG[_\s]*TIME|H[A4]NG[_\s]*T[I1]ME|HANGTIME|HAND[_\s]*TIME)[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i,
-      /HANG[_\s]*TIME[_\s]+(\d+\.?\d*)/i,
-      /HAND[_\s]*TIME[:\s|]*(\d+\.?\d*)[_\s]*(?:s|sec|S[E3]C)/i
-    ],
-    lastData: [
-      /(?:LAST[_\s]*DATA|L[A4]ST[_\s]*D[A4]T[A4]|LASTDATA)[:\s|]*(\d+\.?\d*)[_\s]*(?:yds|YDS|yards)/i,
-      /LAST[_\s]*DATA[_\s]+(\d+\.?\d*)/i
-    ]
-  };
-  
-  // Extract data using multiple approaches for maximum coverage
-  let matchCount = 0;
-  
-  // Try multiple pattern variations for each data point
-  for (const [key, patternArray] of Object.entries(patterns)) {
-    let matched = false;
-    
-    for (const pattern of patternArray) {
-      const match = text.match(pattern) || cleanText.match(pattern);
-      if (match && match[1]) {
-        let value = match[1];
-        
-        // Clean up OCR errors in numbers
-        value = value.replace(/[Oo]/g, '0').replace(/[Il]/g, '1').replace(/[S]/g, '5');
-        
-        // Handle special cases
-        if (key === 'spinRate' && value.length === 3) {
-          // If we got something like "468" it might be "4686" with missing digit
-          const possibleFullNumber = text.match(new RegExp(value + '\\d'));
-          if (possibleFullNumber) value = possibleFullNumber[0];
-        }
-        
-        // Handle decimal point corrections for specific measurements
-        if (['clubSpeed', 'ballSpeed'].includes(key) && !value.includes('.') && value.length >= 3) {
-          // Convert "845" to "84.5", "1181" to "118.1"
-          value = value.slice(0, -1) + '.' + value.slice(-1);
-        }
-        
-        data[key] = value;
-        matchCount++;
-        matched = true;
-        console.log(`✅ Pattern match for ${key}: ${value}`);
-        break;
-      }
-    }
-    
-    if (!matched) {
-      console.log(`❌ No match found for ${key}`);
-    }
-  }
-  
-  // Add units to the extracted values for clarity
-  if (data.clubSpeed) data.clubSpeed += " mph";
-  if (data.ballSpeed) data.ballSpeed += " mph";
-  if (data.attackAngle) data.attackAngle += " deg";
-  if (data.clubPath) data.clubPath += " deg";
-  if (data.dynLoft) data.dynLoft += " deg";
-  if (data.faceAngle) data.faceAngle += " deg";
-  if (data.spinLoft) data.spinLoft += " deg";
-  if (data.faceToPath) data.faceToPath += " deg";
-  if (data.swingPlane) data.swingPlane += " deg";
-  if (data.swingDirection) data.swingDirection += " deg";
-  if (data.dynLie) data.dynLie += " deg";
-  if (data.launchAngle) data.launchAngle += " deg";
-  if (data.launchDirection) data.launchDirection += " deg";
-  if (data.landingAngle) data.landingAngle += " deg";
-  if (data.spinRate) data.spinRate += " rpm";
-  if (data.spinAxis) data.spinAxis += " deg";
-  if (data.height) data.height += " ft";
-  if (data.curve) data.curve += " ft";
-  if (data.carry) data.carry += " yds";
-  if (data.total) data.total += " yds";
-  if (data.lastData) data.lastData += " yds";
-  if (data.lowPointDistance) data.lowPointDistance += " in";
-  if (data.impactOffset) data.impactOffset += " mm";
-  if (data.impactHeight) data.impactHeight += " mm";
-  if (data.hangTime) data.hangTime += " s";
-  
-  console.log(`📊 Total matches found: ${matchCount}`);
-  console.log('🔍 Final extracted data:', data);
-
-  return data;
-};
+// No longer needed - using structured metrics only
