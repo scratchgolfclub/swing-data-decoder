@@ -1,5 +1,4 @@
 import { supabase } from "@/integrations/supabase/client";
-import { getStructuredMetrics, getMetricValue } from "@/utils/structuredMetricsHelper";
 
 export interface GoalSuggestion {
   metric_name: string;
@@ -24,25 +23,35 @@ const METRIC_CONFIGS = {
 
 export const analyzeWorstMetric = async (userId: string): Promise<GoalSuggestion | null> => {
   try {
-    // Get user's latest swing data
+    // Get user's latest swing data from new swings table
     const { data: swingData, error } = await supabase
       .from('swings')
-      .select('structured_metrics, club_type')
+      .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(10);
 
     if (error || !swingData || swingData.length === 0) return null;
 
-    // Analyze metrics across recent swings
+    // Analyze metrics across recent swings using individual columns
     const metricPerformance: Record<string, { values: number[], average: number, deviation: number }> = {};
 
     swingData.forEach(swing => {
-      const metrics = getStructuredMetrics(swing.structured_metrics);
+      // Use the individual columns instead of structured_metrics
+      const metrics = [
+        { title: 'Total Distance', value: swing.total },
+        { title: 'Carry Distance', value: swing.carry },
+        { title: 'Side', value: swing.side ? parseFloat(swing.side.toString().match(/^([0-9]+\.?[0-9]*)/)?.[1] || '0') : null },
+        { title: 'Club Head Speed', value: swing.club_speed },
+        { title: 'Ball Speed', value: swing.ball_speed },
+        { title: 'Smash Factor', value: swing.smash_factor },
+        { title: 'Launch Angle', value: swing.launch_angle },
+        { title: 'Spin Rate', value: swing.spin_rate }
+      ].filter(m => m.value !== null && m.value !== undefined);
       
       metrics.forEach(metric => {
-        const value = getMetricValue(metrics, metric.title);
-        if (value !== null && METRIC_CONFIGS[metric.title as keyof typeof METRIC_CONFIGS]) {
+        const value = typeof metric.value === 'number' ? metric.value : parseFloat(metric.value as string);
+        if (!isNaN(value) && METRIC_CONFIGS[metric.title as keyof typeof METRIC_CONFIGS]) {
           if (!metricPerformance[metric.title]) {
             metricPerformance[metric.title] = { values: [], average: 0, deviation: 0 };
           }

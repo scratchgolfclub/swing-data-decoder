@@ -13,9 +13,10 @@ interface ResultsScreenProps {
     club: string;
   };
   onReset: () => void;
+  isDemoMode?: boolean;
 }
 
-export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
+export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScreenProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
@@ -51,11 +52,16 @@ export const ResultsScreen = ({ data, onReset }: ResultsScreenProps) => {
             <ArrowLeft className="h-4 w-4" />
             Analyze Another
           </Button>
-          {user && (
+          {user && !isDemoMode && (
             <Button onClick={() => navigate('/dashboard')} variant="outline" className="flex items-center gap-2">
               <Home className="h-4 w-4" />
               Dashboard
             </Button>
+          )}
+          {isDemoMode && (
+            <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950 px-3 py-1 rounded-full">
+              Demo Mode - Sign up to save results
+            </div>
           )}
         </div>
 
