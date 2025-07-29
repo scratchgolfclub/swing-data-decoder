@@ -127,6 +127,11 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      console.log(`Making OpenAI API call (attempt ${attempt}/${maxRetries})`);
+      console.log(`Using model: gpt-4o`);
+      console.log(`System prompt length: ${systemPrompt.length} chars`);
+      console.log(`User prompt length: ${userPrompt.length} chars`);
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -144,12 +149,22 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
         }),
       });
 
+      console.log(`OpenAI API response status: ${response.status}`);
+      console.log(`OpenAI API response headers:`, Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status} - ${await response.text()}`);
+        const errorText = await response.text();
+        console.error(`OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
+      console.log(`OpenAI API success - response received`);
+      console.log(`OpenAI response usage:`, data.usage);
+      
       const content = data.choices[0].message.content;
+      console.log(`Generated content length: ${content.length} chars`);
+      
       
       // Parse JSON response
       try {
