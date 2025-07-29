@@ -424,6 +424,82 @@ serve(async (req) => {
           "Imagine swinging towards the shortstop (right-handed golfer), guiding your club on an out-to-in path.",
           "Think about your lead shoulder opening earlier, guiding your club path slightly left of target through impact."
         ]\`
+- **Description:** The up or down movement of the club head at the time of maximum compression.
+- **Good Ranges:** \`{ wedge: [-8,-4], iron: [-5,-2], wood: [-1,3], driver: [-1,5], all: [-5,3] }\`
+- **Drills if Too Low:** \`[
+        "Towel Behind Ball Drill: Place a towel or board behind the ball and practice hitting down to encourage a descending strike.",
+        "Forward Shaft Lean Drill: Practice maintaining a slight forward shaft lean through impact to naturally steepen your attack angle.",
+        "Impact Bag Drill: Focus on hitting an impact bag placed ahead of your ball to reinforce a proper downward strike."
+      ]\`
+- **Drills if Too High:** \`[
+        "Low Tee Drill: Tee the ball lower and practice sweeping the ball smoothly off the tee rather than hitting sharply upwards.",
+        "Level Swing Plane Drill: Swing above alignment sticks placed horizontally at waist height to create a shallower swing path.",
+        "Balance Board Drill: Swing while standing on a balance board to promote a stable and level swing path."
+      ]\`
+- **Feels if Too Low:** \`[
+        "Feel as though you're driving a stake into the ground through the ball, emphasizing a downward strike.",
+        "Imagine compressing the ball against the ground at impact, creating a divot after the ball.",
+        "Visualize brushing the grass aggressively just past the ball position."
+      ]\`
+- **Feels if Too High:** \`[
+        "Feel like you're gently sweeping or skimming the club along the grass through impact.",
+        "Imagine the clubhead gliding smoothly and evenly across the turf, avoiding digging.",
+        "Think of softly brushing the grass rather than striking down or lifting upwards excessively."
+      ]\`
+
+---
+
+### Dynamic Loft
+- **Unit:** deg
+- **Description:** The vertical angle of the club face at the center-point of contact between the club and ball at the time of maximum compression.
+- **Good Ranges:** \`{ wedge: [40, 50], iron: [18, 28], wood: [13, 18], driver: [12, 16], all: [15, 30] }\`
+- **Drills if Too Low:** \`[
+          "Impact Bag Drill: Position an impact bag slightly ahead of the ball and strike it, maintaining a slight upward feeling in your wrists to increase dynamic loft at impact.",
+          "Shaft Angle Drill: Practice swings with a neutral or slightly backward shaft angle at impact to naturally deliver more loft.",
+          "Half Swing Loft Drill: Use a controlled half-swing, focusing on allowing the clubface to naturally release and add loft through impact."
+        ]\`
+- **Drills if Too High:** \`[
+          "Forward Shaft Lean Drill: Exaggerate forward shaft lean at impact, reducing delivered loft and improving compression.",
+          "Hands Forward Impact Drill: Practice positioning your hands ahead of the ball at impact to de-loft the clubface slightly.",
+          "Punch Shot Drill: Hit low punch shots focusing on maintaining a lower, forward-angled clubface through impact."
+        ]\`
+- **Feels if Too Low:** \`[
+          "Feel as if you're gently flipping or releasing the clubface upward through impact.",
+          "Imagine the clubface softly sliding under the ball, promoting higher loft at contact.",
+          "Visualize your wrists naturally relaxing at impact to help the clubface gently lift the ball higher."
+        ]\`
+- **Feels if Too High:** \`[
+          "Feel your hands leading the clubhead through impact, creating a downward, forward-leaning shaft angle.",
+          "Imagine striking the ball with a firm, downward motion to compress it against the turf.",
+          "Visualize squeezing the ball lower with the clubface angled slightly downward at impact."
+        ]\`
+
+---
+
+### Club Path
+- **Unit:** deg
+- **Description:** The in-to-out or out-to-in movement of the club head's geometric center at the time of maximum compression.
+- **Good Ranges:** \`{ all: [-3, 3] }\`
+- **Drills if Too Low:** \`[
+          "Inside-Out Gate Drill: Set alignment sticks slightly outside the ball-target line, and practice swinging the clubhead through the gate, promoting a gentle inside-out swing path.",
+          "Right Foot Back Drill: Slightly pull your trail foot back at address to naturally encourage an inside-to-out club path.",
+          "Baseball Swing Drill: Perform horizontal baseball-like swings to feel the club moving naturally from inside to outside."
+        ]\`
+- **Drills if Too High:** \`[
+          "Alignment Stick Drill: Position alignment sticks on the inside path of the club to encourage a neutral or slightly out-to-in swing.",
+          "Left Foot Forward Drill: Move your lead foot slightly forward at address, promoting an out-to-in swing path.",
+          "Over-the-Top Prevention Drill: Practice slow-motion swings, focusing on dropping your hands straight down from the top to avoid excessive path movement."
+        ]\`
+- **Feels if Too Low:** \`[
+          "Feel the clubhead gently approaching the ball from your body's inside, moving outward through impact.",
+          "Imagine swinging towards the second baseman (right-handed golfer), encouraging an inside-out swing.",
+          "Think of keeping your trail elbow tucked close to your body through the downswing."
+        ]\`
+- **Feels if Too High:** \`[
+          "Feel as if your clubhead is moving slightly across the ball from outside to inside.",
+          "Imagine swinging towards the shortstop (right-handed golfer), guiding your club on an out-to-in path.",
+          "Think about your lead shoulder opening earlier, guiding your club path slightly left of target through impact."
+        ]\`
 
 ---
 
