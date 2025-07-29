@@ -4,13 +4,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Initialize Supabase client with service role key
+// Initialize Supabase client
 const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 interface SwingInsight {
@@ -21,161 +22,109 @@ interface SwingInsight {
   confidence_score: number;
 }
 
-function analyzeSwing(swing: any): SwingInsight[] {
-  const insights: SwingInsight[] = [];
+async function loadKnowledgeBase(): Promise<string> {
+  try {
+    const [knowledgeBase, swingFaults, videoLibrary] = await Promise.all([
+      Deno.readTextFile('./markdown/knowledgeBase.md'),
+      Deno.readTextFile('./markdown/swingFaults_clean.md'), 
+      Deno.readTextFile('./markdown/videoLibrary.md')
+    ]);
+    
+    return `
+# GOLF SWING ANALYSIS KNOWLEDGE BASE
 
-  // Face Angle Analysis
-  if (swing.face_angle !== null) {
-    if (swing.face_angle > 5) {
-      insights.push({
-        title: "Face Too Open",
-        description: `Your clubface is ${swing.face_angle}° open at impact, which typically causes shots to go right. Focus on strengthening your grip or rotating your hands more through impact.`,
-        video_url: "https://www.youtube.com/watch?v=2V6utLRt37o",
-        insight_type: "weakness",
-        confidence_score: 0.9
-      });
-    } else if (swing.face_angle < -5) {
-      insights.push({
-        title: "Face Too Closed",
-        description: `Your clubface is ${Math.abs(swing.face_angle)}° closed at impact, which typically causes hooks or draws. Try weakening your grip or slowing down your hand rotation.`,
-        video_url: "https://www.youtube.com/watch?v=pB75alqHM8s",
-        insight_type: "weakness",
-        confidence_score: 0.9
-      });
-    } else {
-      insights.push({
-        title: "Great Face Control",
-        description: `Excellent clubface control with only ${Math.abs(swing.face_angle)}° deviation. This square face position promotes consistent ball striking.`,
-        insight_type: "strength",
-        confidence_score: 0.8
-      });
-    }
+## SWING METRICS AND RANGES
+${knowledgeBase}
+
+## SWING FAULT PATTERNS
+${swingFaults}
+
+## INSTRUCTIONAL VIDEO LIBRARY
+${videoLibrary}
+`;
+  } catch (error) {
+    console.error('Error loading knowledge base:', error);
+    return 'Knowledge base not available';
   }
+}
 
-  // Club Path Analysis
-  if (swing.club_path !== null) {
-    if (swing.club_path > 4) {
-      insights.push({
-        title: "Too Much Inside-Out",
-        description: `Your swing path is ${swing.club_path}° from the inside, which can cause pushes or hooks. Try working on your backswing plane to approach the ball more neutrally.`,
-        video_url: "https://www.youtube.com/watch?v=xXWY4OXiU_g",
-        insight_type: "weakness",
-        confidence_score: 0.85
-      });
-    } else if (swing.club_path < -4) {
-      insights.push({
-        title: "Coming Over the Top",
-        description: `Your swing path is ${Math.abs(swing.club_path)}° over the top (outside-in), which often causes slices or pulls. Focus on dropping the club into the slot on the downswing.`,
-        video_url: "https://www.youtube.com/watch?v=ST79LJKx6-k",
-        insight_type: "weakness",
-        confidence_score: 0.9
-      });
-    } else {
-      insights.push({
-        title: "Neutral Swing Path",
-        description: `Your swing path of ${swing.club_path}° is close to neutral, promoting consistent ball flight and direction control.`,
-        insight_type: "strength",
-        confidence_score: 0.8
-      });
-    }
+async function analyzeSwingWithAI(swingData: any, clubType: string): Promise<SwingInsight[]> {
+  const knowledgeBase = await loadKnowledgeBase();
+  
+  const systemPrompt = `You are a professional golf instructor analyzing TrackMan swing data. Use the provided knowledge base to give accurate, metric-based insights.
+
+${knowledgeBase}
+
+INSTRUCTIONS:
+1. Analyze the swing data against the good ranges in the knowledge base
+2. Identify specific swing faults using the trigger conditions
+3. Provide 3 targeted insights maximum
+4. Include video recommendations when metrics match trigger conditions
+5. Use the exact drills and feels from the knowledge base
+6. Reference specific metric values in your analysis
+
+Return ONLY a JSON array of insights in this exact format:
+[
+  {
+    "title": "Clear, specific title",
+    "description": "Detailed analysis with specific metric values and actionable advice",
+    "video_url": "https://scratchgc.wistia.com/medias/...", 
+    "insight_type": "strength|weakness|recommendation|drill",
+    "confidence_score": 0.8
   }
+]`;
 
-  // Attack Angle Analysis (for drivers)
-  if (swing.attack_angle !== null && swing.club_type === 'driver') {
-    if (swing.attack_angle < -2) {
-      insights.push({
-        title: "Hitting Down on Driver",
-        description: `Your attack angle is ${swing.attack_angle}°, which is too steep for a driver. Try teeing the ball higher and positioning it more forward in your stance.`,
-        video_url: "https://www.youtube.com/watch?v=WvSaosUPEXQ",
+  const userPrompt = `Analyze this ${clubType} swing data:
+${JSON.stringify(swingData, null, 2)}
+
+Focus on the most impactful metrics for this ${clubType}. Provide specific insights with metric values and actionable recommendations.`;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openAIApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        temperature: 0.3,
+        max_tokens: 2000
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0].message.content;
+    
+    // Parse JSON response
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', content);
+      return [{
+        title: "Analysis Complete",
+        description: "Your swing has been analyzed. Check your fundamentals and practice consistency.",
         insight_type: "recommendation",
-        confidence_score: 0.9
-      });
-    } else if (swing.attack_angle >= 1 && swing.attack_angle <= 5) {
-      insights.push({
-        title: "Optimal Launch Conditions",
-        description: `Great attack angle of ${swing.attack_angle}° for a driver. This upward strike maximizes distance and carry.`,
-        insight_type: "strength",
-        confidence_score: 0.85
-      });
+        confidence_score: 0.7
+      }];
     }
+  } catch (error) {
+    console.error('AI analysis error:', error);
+    return [{
+      title: "Analysis Error",
+      description: "Unable to complete AI analysis. Please try again.",
+      insight_type: "recommendation", 
+      confidence_score: 0.5
+    }];
   }
-
-  // Smash Factor Analysis
-  if (swing.smash_factor !== null && swing.club_type === 'driver') {
-    if (swing.smash_factor >= 1.45) {
-      insights.push({
-        title: "Excellent Ball Striking",
-        description: `Outstanding smash factor of ${swing.smash_factor}. You're making very solid contact and transferring energy efficiently to the ball.`,
-        insight_type: "strength",
-        confidence_score: 0.9
-      });
-    } else if (swing.smash_factor < 1.35) {
-      insights.push({
-        title: "Improve Contact Quality",
-        description: `Your smash factor of ${swing.smash_factor} suggests room for improvement in contact quality. Focus on finding the center of the clubface consistently.`,
-        video_url: "https://www.youtube.com/watch?v=kKGEXhgP3hA",
-        insight_type: "recommendation",
-        confidence_score: 0.8
-      });
-    }
-  }
-
-  // Spin Rate Analysis (for drivers)
-  if (swing.spin_rate !== null && swing.club_type === 'driver') {
-    if (swing.spin_rate > 3000) {
-      insights.push({
-        title: "High Spin Rate",
-        description: `Your spin rate of ${swing.spin_rate} RPM is high for a driver. This reduces distance. Try a lower lofted driver or adjust your attack angle.`,
-        insight_type: "recommendation",
-        confidence_score: 0.8
-      });
-    } else if (swing.spin_rate >= 2000 && swing.spin_rate <= 2700) {
-      insights.push({
-        title: "Optimal Spin Rate",
-        description: `Perfect spin rate of ${swing.spin_rate} RPM for maximum driver distance. This promotes an ideal ball flight trajectory.`,
-        insight_type: "strength",
-        confidence_score: 0.85
-      });
-    }
-  }
-
-  // Side/Accuracy Analysis
-  if (swing.side !== null && swing.side !== '') {
-    const sideMatch = swing.side.toString().match(/^([0-9]+\.?[0-9]*)/);
-    if (sideMatch) {
-      const sideValue = parseFloat(sideMatch[1]);
-      if (sideValue > 25) {
-        insights.push({
-          title: "Accuracy Focus Needed",
-          description: `Your shot landed ${swing.side} from the target line. Work on your fundamentals like grip, stance, and swing plane for better consistency.`,
-          video_url: "https://www.youtube.com/watch?v=ZRz6Xaq6rdw",
-          insight_type: "recommendation",
-          confidence_score: 0.7
-        });
-      } else if (sideValue <= 15) {
-        insights.push({
-          title: "Great Accuracy",
-          description: `Excellent accuracy with your shot landing only ${swing.side} from the target. Keep up the consistent fundamentals!`,
-          insight_type: "strength",
-          confidence_score: 0.8
-        });
-      }
-    }
-  }
-
-  // Distance Analysis (for drivers)
-  if (swing.total !== null && swing.club_type === 'driver') {
-    if (swing.total > 270) {
-      insights.push({
-        title: "Great Distance",
-        description: `Impressive total distance of ${swing.total} yards. You're generating excellent clubhead speed and making solid contact.`,
-        insight_type: "strength",
-        confidence_score: 0.8
-      });
-    }
-  }
-
-  return insights;
 }
 
 serve(async (req) => {
@@ -184,57 +133,68 @@ serve(async (req) => {
   }
 
   try {
-    const { swingId } = await req.json();
+    const body = await req.json();
+    const { swingId, swings, selectedClub } = body;
 
-    if (!swingId) {
-      throw new Error('Swing ID is required');
+    let swingData: any;
+    let clubType: string;
+
+    if (swingId) {
+      // Fetch from database
+      console.log('Fetching swing data for ID:', swingId);
+      const { data: swing, error: swingError } = await supabase
+        .from('swings')
+        .select('*')
+        .eq('id', swingId)
+        .single();
+
+      if (swingError || !swing) {
+        throw new Error(`Could not find swing: ${swingError?.message}`);
+      }
+      
+      swingData = swing;
+      clubType = swing.club_type;
+    } else if (swings && selectedClub) {
+      // Use provided data
+      console.log('Using provided swing data');
+      swingData = swings[0]; // Analyze first swing
+      clubType = selectedClub;
+    } else {
+      throw new Error('Either swingId or swings data must be provided');
     }
 
-    console.log('Evaluating swing:', swingId);
+    console.log('Analyzing swing data:', { clubType, swingData });
 
-    // Fetch swing data
-    const { data: swing, error: swingError } = await supabase
-      .from('swings')
-      .select('*')
-      .eq('id', swingId)
-      .single();
-
-    if (swingError || !swing) {
-      throw new Error(`Could not find swing: ${swingError?.message}`);
-    }
-
-    console.log('Analyzing swing data:', swing);
-
-    // Generate insights
-    const insights = analyzeSwing(swing);
-
+    // Generate AI-powered insights
+    const insights = await analyzeSwingWithAI(swingData, clubType);
     console.log('Generated insights:', insights);
 
-    // Insert insights into database
-    const insightPromises = insights.map(insight => 
-      supabase
-        .from('insights')
-        .insert({
-          swing_id: swingId,
-          ...insight
-        })
-    );
+    // Insert insights into database if swingId provided
+    if (swingId) {
+      const insightPromises = insights.map(insight => 
+        supabase
+          .from('insights')
+          .insert({
+            swing_id: swingId,
+            ...insight
+          })
+      );
 
-    const results = await Promise.all(insightPromises);
-    
-    // Check for any errors
-    const errors = results.filter(result => result.error);
-    if (errors.length > 0) {
-      console.error('Insight insertion errors:', errors);
+      const results = await Promise.all(insightPromises);
+      const errors = results.filter(result => result.error);
+      
+      if (errors.length > 0) {
+        console.error('Insight insertion errors:', errors);
+      }
+
+      const successCount = results.filter(result => !result.error).length;
+      console.log(`Successfully inserted ${successCount} insights`);
     }
-
-    const successCount = results.filter(result => !result.error).length;
-    console.log(`Successfully inserted ${successCount} insights`);
 
     return new Response(JSON.stringify({
       success: true,
-      insightsGenerated: successCount,
-      insights: insights
+      insights: insights,
+      insightsGenerated: insights.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
