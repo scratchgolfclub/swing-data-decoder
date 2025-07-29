@@ -122,15 +122,11 @@ ${JSON.stringify(swingData, null, 2)}
 
 Focus on the most impactful metrics for this ${clubType}. Provide specific insights with metric values and actionable recommendations.`;
 
-  // Retry configuration for rate limiting
-  const maxRetries = 5;
-  const baseDelay = 2000; // 2 seconds base delay
+  // Simple retry configuration - let OpenAI handle rate limiting
+  const maxRetries = 3;
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      // Add throttle delay to reduce rate limiting
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -138,7 +134,7 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o', // Use gpt-4o for better analysis quality
+          model: 'gpt-4o',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
@@ -147,19 +143,6 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           max_tokens: 1500
         }),
       });
-
-      if (response.status === 429) {
-        // Rate limited - wait and retry with exponential backoff
-        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000; // Add jitter
-        console.log(`Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
-        
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, delay));
-          continue;
-        } else {
-          throw new Error('Rate limit exceeded after all retries');
-        }
-      }
 
       if (!response.ok) {
         throw new Error(`OpenAI API error: ${response.status} - ${await response.text()}`);
@@ -181,6 +164,8 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
         }];
       }
     } catch (error) {
+      console.log(`Attempt ${attempt} failed:`, error.message);
+      
       if (attempt === maxRetries) {
         console.error('AI analysis error after all retries:', error);
         return [{
@@ -190,9 +175,6 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           confidence_score: 0.5
         }];
       }
-      
-      // Log the error and continue to next attempt
-      console.log(`Attempt ${attempt} failed:`, error.message);
     }
   }
   
