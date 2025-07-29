@@ -711,6 +711,9 @@ const Dashboard = () => {
           </Card>
         )}
 
+        {/* Knowledge Base Preprocessing */}
+        <KnowledgePreprocessor />
+
         {/* Goal Timeline */}
         <GoalTimeline userId={user.id} currentHandicap={currentHandicap} />
 
