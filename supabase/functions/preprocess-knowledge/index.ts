@@ -325,7 +325,7 @@ serve(async (req) => {
         parser: parseKnowledgeBase
       },
       {
-        name: 'swingFaults.md', 
+        name: 'swingFaults_clean.md', 
         namespace: 'faults',
         parser: parseSwingFaults
       },
@@ -345,7 +345,7 @@ serve(async (req) => {
       
       try {
         // Read the file content
-        const filePath = `./markdown/${kb.name}`;
+        const filePath = `../markdown/${kb.name}`;
         const content = await Deno.readTextFile(filePath);
         
         // Parse the content
