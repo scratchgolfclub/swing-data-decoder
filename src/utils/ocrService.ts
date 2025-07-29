@@ -38,8 +38,14 @@ export const extractTextFromImage = async (imageFile: File, userId?: string): Pr
     
     const { data, error } = await Promise.race([ocrPromise, timeoutPromise]) as any;
     
-    if (error || !data?.metrics) {
-      throw new Error(error?.message || 'Failed to extract structured metrics');
+    if (error) {
+      console.error('❌ Supabase function invoke error:', error);
+      throw new Error(`Edge Function error: ${error.message || JSON.stringify(error)}`);
+    }
+    
+    if (!data?.metrics) {
+      console.error('❌ No metrics in response:', data);
+      throw new Error(`No metrics extracted. Response: ${JSON.stringify(data)}`);
     }
     
     console.log('✅ OpenAI OCR extraction completed:', data.metrics.length, 'metrics');
