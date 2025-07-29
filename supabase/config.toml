@@ -52,5 +52,9 @@ verify_jwt = false
 name = "test-openai-vision"
 verify_jwt = false
 
+[[edge-runtime.functions]]
+name = "process-knowledge-base"
+verify_jwt = false
+
 [analytics]
 enabled = false

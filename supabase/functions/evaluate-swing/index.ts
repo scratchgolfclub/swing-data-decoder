@@ -22,77 +22,122 @@ interface SwingInsight {
   confidence_score: number;
 }
 
-async function loadKnowledgeBase(): Promise<string> {
+// Generate embedding for query
+async function generateQueryEmbedding(text: string): Promise<number[]> {
+  if (!openAIApiKey) {
+    throw new Error('OpenAI API key not found');
+  }
+
+  console.log('Generating query embedding...');
+  const response = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'text-embedding-3-small',
+      input: text,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.data[0].embedding;
+}
+
+// Search relevant knowledge using vector similarity
+async function searchRelevantKnowledge(swingData: any, clubType: string): Promise<string> {
   try {
-    // Try to load knowledge files, with fallbacks for missing files
-    let knowledgeBase = '';
-    let swingFaults = '';
-    let videoLibrary = '';
+    // Create search query from swing data and club type
+    const metrics = Object.entries(swingData)
+      .filter(([key, value]) => value !== null && value !== undefined && key !== 'id' && key !== 'user_id' && key !== 'created_at')
+      .map(([key, value]) => `${key}: ${value}`)
+      .slice(0, 10) // Limit to most important metrics
+      .join(', ');
     
-    try {
-      knowledgeBase = await Deno.readTextFile('./markdown/knowledgeBase.md');
-    } catch (e) {
-      console.log('knowledgeBase.md not found, using basic metrics');
-      knowledgeBase = `
-CLUB SPEED: Good range 80-120 mph
-BALL SPEED: Good range 100-180 mph
-SMASH FACTOR: Good range 1.3-1.5
-LAUNCH ANGLE: Good range 8-15 degrees
-SPIN RATE: Good range 1500-3500 rpm
-CARRY: Good range varies by club
-`;
+    const searchQuery = `Golf swing analysis for ${clubType} club with swing metrics: ${metrics}. What are the optimal ranges, common faults, and improvement recommendations?`;
+    
+    console.log('Search query:', searchQuery.substring(0, 200) + '...');
+    
+    const queryEmbedding = await generateQueryEmbedding(searchQuery);
+    
+    console.log('Searching for relevant knowledge chunks...');
+    const { data: relevantChunks, error } = await supabase.rpc('match_embedding', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.7,
+      match_count: 12
+    });
+
+    if (error) {
+      console.error('Error searching embeddings:', error);
+      throw error;
+    }
+
+    if (!relevantChunks || relevantChunks.length === 0) {
+      console.log('No relevant chunks found, using fallback knowledge');
+      return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
+      
+Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`;
+    }
+
+    console.log(`Found ${relevantChunks.length} relevant knowledge chunks`);
+    console.log('Relevance scores:', relevantChunks.map(c => c.similarity).slice(0, 5));
+
+    // Group chunks by namespace for organized knowledge
+    const groupedChunks = relevantChunks.reduce((acc: any, chunk: any) => {
+      if (!acc[chunk.namespace]) acc[chunk.namespace] = [];
+      acc[chunk.namespace].push(chunk);
+      return acc;
+    }, {});
+
+    // Build focused knowledge base from most relevant chunks
+    let knowledgeBase = `# FOCUSED GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}\n\n`;
+    
+    if (groupedChunks.knowledgebase) {
+      knowledgeBase += `## SWING METRICS AND OPTIMAL RANGES\n`;
+      knowledgeBase += groupedChunks.knowledgebase.map((chunk: any) => chunk.content).join('\n\n');
+      knowledgeBase += '\n\n';
     }
     
-    try {
-      swingFaults = await Deno.readTextFile('./markdown/swingFaults_clean.md');
-    } catch (e) {
-      console.log('swingFaults_clean.md not found, using basic faults');
-      swingFaults = `
-SLICE: Face angle open relative to path
-HOOK: Face angle closed relative to path
-FAT SHOT: Low point behind ball
-THIN SHOT: Low point too far forward
-`;
+    if (groupedChunks.swingfaults) {
+      knowledgeBase += `## SWING FAULT PATTERNS AND TRIGGERS\n`;
+      knowledgeBase += groupedChunks.swingfaults.map((chunk: any) => chunk.content).join('\n\n');
+      knowledgeBase += '\n\n';
     }
     
-    try {
-      videoLibrary = await Deno.readTextFile('./markdown/videoLibrary.md');
-    } catch (e) {
-      console.log('videoLibrary.md not found, using basic library');
-      videoLibrary = `
-Basic golf instruction videos available for common swing faults.
-`;
+    if (groupedChunks.videos) {
+      knowledgeBase += `## INSTRUCTIONAL VIDEO RECOMMENDATIONS\n`;
+      knowledgeBase += groupedChunks.videos.map((chunk: any) => chunk.content).join('\n\n');
     }
+
+    console.log(`Built focused knowledge base: ${knowledgeBase.length} characters`);
+    console.log(`Token estimate: ~${Math.ceil(knowledgeBase.length / 4)} tokens`);
+
+    return knowledgeBase;
     
-    return `
-# GOLF SWING ANALYSIS KNOWLEDGE BASE
-
-## SWING METRICS AND RANGES
-${knowledgeBase}
-
-## SWING FAULT PATTERNS
-${swingFaults}
-
-## INSTRUCTIONAL VIDEO LIBRARY
-${videoLibrary}
-`;
   } catch (error) {
-    console.error('Error loading knowledge base:', error);
-    return `
-# BASIC GOLF SWING ANALYSIS
-
+    console.error('Error in vector search:', error);
+    return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
+    
 Analyze swing metrics against standard ranges:
-- Club Speed: 80-120 mph
-- Ball Speed: 100-180 mph  
-- Smash Factor: 1.3-1.5
-- Launch Angle: 8-15 degrees
-- Spin Rate: 1500-3500 rpm
-`;
+- Club Speed: 80-120 mph optimal
+- Ball Speed: 1.4-1.5x club speed
+- Smash Factor: 1.30-1.50 optimal  
+- Launch Angle: Varies by club type
+- Spin Rate: Optimal range depends on club
+- Face Angle: Square to target preferred
+- Club Path: Square to slightly in-to-out preferred
+
+Provide specific recommendations based on metric deviations from optimal ranges.`;
   }
 }
 
 async function analyzeSwingWithAI(swingData: any, clubType: string): Promise<SwingInsight[]> {
-  const knowledgeBase = await loadKnowledgeBase();
+  const knowledgeBase = await searchRelevantKnowledge(swingData, clubType);
   
   const systemPrompt = `You are a professional golf instructor analyzing TrackMan swing data. Use the provided knowledge base to give accurate, metric-based insights.
 
