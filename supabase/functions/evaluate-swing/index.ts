@@ -128,6 +128,9 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
+      // Add throttle delay to reduce rate limiting
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -135,7 +138,7 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini', // Use faster, cheaper model to reduce rate limiting
+          model: 'gpt-4o', // Use gpt-4o for better analysis quality
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
