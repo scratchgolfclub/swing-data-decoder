@@ -21,9 +21,12 @@ const SwingResults = () => {
       }
 
       try {
-        const { data: swingData, error } = await (supabase as any)
-          .from('swing_data')
-          .select('*')
+        const { data: swingData, error } = await supabase
+          .from('swings')
+          .select(`
+            *,
+            insights(*)
+          `)
           .eq('id', swingId)
           .eq('user_id', user.id)
           .single();
@@ -35,20 +38,9 @@ const SwingResults = () => {
           return;
         }
 
-        // Use the current database structure with structured_metrics
-        const structuredMetrics = swingData.is_baseline 
-          ? swingData.structured_baseline_metrics 
-          : swingData.structured_metrics;
-
-        // Create a complete swing data object for ResultsScreen
-        const swingDataObject = {
-          ...swingData,
-          structuredMetrics: structuredMetrics
-        };
-
         // Format the data to match the expected structure for ResultsScreen
         const formattedResults = {
-          swings: [swingDataObject],
+          swings: [swingData],
           club: swingData.club_type
         };
 

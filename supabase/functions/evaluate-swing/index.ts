@@ -122,52 +122,84 @@ ${JSON.stringify(swingData, null, 2)}
 
 Focus on the most impactful metrics for this ${clubType}. Provide specific insights with metric values and actionable recommendations.`;
 
-  try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000
-      }),
-    });
+  // Retry configuration for rate limiting
+  const maxRetries = 3;
+  const baseDelay = 1000; // 1 second
 
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
-    
-    // Parse JSON response
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return JSON.parse(content);
-    } catch (parseError) {
-      console.error('Failed to parse AI response:', content);
-      return [{
-        title: "Analysis Complete",
-        description: "Your swing has been analyzed. Check your fundamentals and practice consistency.",
-        insight_type: "recommendation",
-        confidence_score: 0.7
-      }];
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openAIApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o-mini', // Use faster, cheaper model to reduce rate limiting
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 1500
+        }),
+      });
+
+      if (response.status === 429) {
+        // Rate limited - wait and retry
+        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+        console.log(`Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
+        
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue;
+        } else {
+          throw new Error('Rate limit exceeded after all retries');
+        }
+      }
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status} - ${await response.text()}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0].message.content;
+      
+      // Parse JSON response
+      try {
+        return JSON.parse(content);
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', content);
+        return [{
+          title: "Analysis Complete",
+          description: "Your swing has been analyzed. Check your fundamentals and practice consistency.",
+          insight_type: "recommendation",
+          confidence_score: 0.7
+        }];
+      }
+    } catch (error) {
+      if (attempt === maxRetries) {
+        console.error('AI analysis error after all retries:', error);
+        return [{
+          title: "Analysis Error",
+          description: "Unable to complete AI analysis. Please try again.",
+          insight_type: "recommendation", 
+          confidence_score: 0.5
+        }];
+      }
+      
+      // Log the error and continue to next attempt
+      console.log(`Attempt ${attempt} failed:`, error.message);
     }
-  } catch (error) {
-    console.error('AI analysis error:', error);
-    return [{
-      title: "Analysis Error",
-      description: "Unable to complete AI analysis. Please try again.",
-      insight_type: "recommendation", 
-      confidence_score: 0.5
-    }];
   }
+  
+  // Fallback (shouldn't reach here)
+  return [{
+    title: "Analysis Error",
+    description: "Unable to complete AI analysis. Please try again.",
+    insight_type: "recommendation", 
+    confidence_score: 0.5
+  }];
 }
 
 serve(async (req) => {

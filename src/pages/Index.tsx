@@ -40,7 +40,7 @@ const Index = () => {
       const analysisResults = { swings: data, club: selectedClub };
       setResults(analysisResults);
       
-      // Save data for authenticated users
+      // Save data for authenticated users and redirect to results
       if (user) {
         try {
           const saveResult = await saveSwingAnalysis({
@@ -49,8 +49,11 @@ const Index = () => {
             originalFiles: selectedFiles
           }, user.id);
           
-          if (saveResult.success) {
+          if (saveResult.success && saveResult.swingIds?.[0]) {
             toast.success('Swing analysis saved to your dashboard!');
+            // Redirect to swing results page to show AI insights
+            window.location.href = `/swing-results/${saveResult.swingIds[0]}`;
+            return;
           } else {
             toast.error('Analysis completed but could not save to dashboard');
           }
