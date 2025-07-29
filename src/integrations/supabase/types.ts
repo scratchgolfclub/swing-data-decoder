@@ -52,6 +52,9 @@ export type Database = {
           id: string
           metadata: Json | null
           namespace: string
+          title: string | null
+          trigger_metrics: string[] | null
+          type: string | null
         }
         Insert: {
           content: string
@@ -60,6 +63,9 @@ export type Database = {
           id?: string
           metadata?: Json | null
           namespace: string
+          title?: string | null
+          trigger_metrics?: string[] | null
+          type?: string | null
         }
         Update: {
           content?: string
@@ -68,6 +74,9 @@ export type Database = {
           id?: string
           metadata?: Json | null
           namespace?: string
+          title?: string | null
+          trigger_metrics?: string[] | null
+          type?: string | null
         }
         Relationships: []
       }
