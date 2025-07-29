@@ -15,6 +15,7 @@ import Profile from "./pages/Profile";
 import SwingHistory from "./pages/SwingHistory";
 import NotFound from "./pages/NotFound";
 import Context from "./pages/Context";
+import Preprocess from "./pages/Preprocess";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,11 @@ const App = () => (
             <Route path="/swing-history" element={
               <ProtectedRoute>
                 <SwingHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/preprocess" element={
+              <ProtectedRoute>
+                <Preprocess />
               </ProtectedRoute>
             } />
             <Route path="/context" element={<Context />} />
