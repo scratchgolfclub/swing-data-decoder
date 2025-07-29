@@ -22,9 +22,9 @@ export const extractTextFromImage = async (imageFile: File, userId?: string): Pr
     // Convert image to base64
     const imageBase64 = await fileToBase64(imageFile);
     
-    // Use OpenAI structured metrics extraction
+    // Use OpenAI structured metrics extraction with 2 minute timeout
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('OpenAI timeout')), 30000)
+      setTimeout(() => reject(new Error('OpenAI timeout')), 120000)
     );
     
     const ocrPromise = supabase.functions.invoke('openai-ocr', {
