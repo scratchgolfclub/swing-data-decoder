@@ -52,7 +52,7 @@ const Index = () => {
           if (saveResult.success && saveResult.swingIds?.[0]) {
             toast.success('Swing analysis saved to your dashboard!');
             // Redirect to swing results page to show AI insights
-            window.location.href = `/swing-results/${saveResult.swingIds[0]}`;
+            window.location.href = `/swing/${saveResult.swingIds[0]}`;
             return;
           } else {
             toast.error('Analysis completed but could not save to dashboard');

@@ -123,8 +123,8 @@ ${JSON.stringify(swingData, null, 2)}
 Focus on the most impactful metrics for this ${clubType}. Provide specific insights with metric values and actionable recommendations.`;
 
   // Retry configuration for rate limiting
-  const maxRetries = 3;
-  const baseDelay = 1000; // 1 second
+  const maxRetries = 5;
+  const baseDelay = 2000; // 2 seconds base delay
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -146,8 +146,8 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
       });
 
       if (response.status === 429) {
-        // Rate limited - wait and retry
-        const delay = baseDelay * Math.pow(2, attempt - 1); // Exponential backoff
+        // Rate limited - wait and retry with exponential backoff
+        const delay = baseDelay * Math.pow(2, attempt - 1) + Math.random() * 1000; // Add jitter
         console.log(`Rate limited. Retrying in ${delay}ms (attempt ${attempt}/${maxRetries})`);
         
         if (attempt < maxRetries) {
