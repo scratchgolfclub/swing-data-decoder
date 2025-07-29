@@ -31,7 +31,7 @@ const Demo = () => {
     setIsLoading(true);
     try {
       const { extractMultipleTrackmanData } = await import('@/utils/ocrService');
-      const data = await extractMultipleTrackmanData(selectedFiles);
+      const data = await extractMultipleTrackmanData(selectedFiles, 'demo-user');
       setResults({ swings: data, club: selectedClub });
     } catch (error) {
       console.error("Analysis failed:", error);

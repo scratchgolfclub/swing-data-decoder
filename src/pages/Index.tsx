@@ -35,7 +35,7 @@ const Index = () => {
     setIsLoading(true);
     try {
       const { extractMultipleTrackmanData } = await import('@/utils/ocrService');
-      const data = await extractMultipleTrackmanData(selectedFiles);
+      const data = await extractMultipleTrackmanData(selectedFiles, user?.id);
       
       const analysisResults = { swings: data, club: selectedClub };
       setResults(analysisResults);

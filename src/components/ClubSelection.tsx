@@ -22,6 +22,7 @@ export const ClubSelection = ({ selectedClub, onClubSelect }: ClubSelectionProps
       {!selectedClub ? (
         <div className="relative">
           <select 
+            value={selectedClub}
             onChange={(e) => onClubSelect(e.target.value)}
             className="w-full h-16 rounded-2xl border-2 border-border bg-card hover:bg-accent/50 transition-all duration-300 appearance-none px-6 text-lg font-medium cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-center"
             style={{ 
@@ -31,7 +32,7 @@ export const ClubSelection = ({ selectedClub, onClubSelect }: ClubSelectionProps
               backgroundSize: '20px 20px'
             }}
           >
-            <option value="" disabled selected hidden>Choose your club</option>
+            <option value="" disabled hidden>Choose your club</option>
             {allClubs.map((club) => (
               <option key={club} value={club} className="text-foreground bg-background">
                 {club}

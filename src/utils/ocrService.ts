@@ -15,7 +15,7 @@ const fileToBase64 = (file: File): Promise<string> => {
   });
 };
 
-export const extractTextFromImage = async (imageFile: File): Promise<{ metrics: any[] }> => {
+export const extractTextFromImage = async (imageFile: File, userId?: string): Promise<{ metrics: any[] }> => {
   try {
     console.log('🚀 Starting OCR extraction with OpenAI Vision...');
     
@@ -28,7 +28,12 @@ export const extractTextFromImage = async (imageFile: File): Promise<{ metrics: 
     );
     
     const ocrPromise = supabase.functions.invoke('openai-ocr', {
-      body: { imageBase64 }
+      body: { 
+        imageBase64,
+        userId: userId || 'demo-user',
+        clubType: 'driver',
+        sessionName: 'Practice Session'
+      }
     });
     
     const { data, error } = await Promise.race([ocrPromise, timeoutPromise]) as any;
@@ -46,12 +51,12 @@ export const extractTextFromImage = async (imageFile: File): Promise<{ metrics: 
   }
 };
 
-export const extractTrackmanData = async (imageFile: File) => {
+export const extractTrackmanData = async (imageFile: File, userId?: string) => {
   try {
     console.log('🔍 Starting TrackMan data extraction...');
     
     // Extract structured metrics using our OCR service
-    const extractedResult = await extractTextFromImage(imageFile);
+    const extractedResult = await extractTextFromImage(imageFile, userId);
     
     console.log(`✅ Successfully extracted ${extractedResult.metrics.length} structured metrics`);
     return { structuredMetrics: extractedResult.metrics };
@@ -62,7 +67,7 @@ export const extractTrackmanData = async (imageFile: File) => {
   }
 };
 
-export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
+export const extractMultipleTrackmanData = async (imageFiles: File[], userId?: string) => {
   try {
     console.log('🔍 Starting OCR processing for', imageFiles.length, 'files');
     
@@ -70,7 +75,7 @@ export const extractMultipleTrackmanData = async (imageFiles: File[]) => {
       imageFiles.map(async (file, index) => {
         console.log(`📁 Processing file ${index + 1}: ${file.name}`);
         
-        const data = await extractTrackmanData(file);
+        const data = await extractTrackmanData(file, userId);
         return { ...data, swingNumber: index + 1 };
       })
     );
