@@ -35,7 +35,6 @@ import { getStructuredMetrics, getMetricValue, StructuredMetric } from '@/utils/
 import { MetricCard } from '@/components/MetricCard';
 import { InsightCard } from '@/components/InsightCard';
 import { PracticeSessionCard } from '@/components/PracticeSessionCard';
-import { KnowledgeBaseProcessor } from '@/components/KnowledgeBaseProcessor';
 
 interface SwingData {
   id: string;
@@ -499,12 +498,6 @@ const Dashboard = () => {
           </Button>
         </div>
 
-        {/* Knowledge Base Setup - Show if no swings yet */}
-        {swingData.length === 0 && (
-          <div className="mb-16">
-            <KnowledgeBaseProcessor />
-          </div>
-        )}
 
         {/* Club Category Selection */}
         <div className="mb-16">
