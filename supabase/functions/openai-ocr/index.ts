@@ -65,15 +65,17 @@ const metricMapping: Record<string, string> = {
 };
 
 function parseMetricValue(value: string, columnName: string): any {
-  if (!value || value.trim() === '') return null;
+  // Ensure value is a string before calling trim
+  const stringValue = String(value || '');
+  if (!stringValue || stringValue.trim() === '') return null;
   
   // Handle text fields that should remain as strings
   if (columnName === 'side' || columnName === 'side_total') {
-    return value.trim();
+    return stringValue.trim();
   }
   
   // Extract numeric value from strings like "95.2 mph", "5.2 R", etc.
-  const numericMatch = value.match(/^([+-]?\d+\.?\d*)/);
+  const numericMatch = stringValue.match(/^([+-]?\d+\.?\d*)/);
   if (numericMatch) {
     const numericValue = parseFloat(numericMatch[1]);
     

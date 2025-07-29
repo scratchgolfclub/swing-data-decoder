@@ -24,11 +24,45 @@ interface SwingInsight {
 
 async function loadKnowledgeBase(): Promise<string> {
   try {
-    const [knowledgeBase, swingFaults, videoLibrary] = await Promise.all([
-      Deno.readTextFile('./markdown/knowledgeBase.md'),
-      Deno.readTextFile('./markdown/swingFaults_clean.md'), 
-      Deno.readTextFile('./markdown/videoLibrary.md')
-    ]);
+    // Try to load knowledge files, with fallbacks for missing files
+    let knowledgeBase = '';
+    let swingFaults = '';
+    let videoLibrary = '';
+    
+    try {
+      knowledgeBase = await Deno.readTextFile('./markdown/knowledgeBase.md');
+    } catch (e) {
+      console.log('knowledgeBase.md not found, using basic metrics');
+      knowledgeBase = `
+CLUB SPEED: Good range 80-120 mph
+BALL SPEED: Good range 100-180 mph
+SMASH FACTOR: Good range 1.3-1.5
+LAUNCH ANGLE: Good range 8-15 degrees
+SPIN RATE: Good range 1500-3500 rpm
+CARRY: Good range varies by club
+`;
+    }
+    
+    try {
+      swingFaults = await Deno.readTextFile('./markdown/swingFaults_clean.md');
+    } catch (e) {
+      console.log('swingFaults_clean.md not found, using basic faults');
+      swingFaults = `
+SLICE: Face angle open relative to path
+HOOK: Face angle closed relative to path
+FAT SHOT: Low point behind ball
+THIN SHOT: Low point too far forward
+`;
+    }
+    
+    try {
+      videoLibrary = await Deno.readTextFile('./markdown/videoLibrary.md');
+    } catch (e) {
+      console.log('videoLibrary.md not found, using basic library');
+      videoLibrary = `
+Basic golf instruction videos available for common swing faults.
+`;
+    }
     
     return `
 # GOLF SWING ANALYSIS KNOWLEDGE BASE
@@ -44,7 +78,16 @@ ${videoLibrary}
 `;
   } catch (error) {
     console.error('Error loading knowledge base:', error);
-    return 'Knowledge base not available';
+    return `
+# BASIC GOLF SWING ANALYSIS
+
+Analyze swing metrics against standard ranges:
+- Club Speed: 80-120 mph
+- Ball Speed: 100-180 mph  
+- Smash Factor: 1.3-1.5
+- Launch Angle: 8-15 degrees
+- Spin Rate: 1500-3500 rpm
+`;
   }
 }
 
