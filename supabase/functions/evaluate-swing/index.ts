@@ -298,44 +298,80 @@ async function searchRelevantKnowledge(swingData: any, clubType: string): Promis
     // Ensure vector database is initialized
     await ensureVectorDatabase();
     
-    // Filter out non-metric fields to create clean search query
+    // Filter out non-metric fields and create multiple targeted search queries
     const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
-    const metrics = Object.entries(swingData)
-      .filter(([key, value]) => value !== null && value !== undefined && !excludeFields.includes(key))
-      .map(([key, value]) => `${key}: ${value}`)
-      .slice(0, 10) // Limit to most important metrics
-      .join(', ');
+    const validMetrics = Object.entries(swingData)
+      .filter(([key, value]) => value !== null && value !== undefined && !excludeFields.includes(key));
     
-    const searchQuery = `Golf swing analysis for ${clubType} club with swing metrics: ${metrics}. What are the optimal ranges, common faults, and improvement recommendations?`;
+    // Create targeted search queries for specific metrics
+    const searchQueries = [];
     
-    console.log('Search query:', searchQuery.substring(0, 200) + '...');
+    // Primary search: Club-specific optimal ranges
+    searchQueries.push(`${clubType} optimal ranges club speed ball speed smash factor launch angle spin rate`);
     
-    const queryEmbedding = await generateQueryEmbedding(searchQuery);
+    // Secondary searches: Specific problematic metrics
+    const metricQueries = validMetrics
+      .slice(0, 5) // Limit to top 5 metrics to avoid too many queries
+      .map(([key, value]) => `${key.replace(/_/g, ' ')} ${value} optimal range swing fault`);
     
-    console.log('Searching for relevant knowledge chunks...');
-    const { data: relevantChunks, error } = await supabase.rpc('match_embedding', {
-      query_embedding: queryEmbedding,
-      match_threshold: 0.7,
-      match_count: 12
-    });
+    searchQueries.push(...metricQueries);
+    
+    console.log('Generated search queries:', searchQueries.slice(0, 3));
+    
+    let allRelevantChunks: any[] = [];
+    
+    // Execute multiple targeted searches with lower threshold
+    for (const query of searchQueries) {
+      try {
+        const queryEmbedding = await generateQueryEmbedding(query);
+        
+        const { data: chunks, error } = await supabase.rpc('match_embedding', {
+          query_embedding: queryEmbedding,
+          match_threshold: 0.4, // Lowered from 0.7 to 0.4 for better recall
+          match_count: 5
+        });
 
-    if (error) {
-      console.error('Error searching embeddings:', error);
-      throw error;
+        if (error) {
+          console.error('Error in search query:', query, error);
+          continue;
+        }
+
+        if (chunks && chunks.length > 0) {
+          console.log(`Query "${query.substring(0, 50)}..." found ${chunks.length} chunks, scores:`, 
+            chunks.map(c => c.similarity.toFixed(3)));
+          allRelevantChunks.push(...chunks);
+        } else {
+          console.log(`Query "${query.substring(0, 50)}..." found no chunks`);
+        }
+      } catch (queryError) {
+        console.error(`Error processing query "${query}":`, queryError);
+      }
     }
 
-    if (!relevantChunks || relevantChunks.length === 0) {
-      console.log('No relevant chunks found, using fallback knowledge');
+    // Remove duplicates and sort by similarity
+    const uniqueChunks = allRelevantChunks
+      .filter((chunk, index, self) => 
+        index === self.findIndex(c => c.id === chunk.id)
+      )
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, 12); // Keep top 12 most relevant
+
+    if (uniqueChunks.length === 0) {
+      console.log('No relevant chunks found after all searches, using fallback knowledge');
       return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
       
 Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`;
     }
 
-    console.log(`Found ${relevantChunks.length} relevant knowledge chunks`);
-    console.log('Relevance scores:', relevantChunks.map(c => c.similarity).slice(0, 5));
+    console.log(`Found ${uniqueChunks.length} total relevant knowledge chunks`);
+    console.log('Top relevance scores:', uniqueChunks.slice(0, 5).map(c => c.similarity.toFixed(3)));
+    console.log('Chunks by namespace:', uniqueChunks.reduce((acc: any, chunk: any) => {
+      acc[chunk.namespace] = (acc[chunk.namespace] || 0) + 1;
+      return acc;
+    }, {}));
 
     // Group chunks by namespace for organized knowledge
-    const groupedChunks = relevantChunks.reduce((acc: any, chunk: any) => {
+    const groupedChunks = uniqueChunks.reduce((acc: any, chunk: any) => {
       if (!acc[chunk.namespace]) acc[chunk.namespace] = [];
       acc[chunk.namespace].push(chunk);
       return acc;
