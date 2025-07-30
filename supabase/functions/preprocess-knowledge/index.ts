@@ -337,31 +337,68 @@ serve(async (req) => {
 
     // Read markdown files directly from the file system
     console.log('Reading markdown files from file system...');
+    console.log('Current working directory:', Deno.cwd());
     
     const markdownContent: { [key: string]: string } = {};
     
+    const filePaths = [
+      '../markdown/knowledgeBase.md',
+      './functions/markdown/knowledgeBase.md',
+      'markdown/knowledgeBase.md'
+    ];
+    
     try {
-      // Read knowledgeBase.md
-      markdownContent['knowledgeBase.md'] = await Deno.readTextFile('./markdown/knowledgeBase.md');
-      console.log('Successfully read knowledgeBase.md');
+      // Try different paths for knowledgeBase.md
+      let content = '';
+      for (const path of filePaths) {
+        try {
+          content = await Deno.readTextFile(path);
+          console.log(`Successfully read knowledgeBase.md from: ${path}`);
+          break;
+        } catch (e) {
+          console.log(`Failed to read from ${path}:`, e.message);
+        }
+      }
+      if (!content) throw new Error('Could not find knowledgeBase.md');
+      markdownContent['knowledgeBase.md'] = content;
     } catch (error) {
       console.error('Error reading knowledgeBase.md:', error);
       throw new Error('Failed to read knowledgeBase.md file');
     }
     
     try {
-      // Read swingFaults_clean.md
-      markdownContent['swingFaults_clean.md'] = await Deno.readTextFile('./markdown/swingFaults_clean.md');
-      console.log('Successfully read swingFaults_clean.md');
+      // Try different paths for swingFaults_clean.md
+      let content = '';
+      for (const path of ['../markdown/swingFaults_clean.md', './functions/markdown/swingFaults_clean.md', 'markdown/swingFaults_clean.md']) {
+        try {
+          content = await Deno.readTextFile(path);
+          console.log(`Successfully read swingFaults_clean.md from: ${path}`);
+          break;
+        } catch (e) {
+          console.log(`Failed to read from ${path}:`, e.message);
+        }
+      }
+      if (!content) throw new Error('Could not find swingFaults_clean.md');
+      markdownContent['swingFaults_clean.md'] = content;
     } catch (error) {
       console.error('Error reading swingFaults_clean.md:', error);
       throw new Error('Failed to read swingFaults_clean.md file');
     }
     
     try {
-      // Read videoLibrary.md
-      markdownContent['videoLibrary.md'] = await Deno.readTextFile('./markdown/videoLibrary.md');
-      console.log('Successfully read videoLibrary.md');
+      // Try different paths for videoLibrary.md
+      let content = '';
+      for (const path of ['../markdown/videoLibrary.md', './functions/markdown/videoLibrary.md', 'markdown/videoLibrary.md']) {
+        try {
+          content = await Deno.readTextFile(path);
+          console.log(`Successfully read videoLibrary.md from: ${path}`);
+          break;
+        } catch (e) {
+          console.log(`Failed to read from ${path}:`, e.message);
+        }
+      }
+      if (!content) throw new Error('Could not find videoLibrary.md');
+      markdownContent['videoLibrary.md'] = content;
     } catch (error) {
       console.error('Error reading videoLibrary.md:', error);
       throw new Error('Failed to read videoLibrary.md file');
