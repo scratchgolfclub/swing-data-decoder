@@ -109,17 +109,22 @@ export const fetchSwingData = async (userId: string) => {
 /**
  * Fetch specific swing with insights
  */
-export const fetchSwingById = async (swingId: string, userId: string) => {
+export const fetchSwingById = async (swingId: string, userId?: string) => {
   try {
-    const { data: swing, error } = await supabase
+    let query = supabase
       .from('swings')
       .select(`
         *,
         insights(*)
       `)
-      .eq('id', swingId)
-      .eq('user_id', userId)
-      .single();
+      .eq('id', swingId);
+    
+    // Only filter by user_id if provided (for authenticated users)
+    if (userId && userId !== 'demo-user') {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data: swing, error } = await query.single();
 
     if (error) {
       console.error('Error fetching swing:', error);

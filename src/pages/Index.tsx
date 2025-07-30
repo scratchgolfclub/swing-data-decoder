@@ -8,7 +8,7 @@ import { ClubSelection } from "@/components/ClubSelection";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { extractTrackmanData } from "@/utils/ocrService";
 import { useAuth } from '@/contexts/AuthContext';
-import { saveSwingAnalysis } from '@/utils/swingDataService';
+import { saveSwingAnalysis, fetchSwingById } from '@/utils/swingDataService';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -29,6 +29,30 @@ const Index = () => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const pollForInsights = async (swingId: string, maxAttempts = 10): Promise<any> => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        // Wait 2 seconds between attempts
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+        
+        const swingWithInsights = await fetchSwingById(swingId, user?.id || 'demo-user');
+        if (swingWithInsights?.insights && swingWithInsights.insights.length > 0) {
+          console.log(`✅ Found ${swingWithInsights.insights.length} insights on attempt ${attempt + 1}`);
+          return swingWithInsights;
+        }
+        
+        console.log(`⏳ Attempt ${attempt + 1}: No insights yet, polling again...`);
+      } catch (error) {
+        console.error(`Error polling for insights (attempt ${attempt + 1}):`, error);
+      }
+    }
+    
+    console.log('⚠️ No insights found after maximum attempts');
+    return null;
+  };
+
   const handleSubmit = async () => {
     if (selectedFiles.length === 0 || !selectedClub) return;
     
@@ -37,30 +61,55 @@ const Index = () => {
       const { extractMultipleTrackmanData } = await import('@/utils/ocrService');
       const data = await extractMultipleTrackmanData(selectedFiles, user?.id);
       
-      const analysisResults = { swings: data, club: selectedClub };
-      setResults(analysisResults);
-      
-      // Save data for authenticated users and redirect to results
-      if (user) {
-        try {
-          const saveResult = await saveSwingAnalysis({
-            swings: data,
-            club: selectedClub,
-            originalFiles: selectedFiles
-          }, user.id);
+      // Save data for all users (logged in and demo)
+      let savedSwingId = null;
+      try {
+        const saveResult = await saveSwingAnalysis({
+          swings: data,
+          club: selectedClub,
+          originalFiles: selectedFiles
+        }, user?.id || 'demo-user');
+        
+        if (saveResult.success && saveResult.swingIds?.[0]) {
+          savedSwingId = saveResult.swingIds[0];
+          console.log('✅ Swing saved with ID:', savedSwingId);
           
-          if (saveResult.success && saveResult.swingIds?.[0]) {
+          if (user) {
+            // For logged in users, redirect to the dedicated results page
             toast.success('Swing analysis saved to your dashboard!');
-            // Redirect to swing results page to show AI insights
-            window.location.href = `/swing/${saveResult.swingIds[0]}`;
+            window.location.href = `/swing/${savedSwingId}`;
             return;
           } else {
-            toast.error('Analysis completed but could not save to dashboard');
+            // For demo users, poll for insights and show results inline
+            toast.success('Analysis complete! Generating AI insights...');
+            
+            // Poll for insights with AI recommendations
+            const swingWithInsights = await pollForInsights(savedSwingId);
+            
+            if (swingWithInsights) {
+              // Create results with insights
+              const analysisResults = { 
+                swings: [swingWithInsights], 
+                club: selectedClub 
+              };
+              setResults(analysisResults);
+              toast.success('AI insights generated!');
+            } else {
+              // Fallback to basic results without insights
+              const analysisResults = { swings: data, club: selectedClub };
+              setResults(analysisResults);
+              toast.warning('Analysis complete, but AI insights are still processing');
+            }
           }
-        } catch (saveError) {
-          console.error('Error saving analysis:', saveError);
-          toast.error('Analysis completed but could not save to dashboard');
+        } else {
+          throw new Error('Failed to save swing data');
         }
+      } catch (saveError) {
+        console.error('Error saving analysis:', saveError);
+        // Fallback to showing results without saving
+        const analysisResults = { swings: data, club: selectedClub };
+        setResults(analysisResults);
+        toast.warning('Analysis complete, but could not save to database');
       }
     } catch (error) {
       console.error('Error processing images:', error);
