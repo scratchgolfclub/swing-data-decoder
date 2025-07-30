@@ -43,64 +43,79 @@ async function generateEmbedding(text: string): Promise<number[]> {
 // Parse knowledge base metrics
 function parseKnowledgeBase(content: string) {
   const entries: any[] = [];
-  const sections = content.split('###').filter(Boolean);
+  
+  // Split by ### to get metric sections
+  const sections = content.split(/^### /m).filter(section => section.trim().length > 0);
   
   for (const section of sections) {
-    const lines = section.trim().split('\n').filter(Boolean);
+    const lines = section.trim().split('\n');
     if (lines.length === 0) continue;
     
-    const title = lines[0].replace(/^#+\s*/, '').trim();
-    if (!title || title.toLowerCase().includes('knowledge base')) continue;
+    const title = lines[0].trim();
+    if (!title || title.toLowerCase().includes('knowledge base') || title.toLowerCase().includes('overview')) continue;
+    
+    console.log(`Parsing metric: ${title}`);
     
     let unit = '';
     let description = '';
-    let goodRanges = '';
-    let drillsLow = '';
-    let drillsHigh = '';
-    let feelsLow = '';
-    let feelsHigh = '';
+    let goodRanges = [];
+    let drillsLow = [];
+    let drillsHigh = [];
+    let feelsLow = [];
+    let feelsHigh = [];
     
-    let currentSection = '';
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
+    for (const line of lines) {
+      const trimmedLine = line.trim();
       
-      if (line.startsWith('- **Unit:**')) {
-        unit = line.replace('- **Unit:**', '').trim();
-      } else if (line.startsWith('- **Description:**')) {
-        description = line.replace('- **Description:**', '').trim();
-        currentSection = 'description';
-      } else if (line.startsWith('- **Good Ranges:**')) {
-        currentSection = 'ranges';
-      } else if (line.startsWith('- **Drills if Too Low:**')) {
-        currentSection = 'drillsLow';
-      } else if (line.startsWith('- **Drills if Too High:**')) {
-        currentSection = 'drillsHigh';
-      } else if (line.startsWith('- **Feels if Too Low:**')) {
-        currentSection = 'feelsLow';
-      } else if (line.startsWith('- **Feels if Too High:**')) {
-        currentSection = 'feelsHigh';
-      } else if (line.startsWith('- **') || line.startsWith('###')) {
-        currentSection = '';
-      } else if (line && currentSection) {
-        switch (currentSection) {
-          case 'description':
-            description += ' ' + line;
-            break;
-          case 'ranges':
-            goodRanges += ' ' + line;
-            break;
-          case 'drillsLow':
-            drillsLow += ' ' + line;
-            break;
-          case 'drillsHigh':
-            drillsHigh += ' ' + line;
-            break;
-          case 'feelsLow':
-            feelsLow += ' ' + line;
-            break;
-          case 'feelsHigh':
-            feelsHigh += ' ' + line;
-            break;
+      if (trimmedLine.startsWith('- **Unit:**')) {
+        unit = trimmedLine.replace('- **Unit:**', '').trim();
+      } else if (trimmedLine.startsWith('- **Description:**')) {
+        description = trimmedLine.replace('- **Description:**', '').trim();
+      } else if (trimmedLine.startsWith('- **Good Ranges:**')) {
+        // Extract JSON array from backticks
+        const rangeMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (rangeMatch) {
+          try {
+            goodRanges = JSON.parse(rangeMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse ranges for ${title}:`, rangeMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Drills if Too Low:**')) {
+        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (drillMatch) {
+          try {
+            drillsLow = JSON.parse(drillMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse drills low for ${title}:`, drillMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Drills if Too High:**')) {
+        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (drillMatch) {
+          try {
+            drillsHigh = JSON.parse(drillMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse drills high for ${title}:`, drillMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Feels if Too Low:**')) {
+        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (feelMatch) {
+          try {
+            feelsLow = JSON.parse(feelMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse feels low for ${title}:`, feelMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Feels if Too High:**')) {
+        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (feelMatch) {
+          try {
+            feelsHigh = JSON.parse(feelMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse feels high for ${title}:`, feelMatch[1]);
+          }
         }
       }
     }
@@ -110,11 +125,11 @@ function parseKnowledgeBase(content: string) {
       `Metric: ${title}`,
       unit ? `Unit: ${unit}` : '',
       description ? `Description: ${description}` : '',
-      goodRanges ? `Good Ranges: ${goodRanges}` : '',
-      drillsLow ? `Drills if Too Low: ${drillsLow}` : '',
-      drillsHigh ? `Drills if Too High: ${drillsHigh}` : '',
-      feelsLow ? `Feels if Too Low: ${feelsLow}` : '',
-      feelsHigh ? `Feels if Too High: ${feelsHigh}` : ''
+      goodRanges.length ? `Good Ranges: ${goodRanges.join(', ')}` : '',
+      drillsLow.length ? `Drills if Too Low: ${drillsLow.join(', ')}` : '',
+      drillsHigh.length ? `Drills if Too High: ${drillsHigh.join(', ')}` : '',
+      feelsLow.length ? `Feels if Too Low: ${feelsLow.join(', ')}` : '',
+      feelsHigh.length ? `Feels if Too High: ${feelsHigh.join(', ')}` : ''
     ].filter(Boolean);
     
     entries.push({
@@ -124,71 +139,78 @@ function parseKnowledgeBase(content: string) {
       trigger_metrics: [title],
       metadata: {
         unit,
-        good_ranges: goodRanges.trim(),
-        drills_low: drillsLow.trim(),
-        drills_high: drillsHigh.trim(),
-        feels_low: feelsLow.trim(),
-        feels_high: feelsHigh.trim()
+        good_ranges: goodRanges,
+        drills_low: drillsLow,
+        drills_high: drillsHigh,
+        feels_low: feelsLow,
+        feels_high: feelsHigh
       }
     });
   }
   
+  console.log(`Found ${entries.length} metric entries`);
   return entries;
 }
 
 // Parse swing faults
 function parseSwingFaults(content: string) {
   const entries: any[] = [];
-  const sections = content.split('###').filter(Boolean);
+  
+  // Split by ### to get fault sections
+  const sections = content.split(/^### /m).filter(section => section.trim().length > 0);
   
   for (const section of sections) {
-    const lines = section.trim().split('\n').filter(Boolean);
+    const lines = section.trim().split('\n');
     if (lines.length === 0) continue;
     
-    const title = lines[0].replace(/^#+\s*/, '').trim();
-    if (!title || title.toLowerCase().includes('swing faults')) continue;
+    const title = lines[0].trim();
+    if (!title || title.toLowerCase().includes('swing faults') || title.toLowerCase().includes('overview')) continue;
+    
+    console.log(`Parsing fault: ${title}`);
     
     let description = '';
     let triggerMetrics: string[] = [];
-    let drills = '';
-    let feels = '';
+    let drills = [];
+    let feels = [];
     
-    let currentSection = '';
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
+    for (const line of lines) {
+      const trimmedLine = line.trim();
       
-      if (line.startsWith('- **Description:**')) {
-        description = line.replace('- **Description:**', '').trim();
-        currentSection = 'description';
-      } else if (line.startsWith('- **Trigger Metrics:**')) {
-        currentSection = 'triggers';
-      } else if (line.startsWith('- **Drills:**')) {
-        currentSection = 'drills';
-      } else if (line.startsWith('- **Feels:**')) {
-        currentSection = 'feels';
-      } else if (line.startsWith('- **') || line.startsWith('###')) {
-        currentSection = '';
-      } else if (line && currentSection) {
-        switch (currentSection) {
-          case 'description':
-            description += ' ' + line;
-            break;
-          case 'triggers':
-            // Extract metric names from trigger conditions
-            const metricMatches = line.matchAll(/"([^"]+)"/g);
-            for (const match of metricMatches) {
-              const metric = match[1];
-              if (!triggerMetrics.includes(metric)) {
-                triggerMetrics.push(metric);
+      if (trimmedLine.startsWith('- **Description:**')) {
+        description = trimmedLine.replace('- **Description:**', '').trim();
+      } else if (trimmedLine.startsWith('- **Trigger Metrics:**')) {
+        // Extract JSON array from backticks
+        const triggerMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (triggerMatch) {
+          try {
+            const triggerData = JSON.parse(triggerMatch[1]);
+            // Extract metric names from trigger objects
+            for (const trigger of triggerData) {
+              if (trigger.metric && !triggerMetrics.includes(trigger.metric)) {
+                triggerMetrics.push(trigger.metric);
               }
             }
-            break;
-          case 'drills':
-            drills += ' ' + line;
-            break;
-          case 'feels':
-            feels += ' ' + line;
-            break;
+          } catch (e) {
+            console.warn(`Failed to parse trigger metrics for ${title}:`, triggerMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Drills:**')) {
+        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (drillMatch) {
+          try {
+            drills = JSON.parse(drillMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse drills for ${title}:`, drillMatch[1]);
+          }
+        }
+      } else if (trimmedLine.startsWith('- **Feels:**')) {
+        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
+        if (feelMatch) {
+          try {
+            feels = JSON.parse(feelMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse feels for ${title}:`, feelMatch[1]);
+          }
         }
       }
     }
@@ -198,8 +220,8 @@ function parseSwingFaults(content: string) {
       `Fault: ${title}`,
       description ? `Description: ${description}` : '',
       triggerMetrics.length ? `Trigger Metrics: ${triggerMetrics.join(', ')}` : '',
-      drills ? `Drills: ${drills}` : '',
-      feels ? `Feels: ${feels}` : ''
+      drills.length ? `Drills: ${drills.join(', ')}` : '',
+      feels.length ? `Feels: ${feels.join(', ')}` : ''
     ].filter(Boolean);
     
     entries.push({
@@ -209,51 +231,65 @@ function parseSwingFaults(content: string) {
       trigger_metrics: triggerMetrics,
       metadata: {
         description: description.trim(),
-        drills: drills.trim(),
-        feels: feels.trim()
+        drills,
+        feels
       }
     });
   }
   
+  console.log(`Found ${entries.length} fault entries`);
   return entries;
 }
 
 // Parse video library
 function parseVideoLibrary(content: string) {
   const entries: any[] = [];
-  const sections = content.split('###').filter(Boolean);
+  
+  // Split by ### to get video sections
+  const sections = content.split(/^### /m).filter(section => section.trim().length > 0);
   
   for (const section of sections) {
-    const lines = section.trim().split('\n').filter(Boolean);
+    const lines = section.trim().split('\n');
     if (lines.length === 0) continue;
     
     const title = lines[0].trim();
-    if (!title || title.includes('Video Library')) continue;
+    if (!title || title.toLowerCase().includes('video library') || title.toLowerCase().includes('overview')) continue;
+    
+    console.log(`Parsing video: ${title}`);
     
     let url = '';
     let triggerMetrics: string[] = [];
     let recommendationReason = '';
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+    for (const line of lines) {
+      const trimmedLine = line.trim();
       
-      if (line.startsWith('- **URL:**')) {
-        const urlMatch = line.match(/\[.*?\]\((https:\/\/[^\)]+)\)/);
+      if (trimmedLine.startsWith('- **URL:**')) {
+        // Extract URL from markdown link format [text](url)
+        const urlMatch = trimmedLine.match(/\[.*?\]\((https:\/\/[^\)]+)\)/);
         if (urlMatch) {
           url = urlMatch[1];
         }
-      } else if (line.startsWith('- **Trigger Metrics:**')) {
-        const metricsMatch = line.match(/\[(.*?)\]/);
+      } else if (trimmedLine.startsWith('- **Trigger Metrics:**')) {
+        // Extract JSON array from backticks
+        const metricsMatch = trimmedLine.match(/`(\[.*?\])`/);
         if (metricsMatch) {
-          const metricsStr = metricsMatch[1];
-          triggerMetrics = metricsStr.split(',').map(m => m.trim().replace(/"/g, ''));
+          try {
+            triggerMetrics = JSON.parse(metricsMatch[1]);
+          } catch (e) {
+            console.warn(`Failed to parse trigger metrics for ${title}:`, metricsMatch[1]);
+          }
         }
-      } else if (line.startsWith('- **Recommendation Reason:**')) {
-        recommendationReason = line.replace('- **Recommendation Reason:**', '').trim();
+      } else if (trimmedLine.startsWith('- **Recommendation Reason:**')) {
+        recommendationReason = trimmedLine.replace('- **Recommendation Reason:**', '').trim();
       }
     }
     
-    if (!url) continue;
+    // Only include videos that have a URL
+    if (!url) {
+      console.warn(`Skipping video ${title} - no URL found`);
+      continue;
+    }
     
     // Create flattened content
     const contentParts = [
@@ -275,6 +311,7 @@ function parseVideoLibrary(content: string) {
     });
   }
   
+  console.log(`Found ${entries.length} video entries`);
   return entries;
 }
 
