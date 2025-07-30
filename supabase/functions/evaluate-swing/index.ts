@@ -298,9 +298,10 @@ async function searchRelevantKnowledge(swingData: any, clubType: string): Promis
     // Ensure vector database is initialized
     await ensureVectorDatabase();
     
-    // Create search query from swing data and club type
+    // Filter out non-metric fields to create clean search query
+    const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
     const metrics = Object.entries(swingData)
-      .filter(([key, value]) => value !== null && value !== undefined && key !== 'id' && key !== 'user_id' && key !== 'created_at')
+      .filter(([key, value]) => value !== null && value !== undefined && !excludeFields.includes(key))
       .map(([key, value]) => `${key}: ${value}`)
       .slice(0, 10) // Limit to most important metrics
       .join(', ');
@@ -408,10 +409,19 @@ Return ONLY a JSON array of insights in this exact format:
   }
 ]`;
 
+  // Filter swing data to remove base64 image and other non-metric fields
+  const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
+  const filteredSwingData = Object.fromEntries(
+    Object.entries(swingData).filter(([key]) => !excludeFields.includes(key))
+  );
+
   const userPrompt = `Analyze this ${clubType} swing data:
-${JSON.stringify(swingData, null, 2)}
+${JSON.stringify(filteredSwingData, null, 2)}
 
 Focus on the most impactful metrics for this ${clubType}. Provide specific insights with metric values and actionable recommendations.`;
+
+  console.log(`Filtered swing data - removed ${Object.keys(swingData).length - Object.keys(filteredSwingData).length} non-metric fields`);
+  console.log(`Filtered data size: ${JSON.stringify(filteredSwingData).length} chars vs original: ${JSON.stringify(swingData).length} chars`);
 
   // Simple retry configuration - let OpenAI handle rate limiting
   const maxRetries = 3;
