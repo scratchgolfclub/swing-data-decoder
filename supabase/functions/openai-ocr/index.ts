@@ -152,9 +152,8 @@ serve(async (req) => {
     const swingData: any = {
       user_id: userId,
       club_type: clubType,
-      session_name: sessionName,
-      // Store the base64 image URL for reference (optional)
-      trackman_image_url: `data:image/jpeg;base64,${imageBase64}`
+      session_name: sessionName
+      // Note: Removed trackman_image_url to avoid database storage issues with large base64 images
     };
 
     // Map each metric to its corresponding database column
