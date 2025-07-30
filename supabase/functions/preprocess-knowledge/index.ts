@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
+import { KNOWLEDGE_BASE_CONTENT, SWING_FAULTS_CONTENT, VIDEO_LIBRARY_CONTENT } from './markdown-content.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -335,76 +336,16 @@ serve(async (req) => {
       throw clearError;
     }
 
-    // Read markdown files directly from the file system
-    console.log('Reading markdown files from file system...');
-    console.log('Current working directory:', Deno.cwd());
+    // Use embedded markdown content instead of reading from filesystem
+    console.log('Using embedded markdown content...');
     
-    const markdownContent: { [key: string]: string } = {};
-    
-    const filePaths = [
-      '../markdown/knowledgeBase.md',
-      './functions/markdown/knowledgeBase.md',
-      'markdown/knowledgeBase.md'
-    ];
-    
-    try {
-      // Try different paths for knowledgeBase.md
-      let content = '';
-      for (const path of filePaths) {
-        try {
-          content = await Deno.readTextFile(path);
-          console.log(`Successfully read knowledgeBase.md from: ${path}`);
-          break;
-        } catch (e) {
-          console.log(`Failed to read from ${path}:`, e.message);
-        }
-      }
-      if (!content) throw new Error('Could not find knowledgeBase.md');
-      markdownContent['knowledgeBase.md'] = content;
-    } catch (error) {
-      console.error('Error reading knowledgeBase.md:', error);
-      throw new Error('Failed to read knowledgeBase.md file');
-    }
-    
-    try {
-      // Try different paths for swingFaults_clean.md
-      let content = '';
-      for (const path of ['../markdown/swingFaults_clean.md', './functions/markdown/swingFaults_clean.md', 'markdown/swingFaults_clean.md']) {
-        try {
-          content = await Deno.readTextFile(path);
-          console.log(`Successfully read swingFaults_clean.md from: ${path}`);
-          break;
-        } catch (e) {
-          console.log(`Failed to read from ${path}:`, e.message);
-        }
-      }
-      if (!content) throw new Error('Could not find swingFaults_clean.md');
-      markdownContent['swingFaults_clean.md'] = content;
-    } catch (error) {
-      console.error('Error reading swingFaults_clean.md:', error);
-      throw new Error('Failed to read swingFaults_clean.md file');
-    }
-    
-    try {
-      // Try different paths for videoLibrary.md
-      let content = '';
-      for (const path of ['../markdown/videoLibrary.md', './functions/markdown/videoLibrary.md', 'markdown/videoLibrary.md']) {
-        try {
-          content = await Deno.readTextFile(path);
-          console.log(`Successfully read videoLibrary.md from: ${path}`);
-          break;
-        } catch (e) {
-          console.log(`Failed to read from ${path}:`, e.message);
-        }
-      }
-      if (!content) throw new Error('Could not find videoLibrary.md');
-      markdownContent['videoLibrary.md'] = content;
-    } catch (error) {
-      console.error('Error reading videoLibrary.md:', error);
-      throw new Error('Failed to read videoLibrary.md file');
-    }
+    const markdownContent: { [key: string]: string } = {
+      'knowledgeBase.md': KNOWLEDGE_BASE_CONTENT,
+      'swingFaults_clean.md': SWING_FAULTS_CONTENT,
+      'videoLibrary.md': VIDEO_LIBRARY_CONTENT
+    };
 
-    // Knowledge base definitions with file paths
+    // Knowledge base definitions with embedded content
     const knowledgeBases = [
       {
         name: 'knowledgeBase.md',
