@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Edit, Save, X, Image } from 'lucide-react';
 import { ThumbnailService } from '@/utils/thumbnailService';
-import { VIDEO_CONTEXTS } from '@/utils/videoContextService';
+// Note: VIDEO_CONTEXTS has been removed as videos now come from vector search
 import { useToast } from '@/components/ui/use-toast';
 import { ThumbnailMigration } from '@/components/ThumbnailMigration';
 
@@ -68,7 +68,7 @@ const ThumbnailPreview = ({ videoLink, videoTitle, videoIndex }: { videoLink: st
 
 const Context = () => {
   const { toast } = useToast();
-  const [videoContexts, setVideoContexts] = useState<VideoContext[]>(VIDEO_CONTEXTS);
+  const [videoContexts, setVideoContexts] = useState<VideoContext[]>([]);
   const [editingVideo, setEditingVideo] = useState<string | null>(null);
   const [editingSummary, setEditingSummary] = useState<string>('');
   const [uploadingThumbnail, setUploadingThumbnail] = useState<string | null>(null);
@@ -186,11 +186,19 @@ const Context = () => {
           <CardHeader>
             <CardTitle className="text-2xl">Video Recommendations</CardTitle>
             <CardDescription>
-              Upload custom thumbnails and manage context for each video recommendation.
+              Video recommendations are now managed through the vector search system. 
+              This section is no longer needed as videos come from the embedding_documents table.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {Object.entries(groupedVideos).map(([category, videos]) => (
+            <div className="p-8 text-center text-muted-foreground">
+              <p className="text-lg font-medium mb-2">Video Management Deprecated</p>
+              <p className="text-sm">
+                Video recommendations are now dynamically generated from the knowledge base using vector search. 
+                Videos are stored in the embedding_documents table and recommended based on swing analysis.
+              </p>
+            </div>
+            {false && Object.entries(groupedVideos).map(([category, videos]) => (
               <div key={category} className="mb-8">
                 <h3 className="text-xl font-semibold mb-4 text-primary">{category}</h3>
                 <div className="space-y-4">
