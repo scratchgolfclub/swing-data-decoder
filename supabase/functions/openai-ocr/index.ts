@@ -16,7 +16,7 @@ const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
 // Mapping from OCR metric titles to database column names
 const metricMapping: Record<string, string> = {
-  // Club metrics
+  // Club metrics - Title Case
   'Club Speed': 'club_speed',
   'Attack Angle': 'attack_angle',
   'Dyn. Loft': 'dynamic_loft',
@@ -35,7 +35,7 @@ const metricMapping: Record<string, string> = {
   'Impact Offset': 'impact_offset',
   'Dynamic Lie': 'dynamic_lie',
   
-  // Ball metrics
+  // Ball metrics - Title Case
   'Ball Speed': 'ball_speed',
   'Smash Fac.': 'smash_factor',
   'Smash Factor': 'smash_factor',
@@ -46,7 +46,7 @@ const metricMapping: Record<string, string> = {
   'Launch Direction': 'launch_direction',
   'Spin Axis': 'spin_axis',
   
-  // Flight metrics
+  // Flight metrics - Title Case
   'Height': 'height',
   'Curve': 'curve',
   'Land. Ang.': 'landing_angle',
@@ -61,8 +61,65 @@ const metricMapping: Record<string, string> = {
   'Low Point Height': 'low_point_height',
   'Low Point Side': 'low_point_side',
   'D Plane Tilt': 'd_plane_tilt',
-  'Hang Time': 'hang_time'
+  'Hang Time': 'hang_time',
+
+  // ALL CAPS versions (from OpenAI Vision API)
+  'CLUB SPEED': 'club_speed',
+  'ATTACK ANGLE': 'attack_angle',
+  'DYN. LOFT': 'dynamic_loft',
+  'DYNAMIC LOFT': 'dynamic_loft',
+  'CLUB PATH': 'club_path',
+  'FACE ANG.': 'face_angle',
+  'FACE ANGLE': 'face_angle',
+  'FACE TO PATH': 'face_to_path',
+  'SPIN LOFT': 'spin_loft',
+  'SWING PLANE': 'swing_plane',
+  'SWING DIRECTION': 'swing_direction',
+  'LOW POINT': 'low_point',
+  'IMP. HEIGHT': 'impact_height',
+  'IMPACT HEIGHT': 'impact_height',
+  'IMP. OFFSET': 'impact_offset',
+  'IMPACT OFFSET': 'impact_offset',
+  'DYNAMIC LIE': 'dynamic_lie',
+  'BALL SPEED': 'ball_speed',
+  'SMASH FAC.': 'smash_factor',
+  'SMASH FACTOR': 'smash_factor',
+  'LAUNCH ANG.': 'launch_angle',
+  'LAUNCH ANGLE': 'launch_angle',
+  'SPIN RATE': 'spin_rate',
+  'LAUNCH DIR.': 'launch_direction',
+  'LAUNCH DIRECTION': 'launch_direction',
+  'SPIN AXIS': 'spin_axis',
+  'HEIGHT': 'height',
+  'CURVE': 'curve',
+  'LAND ANG.': 'landing_angle',
+  'LAND. ANG.': 'landing_angle',
+  'LANDING ANGLE': 'landing_angle',
+  'CARRY': 'carry',
+  'SIDE': 'side',
+  'TOTAL': 'total',
+  'SIDE TOT.': 'side_total',
+  'SIDE TOTAL': 'side_total',
+  'SWING RADIUS': 'swing_radius',
+  'MAX HEIGHT DISTANCE': 'max_height_distance',
+  'LOW POINT HEIGHT': 'low_point_height',
+  'LOW POINT SIDE': 'low_point_side',
+  'D PLANE TILT': 'd_plane_tilt',
+  'HANG TIME': 'hang_time'
 };
+
+// Helper function to find metric mapping with case-insensitive matching
+function findMetricMapping(title: string): string | undefined {
+  // Try exact match first
+  if (metricMapping[title]) {
+    return metricMapping[title];
+  }
+  
+  // Try case-insensitive match
+  const upperTitle = title.toUpperCase();
+  const foundKey = Object.keys(metricMapping).find(key => key.toUpperCase() === upperTitle);
+  return foundKey ? metricMapping[foundKey] : undefined;
+}
 
 function parseMetricValue(value: string, columnName: string): any {
   // Ensure value is a string before calling trim
@@ -158,11 +215,12 @@ serve(async (req) => {
 
     // Map each metric to its corresponding database column
     parsedMetrics.forEach((metric: any) => {
-      const columnName = metricMapping[metric.title];
+      const columnName = findMetricMapping(metric.title);
       if (columnName) {
         const parsedValue = parseMetricValue(metric.value, columnName);
         if (parsedValue !== null) {
           swingData[columnName] = parsedValue;
+          console.log(`Mapped "${metric.title}" -> ${columnName}: ${parsedValue}`);
         }
       } else {
         console.log('Unmapped metric:', metric.title);
