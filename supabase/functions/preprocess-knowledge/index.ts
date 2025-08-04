@@ -41,6 +41,21 @@ async function generateEmbedding(text: string): Promise<number[]> {
   return data.data[0].embedding;
 }
 
+// Helper function to extract multi-line JSON array from markdown
+function extractJsonArray(content: string, startPattern: string): any[] {
+  const regex = new RegExp(startPattern + '\\s*`\\[(.*?)\\]`', 'gs');
+  const match = regex.exec(content);
+  if (match) {
+    try {
+      const jsonString = '[' + match[1] + ']';
+      return JSON.parse(jsonString);
+    } catch (e) {
+      console.warn(`Failed to parse JSON array for ${startPattern}:`, match[1]);
+    }
+  }
+  return [];
+}
+
 // Parse knowledge base metrics
 function parseKnowledgeBase(content: string) {
   const entries: any[] = [];
@@ -65,6 +80,9 @@ function parseKnowledgeBase(content: string) {
     let feelsLow = [];
     let feelsHigh = [];
     
+    // Join all lines to handle multi-line arrays
+    const sectionContent = section.trim();
+    
     for (const line of lines) {
       const trimmedLine = line.trim();
       
@@ -72,54 +90,17 @@ function parseKnowledgeBase(content: string) {
         unit = trimmedLine.replace('- **Unit:**', '').trim();
       } else if (trimmedLine.startsWith('- **Description:**')) {
         description = trimmedLine.replace('- **Description:**', '').trim();
-      } else if (trimmedLine.startsWith('- **Good Ranges:**')) {
-        // Extract JSON array from backticks
-        const rangeMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (rangeMatch) {
-          try {
-            goodRanges = JSON.parse(rangeMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse ranges for ${title}:`, rangeMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Drills if Too Low:**')) {
-        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (drillMatch) {
-          try {
-            drillsLow = JSON.parse(drillMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse drills low for ${title}:`, drillMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Drills if Too High:**')) {
-        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (drillMatch) {
-          try {
-            drillsHigh = JSON.parse(drillMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse drills high for ${title}:`, drillMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Feels if Too Low:**')) {
-        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (feelMatch) {
-          try {
-            feelsLow = JSON.parse(feelMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse feels low for ${title}:`, feelMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Feels if Too High:**')) {
-        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (feelMatch) {
-          try {
-            feelsHigh = JSON.parse(feelMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse feels high for ${title}:`, feelMatch[1]);
-          }
-        }
       }
     }
+    
+    // Extract multi-line arrays using regex patterns
+    goodRanges = extractJsonArray(sectionContent, '- \\*\\*Good Ranges:\\*\\*');
+    drillsLow = extractJsonArray(sectionContent, '- \\*\\*Drills if Too Low:\\*\\*');
+    drillsHigh = extractJsonArray(sectionContent, '- \\*\\*Drills if Too High:\\*\\*');
+    feelsLow = extractJsonArray(sectionContent, '- \\*\\*Feels if Too Low:\\*\\*');
+    feelsHigh = extractJsonArray(sectionContent, '- \\*\\*Feels if Too High:\\*\\*');
+    
+    console.log(`${title} - Drills Low: ${drillsLow.length}, Drills High: ${drillsHigh.length}, Feels Low: ${feelsLow.length}, Feels High: ${feelsHigh.length}`);
     
     // Create flattened content
     const contentParts = [
@@ -174,47 +155,42 @@ function parseSwingFaults(content: string) {
     let drills = [];
     let feels = [];
     
+    // Join all lines to handle multi-line arrays
+    const sectionContent = section.trim();
+    
     for (const line of lines) {
       const trimmedLine = line.trim();
       
       if (trimmedLine.startsWith('- **Description:**')) {
         description = trimmedLine.replace('- **Description:**', '').trim();
-      } else if (trimmedLine.startsWith('- **Trigger Metrics:**')) {
-        // Extract JSON array from backticks
-        const triggerMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (triggerMatch) {
-          try {
-            const triggerData = JSON.parse(triggerMatch[1]);
-            // Extract metric names from trigger objects
-            for (const trigger of triggerData) {
-              if (trigger.metric && !triggerMetrics.includes(trigger.metric)) {
-                triggerMetrics.push(trigger.metric);
-              }
-            }
-          } catch (e) {
-            console.warn(`Failed to parse trigger metrics for ${title}:`, triggerMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Drills:**')) {
-        const drillMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (drillMatch) {
-          try {
-            drills = JSON.parse(drillMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse drills for ${title}:`, drillMatch[1]);
-          }
-        }
-      } else if (trimmedLine.startsWith('- **Feels:**')) {
-        const feelMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (feelMatch) {
-          try {
-            feels = JSON.parse(feelMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse feels for ${title}:`, feelMatch[1]);
-          }
-        }
       }
     }
+    
+    // Extract trigger metrics - handle complex objects
+    const triggerMatch = sectionContent.match(/- \*\*Trigger Metrics:\*\*\s*`\[(.*?)\]`/gs);
+    if (triggerMatch) {
+      try {
+        const triggerText = triggerMatch[0].match(/`\[(.*?)\]`/s);
+        if (triggerText) {
+          const jsonString = '[' + triggerText[1] + ']';
+          const triggerData = JSON.parse(jsonString);
+          // Extract metric names from trigger objects
+          for (const trigger of triggerData) {
+            if (trigger.metric && !triggerMetrics.includes(trigger.metric)) {
+              triggerMetrics.push(trigger.metric);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn(`Failed to parse trigger metrics for ${title}:`, e.message);
+      }
+    }
+    
+    // Extract multi-line arrays using regex patterns
+    drills = extractJsonArray(sectionContent, '- \\*\\*Drills:\\*\\*');
+    feels = extractJsonArray(sectionContent, '- \\*\\*Feels:\\*\\*');
+    
+    console.log(`${title} - Trigger Metrics: ${triggerMetrics.length}, Drills: ${drills.length}, Feels: ${feels.length}`);
     
     // Create flattened content
     const contentParts = [
@@ -262,6 +238,9 @@ function parseVideoLibrary(content: string) {
     let triggerMetrics: string[] = [];
     let recommendationReason = '';
     
+    // Join all lines to handle multi-line arrays
+    const sectionContent = section.trim();
+    
     for (const line of lines) {
       const trimmedLine = line.trim();
       
@@ -271,20 +250,15 @@ function parseVideoLibrary(content: string) {
         if (urlMatch) {
           url = urlMatch[1];
         }
-      } else if (trimmedLine.startsWith('- **Trigger Metrics:**')) {
-        // Extract JSON array from backticks
-        const metricsMatch = trimmedLine.match(/`(\[.*?\])`/);
-        if (metricsMatch) {
-          try {
-            triggerMetrics = JSON.parse(metricsMatch[1]);
-          } catch (e) {
-            console.warn(`Failed to parse trigger metrics for ${title}:`, metricsMatch[1]);
-          }
-        }
       } else if (trimmedLine.startsWith('- **Recommendation Reason:**')) {
         recommendationReason = trimmedLine.replace('- **Recommendation Reason:**', '').trim();
       }
     }
+    
+    // Extract trigger metrics using the helper function
+    triggerMetrics = extractJsonArray(sectionContent, '- \\*\\*Trigger Metrics:\\*\\*');
+    
+    console.log(`${title} - Trigger Metrics: ${triggerMetrics.length}`);
     
     // Only include videos that have a URL
     if (!url) {
