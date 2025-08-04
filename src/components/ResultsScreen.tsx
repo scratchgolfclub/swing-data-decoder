@@ -8,6 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { getStructuredMetrics } from '@/utils/structuredMetricsHelper';
 import { MetricTile } from '@/components/MetricTile';
 import { InsightCard } from '@/components/InsightCard';
+import { SimpleAdvancedToggle } from '@/components/SimpleAdvancedToggle';
+import { BestWorstAnalysis } from '@/components/BestWorstAnalysis';
+import { DrillsSection } from '@/components/DrillsSection';
+import { FeelsSection } from '@/components/FeelsSection';
+import { VideoRecommendationsSection } from '@/components/VideoRecommendationsSection';
 
 interface ResultsScreenProps {
   data: {
@@ -21,6 +26,7 @@ interface ResultsScreenProps {
 export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScreenProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isSimpleView, setIsSimpleView] = useState(true);
   
   if (!data?.swings?.length) {
     return (
@@ -70,6 +76,24 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
       m.title.toLowerCase().includes(title.toLowerCase())
     )
   );
+
+  // Simple view shows only the most important metrics
+  const getSimpleMetrics = (metrics: any[]) => {
+    if (!isSimpleView) return metrics;
+    
+    const priorityOrder = [
+      'Club Speed', 'Ball Speed', 'Smash Factor', 'Attack Angle', 'Club Path', 'Face Angle', 
+      'Launch Angle', 'Spin Rate', 'Carry', 'Total', 'Side'
+    ];
+    
+    return metrics
+      .sort((a, b) => {
+        const aIndex = priorityOrder.findIndex(p => a.title.includes(p));
+        const bIndex = priorityOrder.findIndex(p => b.title.includes(p));
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      })
+      .slice(0, 4); // Show only top 4 metrics in simple view
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-surface to-surface-muted">
@@ -124,6 +148,12 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
           </p>
         </div>
 
+        {/* Best/Worst Analysis */}
+        <BestWorstAnalysis metrics={structuredMetrics} clubType={data.club} />
+
+        {/* Simple/Advanced Toggle */}
+        <SimpleAdvancedToggle isSimpleView={isSimpleView} onToggle={setIsSimpleView} />
+
         {/* Key Insights Section */}
         {(strengths.length > 0 || weaknesses.length > 0) && (
           <div className="mb-12">
@@ -156,12 +186,23 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
           </div>
         )}
 
+        {/* Video Recommendations Section */}
+        <div className="mb-12">
+          <VideoRecommendationsSection swingData={swing} insights={insights} />
+        </div>
+
+        {/* Drills and Feels Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <DrillsSection insights={insights} />
+          <FeelsSection insights={insights} />
+        </div>
+
         {/* Recommendations Section */}
         {recommendations.length > 0 && (
           <div className="mb-12">
             <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
               <BookOpen className="h-6 w-6 text-accent" />
-              Improvement Recommendations
+              Additional Recommendations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recommendations.map((insight: any) => (
@@ -214,7 +255,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
             <CardContent>
               {clubMetrics.length > 0 ? (
                 <div className="space-y-3">
-                  {clubMetrics.map((metric, index) => (
+                  {getSimpleMetrics(clubMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
@@ -237,7 +278,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
             <CardContent>
               {ballMetrics.length > 0 ? (
                 <div className="space-y-3">
-                  {ballMetrics.map((metric, index) => (
+                  {getSimpleMetrics(ballMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
@@ -260,7 +301,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
             <CardContent>
               {flightMetrics.length > 0 ? (
                 <div className="space-y-3">
-                  {flightMetrics.map((metric, index) => (
+                  {getSimpleMetrics(flightMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
