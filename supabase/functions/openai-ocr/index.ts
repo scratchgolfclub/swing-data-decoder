@@ -160,7 +160,16 @@ Analyze swing metrics against standard ranges and provide recommendations based 
     console.error('Error in vector search:', error);
     return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
     
-Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`;
+Analyze swing metrics against standard ranges:
+- Club Speed: 80-120 mph optimal
+- Ball Speed: 1.4-1.5x club speed
+- Smash Factor: 1.30-1.50 optimal  
+- Launch Angle: Varies by club type
+- Spin Rate: Optimal range depends on club
+- Face Angle: Square to target preferred
+- Club Path: Square to slightly in-to-out preferred
+
+Provide specific recommendations based on metric deviations from optimal ranges.`;
   }
 }
 
