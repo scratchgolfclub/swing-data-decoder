@@ -44,9 +44,6 @@ port = 54328
 name = "openai-ocr"
 verify_jwt = false
 
-[[edge-runtime.functions]]
-name = "evaluate-swing"
-verify_jwt = false
 
 [[edge-runtime.functions]]
 name = "test-openai-vision"

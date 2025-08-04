@@ -531,7 +531,7 @@ serve(async (req) => {
 
     console.log('Inserted swing:', insertedSwing);
 
-    // Generate insights directly in this function (eliminates problematic inter-function call)
+    // Generate insights using integrated AI analysis with vector search
     let insights: SwingInsight[] = [];
     try {
       console.log('=== Starting direct insight generation ===');
