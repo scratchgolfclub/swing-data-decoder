@@ -307,7 +307,9 @@ function parseVideoLibrary(content: string) {
       trigger_metrics: triggerMetrics,
       metadata: {
         url,
-        recommendation_reason: recommendationReason
+        recommendation_reason: recommendationReason,
+        drills: [],
+        feels: []
       }
     });
   }

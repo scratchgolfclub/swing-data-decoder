@@ -49,134 +49,112 @@ async function generateQueryEmbedding(text: string): Promise<number[]> {
   return data.data[0].embedding;
 }
 
-// Search relevant knowledge using vector similarity
+// Search relevant knowledge using vector similarity - optimized with parallelization
 async function searchRelevantKnowledge(swingData: any, clubType: string): Promise<{knowledge: string, drills: string[], feels: string[]}> {
   try {
-    // Filter out non-metric fields and create multiple targeted search queries
+    // Filter out non-metric fields and create more focused search query
     const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
     const validMetrics = Object.entries(swingData)
       .filter(([key, value]) => value !== null && value !== undefined && !excludeFields.includes(key));
     
-    // Create targeted search queries for specific metrics
-    const searchQueries = [];
+    // Create single, comprehensive search query instead of multiple queries
+    const primaryMetrics = validMetrics.slice(0, 8).map(([key, value]) => `${key.replace(/_/g, ' ')} ${value}`);
+    const searchQuery = `${clubType} swing analysis ${primaryMetrics.join(' ')} optimal ranges swing faults`;
     
-    // Primary search: Club-specific optimal ranges
-    searchQueries.push(`${clubType} optimal ranges club speed ball speed smash factor launch angle spin rate`);
+    console.log('Single optimized search query:', searchQuery.substring(0, 100) + '...');
     
-    // Secondary searches: Specific problematic metrics
-    const metricQueries = validMetrics
-      .slice(0, 5) // Limit to top 5 metrics to avoid too many queries
-      .map(([key, value]) => `${key.replace(/_/g, ' ')} ${value} optimal range swing fault`);
+    // Single search with higher result count instead of multiple searches
+    const queryEmbedding = await generateQueryEmbedding(searchQuery);
     
-    searchQueries.push(...metricQueries);
-    
-    console.log('Generated search queries:', searchQueries.slice(0, 3));
-    
-    let allRelevantChunks: any[] = [];
-    let allDrills: string[] = [];
-    let allFeels: string[] = [];
-    
-    // Execute multiple targeted searches with lower threshold
-    for (const query of searchQueries) {
-      try {
-        const queryEmbedding = await generateQueryEmbedding(query);
-        
-        const { data: chunks, error } = await supabase.rpc('match_embedding', {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.4,
-          match_count: 5
-        });
+    const { data: chunks, error } = await supabase.rpc('match_embedding', {
+      query_embedding: queryEmbedding,
+      match_threshold: 0.35,
+      match_count: 15 // Get more results in single query
+    });
 
-        if (error) {
-          console.error('Error in search query:', query, error);
-          continue;
-        }
-
-        if (chunks && chunks.length > 0) {
-          console.log(`Query "${query.substring(0, 50)}..." found ${chunks.length} chunks, scores:`, 
-            chunks.map(c => c.similarity.toFixed(3)));
-          allRelevantChunks.push(...chunks);
-
-          // Extract drills and feels from metadata
-          chunks.forEach((chunk: any) => {
-            if (chunk.metadata) {
-              if (chunk.metadata.drills && Array.isArray(chunk.metadata.drills)) {
-                allDrills.push(...chunk.metadata.drills);
-              }
-              if (chunk.metadata.feels && Array.isArray(chunk.metadata.feels)) {
-                allFeels.push(...chunk.metadata.feels);
-              }
-            }
-          });
-        } else {
-          console.log(`Query "${query.substring(0, 50)}..." found no chunks`);
-        }
-      } catch (queryError) {
-        console.error(`Error processing query "${query}":`, queryError);
-      }
+    if (error) {
+      console.error('Error in vector search:', error);
+      throw error;
     }
 
-    // Remove duplicates and sort by similarity
-    const uniqueChunks = allRelevantChunks
-      .filter((chunk, index, self) => 
-        index === self.findIndex(c => c.id === chunk.id)
-      )
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 12); // Keep top 12 most relevant
-
-    // Remove duplicates and limit drills/feels to 2-3 each
-    const uniqueDrills = [...new Set(allDrills)].slice(0, 3);
-    const uniqueFeels = [...new Set(allFeels)].slice(0, 3);
-
-    if (uniqueChunks.length === 0) {
-      console.log('No relevant chunks found, using fallback knowledge');
+    if (!chunks || chunks.length === 0) {
+      console.log('No relevant chunks found');
       return {
         knowledge: `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
         
 Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`,
-        drills: ['Practice slow motion swings', 'Work on grip fundamentals'],
-        feels: ['Feel balanced throughout swing', 'Keep head still during swing']
+        drills: [],
+        feels: []
       };
     }
 
-    console.log(`Found ${uniqueChunks.length} total relevant knowledge chunks`);
-    console.log('Top relevance scores:', uniqueChunks.slice(0, 5).map(c => c.similarity.toFixed(3)));
-    console.log('Chunks by namespace:', uniqueChunks.reduce((acc: any, chunk: any) => {
-      acc[chunk.namespace] = (acc[chunk.namespace] || 0) + 1;
-      return acc;
-    }, {}));
+    console.log(`Found ${chunks.length} relevant chunks, top scores:`, 
+      chunks.slice(0, 5).map(c => c.similarity.toFixed(3)));
+
+    // Extract drills and feels from metadata
+    let allDrills: string[] = [];
+    let allFeels: string[] = [];
+    
+    chunks.forEach((chunk: any) => {
+      if (chunk.metadata) {
+        // Extract drills from different metadata fields
+        if (chunk.metadata.drills && Array.isArray(chunk.metadata.drills)) {
+          allDrills.push(...chunk.metadata.drills);
+        }
+        if (chunk.metadata.drills_low && Array.isArray(chunk.metadata.drills_low)) {
+          allDrills.push(...chunk.metadata.drills_low);
+        }
+        if (chunk.metadata.drills_high && Array.isArray(chunk.metadata.drills_high)) {
+          allDrills.push(...chunk.metadata.drills_high);
+        }
+        
+        // Extract feels from different metadata fields
+        if (chunk.metadata.feels && Array.isArray(chunk.metadata.feels)) {
+          allFeels.push(...chunk.metadata.feels);
+        }
+        if (chunk.metadata.feels_low && Array.isArray(chunk.metadata.feels_low)) {
+          allFeels.push(...chunk.metadata.feels_low);
+        }
+        if (chunk.metadata.feels_high && Array.isArray(chunk.metadata.feels_high)) {
+          allFeels.push(...chunk.metadata.feels_high);
+        }
+      }
+    });
+
+    // Remove duplicates and limit to 3 each
+    const uniqueDrills = [...new Set(allDrills)].slice(0, 3);
+    const uniqueFeels = [...new Set(allFeels)].slice(0, 3);
 
     // Group chunks by namespace for organized knowledge
-    const groupedChunks = uniqueChunks.reduce((acc: any, chunk: any) => {
+    const groupedChunks = chunks.reduce((acc: any, chunk: any) => {
       if (!acc[chunk.namespace]) acc[chunk.namespace] = [];
       acc[chunk.namespace].push(chunk);
       return acc;
     }, {});
 
-    // Build focused knowledge base from most relevant chunks
+    // Build focused knowledge base from most relevant chunks (limited size for performance)
     let knowledgeBase = `# FOCUSED GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}\n\n`;
     
-    if (groupedChunks.knowledgebase) {
+    if (groupedChunks.metrics) {
       knowledgeBase += `## SWING METRICS AND OPTIMAL RANGES\n`;
-      knowledgeBase += groupedChunks.knowledgebase.map((chunk: any) => chunk.content).join('\n\n');
+      knowledgeBase += groupedChunks.metrics.slice(0, 5).map((chunk: any) => chunk.content).join('\n\n');
       knowledgeBase += '\n\n';
     }
     
-    if (groupedChunks.swingfaults) {
+    if (groupedChunks.faults) {
       knowledgeBase += `## SWING FAULT PATTERNS AND TRIGGERS\n`;
-      knowledgeBase += groupedChunks.swingfaults.map((chunk: any) => chunk.content).join('\n\n');
+      knowledgeBase += groupedChunks.faults.slice(0, 3).map((chunk: any) => chunk.content).join('\n\n');
       knowledgeBase += '\n\n';
     }
     
     if (groupedChunks.videos) {
       knowledgeBase += `## INSTRUCTIONAL VIDEO RECOMMENDATIONS\n`;
-      knowledgeBase += groupedChunks.videos.map((chunk: any) => chunk.content).join('\n\n');
+      knowledgeBase += groupedChunks.videos.slice(0, 2).map((chunk: any) => chunk.content).join('\n\n');
     }
 
     console.log(`Built focused knowledge base: ${knowledgeBase.length} characters`);
-    console.log(`Token estimate: ~${Math.ceil(knowledgeBase.length / 4)} tokens`);
-    console.log('Extracted drills:', uniqueDrills);
-    console.log('Extracted feels:', uniqueFeels);
+    console.log('Extracted drills:', uniqueDrills.length);
+    console.log('Extracted feels:', uniqueFeels.length);
 
     return {
       knowledge: knowledgeBase,
@@ -199,25 +177,34 @@ Analyze swing metrics against standard ranges:
 - Club Path: Square to slightly in-to-out preferred
 
 Provide specific recommendations based on metric deviations from optimal ranges.`,
-      drills: ['Practice slow motion swings', 'Work on grip fundamentals'],
-      feels: ['Feel balanced throughout swing', 'Keep head still during swing']
+      drills: [],
+      feels: []
     };
   }
 }
 
 async function analyzeSwingWithAI(swingData: any, clubType: string): Promise<{insights: SwingInsight[], drills: string[], feels: string[]}> {
-  const { knowledge: knowledgeBase, drills, feels } = await searchRelevantKnowledge(swingData, clubType);
+  // Parallelize knowledge search and preparation
+  const knowledgePromise = searchRelevantKnowledge(swingData, clubType);
+  
+  // Start preparing prompt while knowledge search is running
+  const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
+  const filteredSwingData = Object.fromEntries(
+    Object.entries(swingData).filter(([key]) => !excludeFields.includes(key))
+  );
+
+  const { knowledge: knowledgeBase, drills, feels } = await knowledgePromise;
   
   const systemPrompt = `You are a professional golf instructor analyzing TrackMan swing data. Use the provided knowledge base to give accurate, metric-based insights.
 
 ${knowledgeBase}
 
-INSTRUCTIONS:
+CRITICAL INSTRUCTIONS:
 1. Analyze the swing data against the good ranges in the knowledge base
 2. Identify specific swing faults using the trigger conditions
-3. Provide 3 targeted insights maximum
+3. Provide 2-3 targeted insights maximum
 4. Include video recommendations when metrics match trigger conditions
-5. Use the exact drills and feels from the knowledge base
+5. DO NOT generate any drills or feels - these come from the knowledge base only
 6. Reference specific metric values in your analysis
 
 Return ONLY a JSON array of insights in this exact format:
@@ -225,17 +212,11 @@ Return ONLY a JSON array of insights in this exact format:
   {
     "title": "Clear, specific title",
     "description": "Detailed analysis with specific metric values and actionable advice",
-    "video_url": "https://scratchgc.wistia.com/medias/...", 
-    "insight_type": "strength|weakness|recommendation|drill",
+    "video_url": "https://scratchgc.wistia.com/medias/..." (only if found in knowledge base), 
+    "insight_type": "strength|weakness|recommendation",
     "confidence_score": 0.8
   }
 ]`;
-
-  // Filter swing data to remove base64 image and other non-metric fields
-  const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
-  const filteredSwingData = Object.fromEntries(
-    Object.entries(swingData).filter(([key]) => !excludeFields.includes(key))
-  );
 
   const userPrompt = `Analyze this ${clubType} swing data:
 ${JSON.stringify(filteredSwingData, null, 2)}
@@ -258,13 +239,13 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini', // Faster model for better performance
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt }
           ],
-          temperature: 0.3,
-          max_tokens: 1500
+          temperature: 0.2,
+          max_tokens: 800 // Reduced for faster response
         }),
       });
 
