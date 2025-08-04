@@ -10,8 +10,9 @@ interface VideoRecommendationsSectionProps {
 }
 
 export const VideoRecommendationsSection = ({ swingData, insights }: VideoRecommendationsSectionProps) => {
-  // Get video recommendations based on swing data
-  const recommendedVideos = getVideoRecommendations([swingData]);
+  // Get video recommendations based on swing data - handle both array and single swing
+  const swingArray = Array.isArray(swingData) ? swingData : (swingData?.swings || [swingData]);
+  const recommendedVideos = getVideoRecommendations(swingArray);
   
   // Also check if insights have video URLs
   const insightVideos = insights
@@ -39,8 +40,55 @@ export const VideoRecommendationsSection = ({ swingData, insights }: VideoRecomm
     index === self.findIndex(v => v.url === video.url)
   ).slice(0, 4); // Limit to 4 videos max
 
+  // If no videos found, show some default recommendations
   if (uniqueVideos.length === 0) {
-    return null;
+    const defaultVideos = [
+      {
+        title: 'Golf Posture',
+        description: 'Foundation for consistent swing mechanics and setup',
+        url: 'https://scratchgc.wistia.com/medias/5u6i7fhjfk',
+        reason: 'Setup fundamental'
+      },
+      {
+        title: 'Club Path on TrackMan',
+        description: 'Understanding club path and ball flight laws',
+        url: 'https://scratchgc.wistia.com/medias/ufxhjffk9q',
+        reason: 'Ball flight education'
+      }
+    ];
+    
+    return (
+      <Card className="bg-surface border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Play className="h-5 w-5 text-accent" />
+            Recommended Training Videos
+            <Badge variant="outline" className="ml-auto">
+              {defaultVideos.length} videos
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {defaultVideos.map((video, index) => (
+              <VideoCard
+                key={video.url}
+                video={video}
+                index={index}
+              />
+            ))}
+          </div>
+          <div className="mt-6 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Play className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-muted-foreground">
+                <span className="font-medium">General Recommendations:</span> Upload more swings for personalized video suggestions based on your specific swing data.
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (

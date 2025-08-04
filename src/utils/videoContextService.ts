@@ -532,9 +532,9 @@ export const getVideoRecommendations = (swingData: any[]): VideoContext[] => {
   
   if (!swingData || swingData.length === 0) return recommendations;
   
-  // Get latest swing data or combine multiple swings for analysis
+  // Get latest swing data - handle both raw swing objects and structured data
   const latestSwing = swingData[0];
-  const metrics = getStructuredMetrics(latestSwing.structuredMetrics || latestSwing.structured_metrics || []);
+  const metrics = getStructuredMetrics(latestSwing.structuredMetrics || latestSwing.structured_metrics || latestSwing || {});
   
   // Check each video's recommendation conditions
   for (const video of VIDEO_CONTEXTS) {
@@ -546,8 +546,8 @@ export const getVideoRecommendations = (swingData: any[]): VideoContext[] => {
       }
     }
     
-    // If more than 50% of conditions match, recommend the video
-    if (recommendationScore > video.recommendWhen.length * 0.5) {
+    // If any conditions match, recommend the video (lowered threshold)
+    if (recommendationScore > 0) {
       recommendations.push(video);
     }
   }
@@ -561,5 +561,5 @@ export const getVideoRecommendations = (swingData: any[]): VideoContext[] => {
       evaluateRecommendCondition(condition, metrics)
     ).length;
     return scoreB - scoreA;
-  });
+  }).slice(0, 6); // Limit to top 6 videos
 };

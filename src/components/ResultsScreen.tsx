@@ -46,7 +46,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   }
 
   const swing = data.swings[0];
-  const structuredMetrics = getStructuredMetrics(swing);
+  const structuredMetrics = getStructuredMetrics(swing.structured_metrics || swing.structuredMetrics || swing);
   
   // Get insights from the new recommendation engine
   const insights = swing.insights || [];
