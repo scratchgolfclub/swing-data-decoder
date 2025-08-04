@@ -160,16 +160,7 @@ Analyze swing metrics against standard ranges and provide recommendations based 
     console.error('Error in vector search:', error);
     return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
     
-Analyze swing metrics against standard ranges:
-- Club Speed: 80-120 mph optimal
-- Ball Speed: 1.4-1.5x club speed
-- Smash Factor: 1.30-1.50 optimal  
-- Launch Angle: Varies by club type
-- Spin Rate: Optimal range depends on club
-- Face Angle: Square to target preferred
-- Club Path: Square to slightly in-to-out preferred
-
-Provide specific recommendations based on metric deviations from optimal ranges.`;
+Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`;
   }
 }
 
@@ -254,7 +245,9 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
       console.log('Raw OpenAI response content preview:', content.substring(0, 200));
 
       try {
-        const insights = JSON.parse(content);
+        // Clean up potential markdown formatting
+        const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+        const insights = JSON.parse(cleanContent);
         console.log(`Successfully parsed ${insights.length} insights`);
         
         // Validate insights structure
@@ -272,7 +265,16 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
         console.error('Failed to parse OpenAI response as JSON:', parseError);
         console.log('Full content that failed to parse:', content);
         
-        // Return a fallback insight
+        // Try to extract insights from malformed JSON
+        const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+        try {
+          const fallbackInsights = JSON.parse(cleanContent);
+          if (Array.isArray(fallbackInsights) && fallbackInsights.length > 0) {
+            return fallbackInsights;
+          }
+        } catch {}
+        
+        // Return a fallback insight only as last resort
         return [{
           title: 'Analysis Complete',
           description: `Your ${clubType} swing has been analyzed. Please check the metrics for detailed feedback.`,
