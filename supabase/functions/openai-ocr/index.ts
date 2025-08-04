@@ -243,14 +243,13 @@ serve(async (req) => {
 
     console.log('Inserted swing:', insertedSwing);
 
-    // Call evaluate-swing function to generate insights using direct HTTP call
+    // Call evaluate-swing function to generate insights (no auth headers since verify_jwt = false)
     try {
+      console.log('Calling evaluate-swing for swingId:', insertedSwing.id);
       const evaluateResponse = await fetch(`https://motdnvzwtofailxjlhfg.supabase.co/functions/v1/evaluate-swing`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
-          'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ swingId: insertedSwing.id })
       });

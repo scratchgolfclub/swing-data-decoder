@@ -11,6 +11,12 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+console.log('Evaluate-swing function starting...');
+console.log('Environment check:');
+console.log('- SUPABASE_URL:', supabaseUrl ? 'present' : 'missing');
+console.log('- SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'present' : 'missing');
+console.log('- OPENAI_API_KEY:', openAIApiKey ? 'present' : 'missing');
+
 // Initialize Supabase client
 const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
 
@@ -292,14 +298,22 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
 }
 
 serve(async (req) => {
+  console.log('=== Evaluate-swing function called ===');
+  console.log('Request method:', req.method);
+  console.log('Request headers:', Object.fromEntries(req.headers.entries()));
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
     console.log('=== Starting swing evaluation ===');
-    const { swingId, swingData } = await req.json();
+    const requestBody = await req.text();
+    console.log('Raw request body:', requestBody);
+    
+    const { swingId, swingData } = JSON.parse(requestBody);
     
     let actualSwingData = swingData;
     
