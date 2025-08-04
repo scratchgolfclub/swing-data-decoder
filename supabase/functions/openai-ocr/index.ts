@@ -50,7 +50,7 @@ async function generateQueryEmbedding(text: string): Promise<number[]> {
 }
 
 // Search relevant knowledge using vector similarity
-async function searchRelevantKnowledge(swingData: any, clubType: string): Promise<string> {
+async function searchRelevantKnowledge(swingData: any, clubType: string): Promise<{knowledge: string, drills: string[], feels: string[]}> {
   try {
     // Filter out non-metric fields and create multiple targeted search queries
     const excludeFields = ['id', 'user_id', 'created_at', 'updated_at', 'session_name', 'trackman_image_url'];
@@ -73,6 +73,8 @@ async function searchRelevantKnowledge(swingData: any, clubType: string): Promis
     console.log('Generated search queries:', searchQueries.slice(0, 3));
     
     let allRelevantChunks: any[] = [];
+    let allDrills: string[] = [];
+    let allFeels: string[] = [];
     
     // Execute multiple targeted searches with lower threshold
     for (const query of searchQueries) {
@@ -94,6 +96,18 @@ async function searchRelevantKnowledge(swingData: any, clubType: string): Promis
           console.log(`Query "${query.substring(0, 50)}..." found ${chunks.length} chunks, scores:`, 
             chunks.map(c => c.similarity.toFixed(3)));
           allRelevantChunks.push(...chunks);
+
+          // Extract drills and feels from metadata
+          chunks.forEach((chunk: any) => {
+            if (chunk.metadata) {
+              if (chunk.metadata.drills && Array.isArray(chunk.metadata.drills)) {
+                allDrills.push(...chunk.metadata.drills);
+              }
+              if (chunk.metadata.feels && Array.isArray(chunk.metadata.feels)) {
+                allFeels.push(...chunk.metadata.feels);
+              }
+            }
+          });
         } else {
           console.log(`Query "${query.substring(0, 50)}..." found no chunks`);
         }
@@ -110,11 +124,19 @@ async function searchRelevantKnowledge(swingData: any, clubType: string): Promis
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 12); // Keep top 12 most relevant
 
+    // Remove duplicates and limit drills/feels to 2-3 each
+    const uniqueDrills = [...new Set(allDrills)].slice(0, 3);
+    const uniqueFeels = [...new Set(allFeels)].slice(0, 3);
+
     if (uniqueChunks.length === 0) {
       console.log('No relevant chunks found, using fallback knowledge');
-      return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
-      
-Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`;
+      return {
+        knowledge: `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
+        
+Analyze swing metrics against standard ranges and provide recommendations based on common patterns.`,
+        drills: ['Practice slow motion swings', 'Work on grip fundamentals'],
+        feels: ['Feel balanced throughout swing', 'Keep head still during swing']
+      };
     }
 
     console.log(`Found ${uniqueChunks.length} total relevant knowledge chunks`);
@@ -153,13 +175,20 @@ Analyze swing metrics against standard ranges and provide recommendations based 
 
     console.log(`Built focused knowledge base: ${knowledgeBase.length} characters`);
     console.log(`Token estimate: ~${Math.ceil(knowledgeBase.length / 4)} tokens`);
+    console.log('Extracted drills:', uniqueDrills);
+    console.log('Extracted feels:', uniqueFeels);
 
-    return knowledgeBase;
+    return {
+      knowledge: knowledgeBase,
+      drills: uniqueDrills,
+      feels: uniqueFeels
+    };
     
   } catch (error) {
     console.error('Error in vector search:', error);
-    return `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
-    
+    return {
+      knowledge: `# BASIC GOLF SWING ANALYSIS FOR ${clubType.toUpperCase()}
+      
 Analyze swing metrics against standard ranges:
 - Club Speed: 80-120 mph optimal
 - Ball Speed: 1.4-1.5x club speed
@@ -169,12 +198,15 @@ Analyze swing metrics against standard ranges:
 - Face Angle: Square to target preferred
 - Club Path: Square to slightly in-to-out preferred
 
-Provide specific recommendations based on metric deviations from optimal ranges.`;
+Provide specific recommendations based on metric deviations from optimal ranges.`,
+      drills: ['Practice slow motion swings', 'Work on grip fundamentals'],
+      feels: ['Feel balanced throughout swing', 'Keep head still during swing']
+    };
   }
 }
 
-async function analyzeSwingWithAI(swingData: any, clubType: string): Promise<SwingInsight[]> {
-  const knowledgeBase = await searchRelevantKnowledge(swingData, clubType);
+async function analyzeSwingWithAI(swingData: any, clubType: string): Promise<{insights: SwingInsight[], drills: string[], feels: string[]}> {
+  const { knowledge: knowledgeBase, drills, feels } = await searchRelevantKnowledge(swingData, clubType);
   
   const systemPrompt = `You are a professional golf instructor analyzing TrackMan swing data. Use the provided knowledge base to give accurate, metric-based insights.
 
@@ -269,7 +301,7 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
           throw new Error('No valid insights found in OpenAI response');
         }
         
-        return validInsights;
+        return { insights: validInsights, drills, feels };
       } catch (parseError) {
         console.error('Failed to parse OpenAI response as JSON:', parseError);
         console.log('Full content that failed to parse:', content);
@@ -279,17 +311,21 @@ Focus on the most impactful metrics for this ${clubType}. Provide specific insig
         try {
           const fallbackInsights = JSON.parse(cleanContent);
           if (Array.isArray(fallbackInsights) && fallbackInsights.length > 0) {
-            return fallbackInsights;
+            return { insights: fallbackInsights, drills, feels };
           }
         } catch {}
         
         // Return a fallback insight only as last resort
-        return [{
-          title: 'Analysis Complete',
-          description: `Your ${clubType} swing has been analyzed. Please check the metrics for detailed feedback.`,
-          insight_type: 'recommendation' as const,
-          confidence_score: 0.7
-        }];
+        return {
+          insights: [{
+            title: 'Analysis Complete',
+            description: `Your ${clubType} swing has been analyzed. Please check the metrics for detailed feedback.`,
+            insight_type: 'recommendation' as const,
+            confidence_score: 0.7
+          }],
+          drills,
+          feels
+        };
       }
     } catch (error) {
       console.error(`Error on attempt ${attempt}:`, error);
@@ -538,7 +574,8 @@ serve(async (req) => {
       console.log(`Analyzing ${clubType} swing for ID: ${insertedSwing.id}`);
       
       // Generate insights using AI
-      insights = await analyzeSwingWithAI(insertedSwing, clubType);
+      const { insights: generatedInsights, drills, feels } = await analyzeSwingWithAI(insertedSwing, clubType);
+      insights = generatedInsights;
       
       // Insert insights into database
       console.log(`Inserting ${insights.length} insights for swing ${insertedSwing.id}`);
@@ -552,7 +589,9 @@ serve(async (req) => {
             description: insight.description,
             video_url: insight.video_url,
             insight_type: insight.insight_type,
-            confidence_score: insight.confidence_score
+            confidence_score: insight.confidence_score,
+            drills: drills,
+            feels: feels
           });
 
         if (insertError) {

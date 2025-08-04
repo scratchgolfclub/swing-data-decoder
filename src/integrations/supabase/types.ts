@@ -109,6 +109,8 @@ export type Database = {
           confidence_score: number | null
           created_at: string | null
           description: string
+          drills: Json | null
+          feels: Json | null
           id: string
           insight_type: string | null
           swing_id: string
@@ -119,6 +121,8 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string | null
           description: string
+          drills?: Json | null
+          feels?: Json | null
           id?: string
           insight_type?: string | null
           swing_id: string
@@ -129,6 +133,8 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string | null
           description?: string
+          drills?: Json | null
+          feels?: Json | null
           id?: string
           insight_type?: string | null
           swing_id?: string
