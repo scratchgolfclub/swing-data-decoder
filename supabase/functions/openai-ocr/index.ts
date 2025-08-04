@@ -243,16 +243,24 @@ serve(async (req) => {
 
     console.log('Inserted swing:', insertedSwing);
 
-    // Call evaluate-swing function to generate insights
+    // Call evaluate-swing function to generate insights using direct HTTP call
     try {
-      const { data: insights, error: insightError } = await supabase.functions.invoke('evaluate-swing', {
-        body: { swingId: insertedSwing.id }
+      const evaluateResponse = await fetch(`https://motdnvzwtofailxjlhfg.supabase.co/functions/v1/evaluate-swing`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+          'apikey': Deno.env.get('SUPABASE_ANON_KEY') || ''
+        },
+        body: JSON.stringify({ swingId: insertedSwing.id })
       });
 
-      if (insightError) {
-        console.error('Insight generation error:', insightError);
+      if (!evaluateResponse.ok) {
+        const errorText = await evaluateResponse.text();
+        console.error(`Evaluate-swing HTTP error ${evaluateResponse.status}:`, errorText);
         // Don't fail the main operation if insights fail
       } else {
+        const insights = await evaluateResponse.json();
         console.log('Generated insights:', insights);
       }
     } catch (insightError) {
