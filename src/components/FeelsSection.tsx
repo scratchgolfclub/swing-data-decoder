@@ -105,7 +105,9 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
         {uniqueFeels.length > 0 && (
           <div className="mt-6 p-4 bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 rounded-xl">
             <div className="flex items-start gap-3">
-              <Brain className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+              <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Brain className="h-4 w-4" />
+              </div>
               <div className="text-sm text-foreground">
                 <span className="font-semibold text-accent">Mental Game:</span> Choose one feel to focus on during your next swing. 
                 Let it guide your movement naturally without overthinking.
