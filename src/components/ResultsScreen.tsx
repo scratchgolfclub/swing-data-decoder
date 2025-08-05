@@ -133,18 +133,26 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
 
         {/* Hero Section */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <Target className="h-6 w-6 text-accent" />
-            <Badge variant="outline" className="text-sm font-medium">
-              {data.club} Analysis
-            </Badge>
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-full">
+              <Target className="h-5 w-5 text-primary" />
+              <span className="text-sm font-semibold text-primary uppercase tracking-wide">
+                {data.club}
+              </span>
+            </div>
+            <div className="w-2 h-2 rounded-full bg-border"></div>
+            <span className="text-sm text-muted-foreground font-medium">
+              TrackMan Data
+            </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
-            Swing Analysis
-            <span className="block text-accent">Complete</span>
+            Your Swing
+            <span className="block bg-gradient-to-r from-primary to-primary-600 bg-clip-text text-transparent">
+              Analysis
+            </span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            AI-powered insights and recommendations based on your TrackMan data
+            AI-powered insights and recommendations to improve your game
           </p>
         </div>
 
