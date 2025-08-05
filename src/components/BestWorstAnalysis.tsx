@@ -32,8 +32,8 @@ export const BestWorstAnalysis = ({ metrics, clubType }: BestWorstAnalysisProps)
         case 'smash factor':
           if (clubType === 'driver') {
             score = value >= 1.45 ? 100 : value >= 1.40 ? 80 : value >= 1.35 ? 60 : 30;
-            reason = value >= 1.45 ? 'Excellent energy transfer - hitting the sweet spot consistently' : 
-                    value >= 1.40 ? 'Good solid contact' : 'Room for improvement in strike quality';
+            reason = value >= 1.45 ? 'Excellent energy transfer - perfect contact' : 
+                    value >= 1.40 ? 'Solid contact quality' : 'Contact quality can improve';
           }
           break;
         
@@ -41,33 +41,33 @@ export const BestWorstAnalysis = ({ metrics, clubType }: BestWorstAnalysisProps)
           // Higher is generally better, but context matters
           score = clubType === 'driver' ? (value >= 105 ? 90 : value >= 95 ? 70 : 50) : 
                   clubType.includes('iron') ? (value >= 85 ? 90 : value >= 75 ? 70 : 50) : 60;
-          reason = `${score >= 80 ? 'Strong' : score >= 60 ? 'Average' : 'Below average'} swing speed for ${clubType}`;
+          reason = `${score >= 80 ? 'Great swing speed' : score >= 60 ? 'Good swing speed' : 'Room to increase speed'} with ${clubType}`;
           break;
 
         case 'attack angle':
           if (clubType === 'driver') {
             const optimal = value >= 1 && value <= 5;
             score = optimal ? 95 : Math.abs(value) <= 2 ? 70 : 40;
-            reason = optimal ? 'Ideal upward strike for maximum distance' : 
-                    value < -2 ? 'Too steep - losing distance and trajectory' : 
-                    'Room to optimize launch conditions';
+            reason = optimal ? 'Perfect launch angle setup' : 
+                    value < -2 ? 'Hit up more for better distance' : 
+                    'Small adjustment needed for optimal launch';
           }
           break;
 
         case 'club path':
           const pathScore = Math.abs(value) <= 2 ? 90 : Math.abs(value) <= 4 ? 70 : 40;
           score = pathScore;
-          reason = Math.abs(value) <= 2 ? 'Excellent swing path control' : 
-                  Math.abs(value) <= 4 ? 'Minor path deviation' : 
-                  `${value > 0 ? 'Too much in-to-out' : 'Too much out-to-in'} - affecting ball flight`;
+          reason = Math.abs(value) <= 2 ? 'Great swing path control' : 
+                  Math.abs(value) <= 4 ? 'Minor path adjustment needed' : 
+                  `Swing path needs work for straighter shots`;
           break;
 
         case 'face angle':
           const faceScore = Math.abs(value) <= 1 ? 95 : Math.abs(value) <= 2 ? 80 : 50;
           score = faceScore;
-          reason = Math.abs(value) <= 1 ? 'Excellent face control at impact' : 
-                  Math.abs(value) <= 2 ? 'Good face position' : 
-                  'Face angle needs attention for straighter shots';
+          reason = Math.abs(value) <= 1 ? 'Perfect face control at impact' : 
+                  Math.abs(value) <= 2 ? 'Good clubface position' : 
+                  'Focus on clubface position for accuracy';
           break;
 
         default:
@@ -93,64 +93,60 @@ export const BestWorstAnalysis = ({ metrics, clubType }: BestWorstAnalysisProps)
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-      {/* Best Performing Metric */}
-      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-primary">
-            <Star className="h-5 w-5" />
-            Best Data Point
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-lg">{best.metric.title}</span>
-              <Badge variant="default" className="bg-primary/10 text-primary border-primary/20">
-                {best.metric.value} {best.metric.descriptor}
-              </Badge>
+    <Card className="bg-gradient-to-r from-primary/5 via-surface to-warning/5 border border-border mb-8">
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Best Performing Metric */}
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Star className="h-5 w-5 text-primary" />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">
-                Performance Score: {best.score}/100
-              </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-primary">Your Best</span>
+                <Badge variant="outline" className="text-xs bg-primary/5 text-primary border-primary/20">
+                  {best.score}/100
+                </Badge>
+              </div>
+              <h4 className="font-semibold text-foreground truncate mb-1">
+                {best.metric.title}: {best.metric.value}
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {best.reason}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {best.reason}
-            </p>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Worst Performing Metric */}
-      <Card className="bg-gradient-to-br from-warning/5 to-warning/10 border-warning/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-warning">
-            <AlertTriangle className="h-5 w-5" />
-            Needs Most Improvement
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-lg">{worst.metric.title}</span>
-              <Badge variant="secondary" className="bg-warning/10 text-warning border-warning/20">
-                {worst.metric.value} {worst.metric.descriptor}
-              </Badge>
+          {/* Separator */}
+          <div className="hidden lg:block w-px bg-border"></div>
+          <div className="lg:hidden h-px bg-border"></div>
+
+          {/* Worst Performing Metric */}
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-warning/10 border border-warning/20 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-warning" />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <TrendingDown className="h-4 w-4 text-warning" />
-              <span className="text-sm font-medium text-warning">
-                Performance Score: {worst.score}/100
-              </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium text-warning">Focus Area</span>
+                <Badge variant="outline" className="text-xs bg-warning/5 text-warning border-warning/20">
+                  {worst.score}/100
+                </Badge>
+              </div>
+              <h4 className="font-semibold text-foreground truncate mb-1">
+                {worst.metric.title}: {worst.metric.value}
+              </h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {worst.reason}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {worst.reason}
-            </p>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };

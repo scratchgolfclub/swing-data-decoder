@@ -132,18 +132,18 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
         </div>
 
         {/* Hero Section */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 mb-4">
             <Target className="h-6 w-6 text-accent" />
             <Badge variant="outline" className="text-sm font-medium">
               {data.club} Analysis
             </Badge>
           </div>
-          <h1 className="text-5xl font-bold text-foreground mb-4 leading-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4 leading-tight">
             Swing Analysis
             <span className="block text-accent">Complete</span>
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             AI-powered insights and recommendations based on your TrackMan data
           </p>
         </div>
@@ -156,18 +156,18 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
 
         {/* Key Insights Section */}
         {(strengths.length > 0 || weaknesses.length > 0) && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-              <TrendingUp className="h-6 w-6 text-accent" />
+          <div className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-accent" />
               Key Performance Insights
             </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               {strengths.slice(0, 1).map((insight: any) => (
                 <InsightCard
                   key={insight.id}
                   type="strength"
                   title={insight.title}
-                  value={`${Math.round(insight.confidence_score * 100)}% confidence`}
+                  value={`High confidence`}
                   description={insight.description}
                   icon={CheckCircle}
                 />
@@ -177,7 +177,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
                   key={insight.id}
                   type="weakness"
                   title={insight.title}
-                  value={`${Math.round(insight.confidence_score * 100)}% confidence`}
+                  value={`Needs attention`}
                   description={insight.description}
                   icon={AlertTriangle}
                 />
@@ -187,33 +187,33 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
         )}
 
         {/* Video Recommendations Section */}
-        <div className="mb-12">
+        <div className="mb-8">
           <VideoRecommendationsSection swingData={swing} insights={insights} />
         </div>
 
         {/* Drills and Feels Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           <DrillsSection insights={insights} />
           <FeelsSection insights={insights} />
         </div>
 
         {/* Recommendations Section */}
         {recommendations.length > 0 && (
-          <div className="mb-12">
-            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-accent" />
+          <div className="mb-10">
+            <h2 className="text-xl font-bold text-foreground mb-5 flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-accent" />
               Additional Recommendations
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recommendations.map((insight: any) => (
-                <Card key={insight.id} className="hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-surface border-border">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-3 mb-4">
+                <Card key={insight.id} className="hover:shadow-card transition-all duration-300 hover:scale-[1.01] bg-surface border-border">
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-3 mb-3">
                       <div className="p-2 rounded-lg bg-accent/10">
                         <Target className="h-4 w-4 text-accent" />
                       </div>
                       <div className="flex-1">
-                        <h4 className="font-semibold text-foreground mb-1">
+                        <h4 className="font-semibold text-foreground mb-1 text-sm">
                           {insight.title}
                         </h4>
                         <Badge variant="outline" className="text-xs">
@@ -221,7 +221,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
                         </Badge>
                       </div>
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                    <p className="text-sm text-muted-foreground leading-relaxed mb-3">
                       {insight.description}
                     </p>
                     {insight.video_url && (
@@ -232,7 +232,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
                         className="inline-flex items-center gap-2 text-accent hover:text-accent-hover text-sm font-medium transition-colors"
                       >
                         <Play className="h-3 w-3" />
-                        Watch Training Video
+                        Watch Video
                       </a>
                     )}
                   </CardContent>
@@ -243,24 +243,24 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
         )}
 
         {/* Detailed Metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Club Data */}
           <Card className="bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-accent" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Target className="h-4 w-4 text-accent" />
                 Club Data
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {clubMetrics.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                   {getSimpleMetrics(clubMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 text-sm">
                   No club data available
                 </p>
               )}
@@ -269,21 +269,21 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
 
           {/* Ball Data */}
           <Card className="bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-accent" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="h-4 w-4 text-accent" />
                 Ball Data
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {ballMetrics.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                   {getSimpleMetrics(ballMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 text-sm">
                   No ball data available
                 </p>
               )}
@@ -292,21 +292,21 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
 
           {/* Flight Data */}
           <Card className="bg-surface border-border">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-accent" />
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CheckCircle className="h-4 w-4 text-accent" />
                 Flight Data
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {flightMetrics.length > 0 ? (
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
                   {getSimpleMetrics(flightMetrics).map((metric, index) => (
                     <MetricTile key={index} metric={metric} />
                   ))}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-center py-8">
+                <p className="text-muted-foreground text-center py-6 text-sm">
                   No flight data available
                 </p>
               )}

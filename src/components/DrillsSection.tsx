@@ -24,32 +24,34 @@ export const DrillsSection = ({ insights }: DrillsSectionProps) => {
 
   return (
     <Card className="bg-surface border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-accent" />
-          Drills to Work On
-          <Badge variant="outline" className="ml-auto">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Target className="h-4 w-4 text-primary" />
+          </div>
+          <span className="text-lg font-semibold">Practice Drills</span>
+          <Badge variant="outline" className="ml-auto text-xs bg-primary/5 text-primary border-primary/20">
             {uniqueDrills.length} drill{uniqueDrills.length !== 1 ? 's' : ''}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <CardContent className="pt-0">
+        <div className="space-y-3">
           {uniqueDrills.map((drill, index) => (
             <div 
               key={index}
-              className="group p-4 rounded-lg border border-border hover:border-accent/30 transition-all duration-200 hover:shadow-sm"
+              className="group relative p-4 rounded-xl bg-gradient-to-r from-primary/3 to-transparent border border-primary/10 hover:border-primary/20 transition-all duration-300 hover:shadow-sm"
             >
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-1">
-                  <div className="w-6 h-6 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-accent">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+                    <span className="text-sm font-bold">
                       {index + 1}
                     </span>
                   </div>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-foreground leading-relaxed">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground leading-relaxed pr-2">
                     {String(drill)}
                   </p>
                 </div>
@@ -59,12 +61,12 @@ export const DrillsSection = ({ insights }: DrillsSectionProps) => {
         </div>
         
         {uniqueDrills.length > 0 && (
-          <div className="mt-6 p-4 bg-accent/5 border border-accent/20 rounded-lg">
-            <div className="flex items-start gap-2">
-              <CheckCircle2 className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <span className="font-medium">Practice Tip:</span> Focus on 1-2 drills per session for best results. 
-                Consistent practice with proper form is more effective than trying all drills at once.
+          <div className="mt-6 p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-foreground">
+                <span className="font-semibold text-primary">Pro Tip:</span> Pick 1-2 drills to focus on during your next practice session. 
+                Quality repetition beats quantity every time.
               </div>
             </div>
           </div>

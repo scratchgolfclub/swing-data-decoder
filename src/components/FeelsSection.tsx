@@ -51,39 +51,44 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
 
   return (
     <Card className="bg-surface border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-accent" />
-          Feels to Think About
-          <Badge variant="outline" className="ml-auto">
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
+            <Brain className="h-4 w-4 text-accent" />
+          </div>
+          <span className="text-lg font-semibold">Swing Feels</span>
+          <Badge variant="outline" className="ml-auto text-xs bg-accent/5 text-accent border-accent/20">
             {uniqueFeels.length} feel{uniqueFeels.length !== 1 ? 's' : ''}
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         <div className="space-y-6">
           {Object.entries(categorizedFeels).map(([category, feels]) => {
             if (feels.length === 0) return null;
             
             return (
               <div key={category}>
-                <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                  <span className="text-sm">{category}</span>
-                  <Badge variant="secondary" className="text-xs">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-2 h-2 rounded-full bg-accent"></div>
+                  <h4 className="font-semibold text-foreground text-sm">
+                    {category}
+                  </h4>
+                  <Badge variant="secondary" className="text-xs bg-accent/10 text-accent border-accent/20">
                     {feels.length}
                   </Badge>
-                </h4>
-                <div className="space-y-3">
+                </div>
+                <div className="space-y-3 ml-5">
                   {feels.map((feel, index) => (
                     <div 
                       key={index}
-                      className="group p-3 rounded-lg bg-accent/5 border border-accent/10 hover:border-accent/20 transition-all duration-200"
+                      className="group relative p-3 rounded-xl bg-gradient-to-r from-accent/3 to-transparent border border-accent/10 hover:border-accent/20 transition-all duration-300"
                     >
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 mt-1">
                           <Lightbulb className="h-4 w-4 text-accent" />
                         </div>
-                        <p className="text-sm text-foreground leading-relaxed italic">
+                        <p className="text-sm font-medium text-foreground leading-relaxed italic">
                           "{String(feel)}"
                         </p>
                       </div>
@@ -96,12 +101,12 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
         </div>
         
         {uniqueFeels.length > 0 && (
-          <div className="mt-6 p-4 bg-muted/50 border border-border rounded-lg">
-            <div className="flex items-start gap-2">
-              <Brain className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
-              <div className="text-sm text-muted-foreground">
-                <span className="font-medium">Mental Approach:</span> Use these feels as mental cues during practice. 
-                Focus on one feel at a time and let it guide your swing naturally.
+          <div className="mt-6 p-4 bg-gradient-to-r from-accent/5 to-accent/10 border border-accent/20 rounded-xl">
+            <div className="flex items-start gap-3">
+              <Brain className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-foreground">
+                <span className="font-semibold text-accent">Mental Game:</span> Choose one feel to focus on during your next swing. 
+                Let it guide your movement naturally without overthinking.
               </div>
             </div>
           </div>
