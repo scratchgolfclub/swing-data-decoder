@@ -28,6 +28,32 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
   const navigate = useNavigate();
   const [isSimpleView, setIsSimpleView] = useState(true);
   
+  // Function to format club name for display
+  const formatClubName = (club: string): string => {
+    const clubLower = club.toLowerCase();
+    
+    if (clubLower.includes('driver')) return 'Driver';
+    if (clubLower.includes('wedge')) return 'Wedge';
+    if (clubLower.includes('hybrid')) return 'Hybrid';
+    if (clubLower.includes('wood')) return 'Wood';
+    if (clubLower.includes('putter')) return 'Putter';
+    
+    // Handle iron formatting (e.g., "9i" -> "9-Iron")
+    const ironMatch = club.match(/(\d+)i/i);
+    if (ironMatch) {
+      return `${ironMatch[1]}-Iron`;
+    }
+    
+    // Handle other numbered clubs
+    const numberMatch = club.match(/(\d+)/);
+    if (numberMatch && clubLower.includes('iron')) {
+      return `${numberMatch[1]}-Iron`;
+    }
+    
+    // Default: capitalize first letter
+    return club.charAt(0).toUpperCase() + club.slice(1);
+  };
+  
   if (!data?.swings?.length) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-surface to-surface-muted p-4">
@@ -137,7 +163,7 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
             <div className="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-full">
               <Target className="h-5 w-5 text-primary" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
-                {data.club}
+                {formatClubName(data.club)}
               </span>
             </div>
             <div className="w-2 h-2 rounded-full bg-border"></div>
