@@ -95,7 +95,7 @@ export const BestWorstAnalysis = ({ metrics, clubType }: BestWorstAnalysisProps)
   return (
     <Card className="bg-gradient-to-r from-primary/5 via-surface to-warning/5 border border-border mb-8">
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col lg:flex-row items-center gap-6 lg:gap-8">
           {/* Best Performing Metric */}
           <div className="flex items-center gap-4">
             <div className="flex-shrink-0">
