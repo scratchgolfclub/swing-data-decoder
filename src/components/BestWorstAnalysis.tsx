@@ -113,9 +113,6 @@ export const BestWorstAnalysis = ({ metrics, clubType }: BestWorstAnalysisProps)
               <h4 className="font-semibold text-foreground truncate mb-1">
                 {best.metric.title}: {best.metric.value}
               </h4>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {best.reason}
-              </p>
             </div>
           </div>
 
