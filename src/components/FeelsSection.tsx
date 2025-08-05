@@ -82,11 +82,13 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
                   {feels.map((feel, index) => (
                     <div 
                       key={index}
-                      className="group relative p-3 rounded-xl bg-gradient-to-r from-accent/3 to-transparent border border-accent/10 hover:border-accent/20 transition-all duration-300"
+                      className="group relative p-4 rounded-xl bg-gradient-to-r from-accent/5 to-transparent border border-accent/15 hover:border-accent/25 transition-all duration-300"
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 mt-1">
-                          <Lightbulb className="h-4 w-4 text-accent" />
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
+                            <Lightbulb className="h-4 w-4 text-accent" />
+                          </div>
                         </div>
                         <p className="text-sm font-medium text-foreground leading-relaxed italic">
                           "{String(feel)}"
