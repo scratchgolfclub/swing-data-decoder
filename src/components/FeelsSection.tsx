@@ -109,7 +109,7 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
                 <Brain className="h-4 w-4" />
               </div>
               <div className="text-sm text-foreground">
-                <span className="font-semibold text-accent">Mental Game:</span> Choose one feel to focus on during your next swing. 
+                <span className="font-semibold text-foreground">Mental Game:</span> Choose one feel to focus on during your next swing. 
                 Let it guide your movement naturally without overthinking.
               </div>
             </div>
