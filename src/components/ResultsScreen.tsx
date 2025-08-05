@@ -273,7 +273,9 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
           <Card className="bg-surface border-border">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4 text-accent" />
+                <div className="w-6 h-6 rounded-lg bg-accent text-accent-foreground flex items-center justify-center">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
                 Ball Data
               </CardTitle>
             </CardHeader>
@@ -296,7 +298,9 @@ export const ResultsScreen = ({ data, onReset, isDemoMode = false }: ResultsScre
           <Card className="bg-surface border-border">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-base">
-                <CheckCircle className="h-4 w-4 text-accent" />
+                <div className="w-6 h-6 rounded-lg bg-accent text-accent-foreground flex items-center justify-center">
+                  <CheckCircle className="h-4 w-4" />
+                </div>
                 Flight Data
               </CardTitle>
             </CardHeader>
