@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +8,7 @@ import { Camera, TrendingUp, Target, Trophy, History, Upload, Users, User, Setti
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { LeaderboardPreview } from '@/components/LeaderboardPreview';
+import LeaderboardPreview from '@/components/LeaderboardPreview';
 import { GoalTimeline } from '@/components/GoalTimeline';
 import { ModernBadgeSection } from '@/components/ModernBadgeSection';
 import Header from '@/components/Header';
@@ -41,19 +42,43 @@ export default function Dashboard() {
           return;
         }
 
-        const { data, error } = await supabase
-          .from('dashboard_stats')
+        // Get user stats from the existing user_stats table
+        const { data: userStats, error: statsError } = await supabase
+          .from('user_stats')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
-        if (error) {
-          console.error('Error fetching dashboard stats:', error);
+        // Get recent swings for activity
+        const { data: recentSwings, error: swingsError } = await supabase
+          .from('swings')
+          .select('id, created_at, club_type, total')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (statsError && statsError.code !== 'PGRST116') {
+          console.error('Error fetching user stats:', statsError);
           toast.error('Failed to load dashboard stats.');
           return;
         }
 
-        setStats(data);
+        // Create dashboard stats from available data
+        const dashboardStats: DashboardStats = {
+          totalSwings: userStats?.total_swings || 0,
+          avgAccuracy: userStats?.accuracy_average || 0,
+          improvementRate: userStats?.improvement_score || 0,
+          currentStreak: 0, // TODO: Calculate from swings data
+          bestScore: userStats?.longest_drive || 0,
+          recentActivity: (recentSwings || []).map(swing => ({
+            id: swing.id,
+            date: swing.created_at,
+            type: 'swing_analysis',
+            description: `${swing.club_type} swing${swing.total ? ` - ${swing.total} yards` : ''}`
+          }))
+        };
+
+        setStats(dashboardStats);
       } catch (error) {
         console.error('Error processing dashboard stats:', error);
         toast.error('Unexpected error loading dashboard data.');
@@ -225,7 +250,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Goals and Badges */}
           <div className="lg:col-span-2 space-y-8">
-            <GoalTimeline />
+            <GoalTimeline userId={user?.id || ''} />
             <ModernBadgeSection />
           </div>
 
