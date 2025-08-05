@@ -53,8 +53,8 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
     <Card className="bg-surface border-border">
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center">
-            <Brain className="h-4 w-4 text-accent" />
+          <div className="w-8 h-8 rounded-lg bg-accent text-accent-foreground flex items-center justify-center shadow-sm">
+            <Brain className="h-4 w-4" />
           </div>
           <span className="text-lg font-semibold">Swing Feels</span>
           <Badge variant="outline" className="ml-auto text-xs bg-accent/5 text-accent border-accent/20">
