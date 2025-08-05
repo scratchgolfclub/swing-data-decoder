@@ -86,8 +86,8 @@ export const FeelsSection = ({ insights }: FeelsSectionProps) => {
                     >
                       <div className="flex items-start gap-4">
                         <div className="flex-shrink-0">
-                          <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center">
-                            <Lightbulb className="h-4 w-4 text-accent" />
+                          <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center shadow-sm">
+                            <Lightbulb className="h-4 w-4" />
                           </div>
                         </div>
                         <p className="text-sm font-medium text-foreground leading-relaxed italic">
